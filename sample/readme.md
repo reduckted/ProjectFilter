@@ -1,0 +1,1 @@
+A sample solution to test the extension with.
