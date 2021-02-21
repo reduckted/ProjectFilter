@@ -1,0 +1,109 @@
+<Project>
+
+    <Import Sdk="Microsoft.NET.Sdk.WindowsDesktop" Project="Sdk.props" />
+
+    <PropertyGroup>
+        <TargetFramework>net472</TargetFramework>
+        <RootNamespace>ProjectFilter</RootNamespace>
+        <UseWPF>true</UseWPF>
+        <Nullable>enable</Nullable>
+        <LangVersion>8.0</LangVersion>
+        <AnalysisMode>AllEnabledByDefault</AnalysisMode>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <SchemaVersion>2.0</SchemaVersion>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <GeneratePkgDefFile>true</GeneratePkgDefFile>
+        <UseCodebase>true</UseCodebase>
+        <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
+        <IncludeDebugSymbolsInVSIXContainer>false</IncludeDebugSymbolsInVSIXContainer>
+        <IncludeDebugSymbolsInLocalVSIXDeployment>false</IncludeDebugSymbolsInLocalVSIXDeployment>
+        <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
+        <CopyOutputSymbolsToOutputDirectory>false</CopyOutputSymbolsToOutputDirectory>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <StartAction>Program</StartAction>
+        <StartProgram Condition="'$(DevEnvDir)' != ''">$(DevEnvDir)devenv.exe</StartProgram>
+        <StartArguments>/rootsuffix Exp</StartArguments>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <IncludeDebugSymbolsInVSIXContainer>true</IncludeDebugSymbolsInVSIXContainer>
+        <DeployExtension>true</DeployExtension>
+        <DebugType>full</DebugType>
+        <DebugSymbols>true</DebugSymbols>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <DeployExtension>false</DeployExtension>
+        <DebugType>pdbonly</DebugType>
+        <DebugSymbols>true</DebugSymbols>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Update="VSPackage.resx">
+            <LogicalName>VSPackage.resources</LogicalName>
+            <MergeWithCTO>true</MergeWithCTO>
+        </EmbeddedResource>
+
+        <Compile Update="VSCommandTable.cs">
+            <DesignTime>True</DesignTime>
+            <AutoGen>True</AutoGen>
+            <DependentUpon>VSCommandTable.vsct</DependentUpon>
+        </Compile>
+
+        <Compile Update="source.extension.cs">
+            <DesignTime>True</DesignTime>
+            <AutoGen>True</AutoGen>
+            <DependentUpon>source.extension.vsixmanifest</DependentUpon>
+        </Compile>
+
+        <VSCTCompile Include="VSCommandTable.vsct">
+            <ResourceName>Menus.ctmenu</ResourceName>
+            <SubType>Designer</SubType>
+            <Generator>VsctGenerator</Generator>
+            <LastGenOutput>VSCommandTable.cs</LastGenOutput>
+        </VSCTCompile>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="source.extension.vsixmanifest">
+            <SubType>Designer</SubType>
+            <Generator>VsixManifestGenerator</Generator>
+            <LastGenOutput>source.extension.cs</LastGenOutput>
+        </None>
+        <None Update="VSCommandTable.vsct">
+            <Generator>VsctGenerator</Generator>
+            <LastGenOutput>VSCommandTable.cs</LastGenOutput>
+        </None>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="5.0.3">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.VisualStudio.SDK" Version="16.0.206" ExcludeAssets="runtime">
+            <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="16.10.10">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="PresentationCore" />
+        <Reference Include="PresentationFramework" />
+        <Reference Include="System.Design" />
+        <Reference Include="System.Xaml" />
+        <Reference Include="WindowsBase" />
+    </ItemGroup>
+
+    <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
+    <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="Exists('$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets')" />
+
+</Project>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <Extern href="stdidcmd.h"/>
+    <Extern href="vsshlids.h"/>
+
+    <Include href="KnownImageIds.vsct"/>
+
+    <Commands package="ProjectFilterPackage">
+        <Buttons>
+            <Button guid="ProjectFilterPackageCommandSet" id="FilterProjectsCommand" priority="0xf000" type="Button">
+                <Parent guid="guidSHLMainMenu" id="IDG_VS_TOOLBAR_PROJWIN_NAVIGATION"/>
+                <Icon guid="ImageCatalogGuid" id="Filter"/>
+                <CommandFlag>IconIsMoniker</CommandFlag>
+                <CommandFlag>DynamicVisibility</CommandFlag>
+                <Strings>
+                    <CommandName>Filter Projects</CommandName>
+                    <ButtonText>Filter Projects...</ButtonText>
+                    <ToolTipText>Filter Projects...</ToolTipText>
+                    <CanonicalName>.ProjectFilter.FilterProjects</CanonicalName>
+                    <LocCanonicalName>.ProjectFilter.FilterProjects</LocCanonicalName>
+                </Strings>
+            </Button>
+        </Buttons>
+    </Commands>
+
+    <VisibilityConstraints>
+        <VisibilityItem guid="ProjectFilterPackageCommandSet" id="FilterProjectsCommand" context="UICONTEXT_SolutionExistsAndFullyLoaded"/>
+    </VisibilityConstraints>
+
+    <Symbols>
+        <GuidSymbol name="ProjectFilterPackage" value="{ef4f8800-6a91-41d3-9c6b-44d13fc9c487}" />
+
+        <GuidSymbol name="ProjectFilterPackageCommandSet" value="{39bac074-cfa1-457b-9b0b-9c2711705fc7}">
+            <IDSymbol name="FilterProjectsCommand" value="0x0001" />
+        </GuidSymbol>
+
+        <!-- This UI context isn't defined in "vsshlids.h". -->
+        <GuidSymbol name="UICONTEXT_SolutionExistsAndFullyLoaded" value="{10534154-102D-46E2-ABA8-A6BFA25BA0BE}"/>
+    </Symbols>
+</CommandTable>

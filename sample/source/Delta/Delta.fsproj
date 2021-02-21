@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -6,6 +6,10 @@
 
   <ItemGroup>
     <Compile Include="Library.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Epsilon\Epsilon.csproj" />
   </ItemGroup>
 
 </Project>

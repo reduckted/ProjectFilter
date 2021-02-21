@@ -1,0 +1,9 @@
+[*Tests.cs]
+
+# VSTHRD200: Use "Async" suffix for async methods.
+dotnet_diagnostic.VSTHRD200.severity = none
+
+[*.cs]
+
+# VSTHRD010: Invoke single-threaded types on Main.
+dotnet_diagnostic.VSTHRD010.severity = none
