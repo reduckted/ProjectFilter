@@ -18,6 +18,10 @@
         <PackageReference Include="Microsoft.VisualStudio.SDK" Version="16.0.206" />
         <PackageReference Include="Moq" Version="4.16.0" />
         <PackageReference Include="xunit" Version="2.4.1" />
+        <PackageReference Include="xunit.runner.msbuild" Version="2.4.1">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -36,5 +40,9 @@
     <ItemGroup>
         <Reference Include="System.Xaml" />
     </ItemGroup>
+
+    <Target Name="Test">
+        <xunit Assemblies="$(TargetPath)" />
+    </Target>
 
 </Project>
