@@ -12,6 +12,10 @@
     </PropertyGroup>
 
     <PropertyGroup>
+        <Version>1.0.0</Version>
+    </PropertyGroup>
+
+    <PropertyGroup>
         <SchemaVersion>2.0</SchemaVersion>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <GeneratePkgDefFile>true</GeneratePkgDefFile>
@@ -102,6 +106,25 @@
         <Reference Include="System.Xaml" />
         <Reference Include="WindowsBase" />
     </ItemGroup>
+
+    <Target Name="SetVsixVersion" BeforeTargets="BeforeBuild">
+        <!--
+        We only want to change the version number during
+        the build, so backup the manifest file first.
+        -->
+        <PropertyGroup>
+            <VsixManifestOriginal>source.extension.vsixmanifest</VsixManifestOriginal>
+            <VsixManifestBackup>$(IntermediateOutputPath)$(VsixManifestOriginal).backup</VsixManifestBackup>
+        </PropertyGroup>
+
+        <Copy SourceFiles="$(VsixManifestOriginal)" DestinationFiles="$(VsixManifestBackup)" />
+        <XmlPoke XmlInputPath="source.extension.vsixmanifest" Query="/x:PackageManifest/x:Metadata/x:Identity/@Version" Value="$(Version)" Namespaces="&lt;Namespace Prefix='x' Uri='http://schemas.microsoft.com/developer/vsx-schema/2011' /&gt;" />
+    </Target>
+
+    <Target Name="RestoreVsixVersion" BeforeTargets="AfterBuild">
+        <!-- Restore the backup of the manifest file. -->
+        <Move SourceFiles="$(VsixManifestBackup)" DestinationFiles="$(VsixManifestOriginal)" />
+    </Target>
 
     <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
     <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="Exists('$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets')" />
