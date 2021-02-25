@@ -48,6 +48,16 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <None Remove="Resources\Icon.png" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="Resources\Icon.png">
+            <IncludeInVSIX>true</IncludeInVSIX>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup>
         <EmbeddedResource Update="VSPackage.resx">
             <LogicalName>VSPackage.resources</LogicalName>
             <MergeWithCTO>true</MergeWithCTO>
