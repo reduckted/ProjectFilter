@@ -1,17 +1,11 @@
-name: Continuous Integration
+name: Publish Extension
 
 on:
-    push:
-        branches:
-            - master
-        tags-ignore:
-            - "**"
-
-    pull_request:
-        types: [opened, synchronize, edited]
+    release:
+        types: [published]
 
 jobs:
-    build:
+    publish:
         runs-on: windows-latest
 
         env:
@@ -32,3 +26,10 @@ jobs:
 
             - name: Test
               run: msbuild tests/ProjectFilter.UnitTests /t:Test /v:Minimal
+
+            - name: Publish
+              uses: cezarypiatek/VsixPublisherAction@0.2
+              with:
+                  extension-file: source\ProjectFilter\bin\Release\ProjectFilter.vsix
+                  publish-manifest-file: publish.json
+                  personal-access-code: ${{ secrets.PUBLISHER_TOKEN }}
