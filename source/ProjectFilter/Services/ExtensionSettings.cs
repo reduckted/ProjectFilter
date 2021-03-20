@@ -1,3 +1,4 @@
+using Microsoft;
 using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -15,19 +16,27 @@ namespace ProjectFilter.Services {
         private const string CollectionPath = "ProjectFilter_ed6f0249-446a-4ddf-a8e8-b545113ba58f";
 
 
+        private readonly IAsyncServiceProvider _provider;
+
+
 #nullable disable
         private WritableSettingsStore _store;
 #nullable restore
 
 
-        public async Task InitializeAsync(IAsyncServiceProvider provider, CancellationToken cancellationToken) {
+        public ExtensionSettings(IAsyncServiceProvider provider) {
+            _provider = provider;
+        }
+
+
+        public async Task InitializeAsync(CancellationToken cancellationToken) {
             SettingsManager manager;
 
 
             await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
             manager = new ShellSettingsManager(
-                await provider.GetServiceAsync<SVsSettingsManager, IVsSettingsManager>()
+                await _provider.GetServiceAsync<SVsSettingsManager, IVsSettingsManager>()
             );
 
             _store = manager.GetWritableSettingsStore(SettingsScope.UserSettings);

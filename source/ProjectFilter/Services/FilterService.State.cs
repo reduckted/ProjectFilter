@@ -32,6 +32,12 @@ namespace ProjectFilter.Services {
             }
 
 
+            public void AddProjectToLoad(Guid project) {
+                _projectsToLoad.Add(project);
+                UpdateProgressSteps();
+            }
+
+
             public void AddProjectsToLoad(IEnumerable<Guid> projects) {
                 _projectsToLoad.UnionWith(projects);
                 UpdateProgressSteps();

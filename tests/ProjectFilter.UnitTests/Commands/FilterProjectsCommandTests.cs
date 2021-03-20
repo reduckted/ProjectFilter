@@ -10,10 +10,9 @@ using Task = System.Threading.Tasks.Task;
 
 namespace ProjectFilter.Commands {
 
-    public class FilterProjectsCommandTests : InitializableTest<FilterProjectsCommand> {
+    public class FilterProjectsCommandTests : ServiceTest<FilterProjectsCommand> {
 
         private readonly Mock<IFilterService> _filterService;
-        private MenuCommand? _command;
         private FilterOptions? _options;
 
 
@@ -23,13 +22,10 @@ namespace ProjectFilter.Commands {
 
 
             commands = new Mock<IMenuCommandService>();
-
-            commands
-                .Setup((x) => x.AddCommand(It.IsAny<MenuCommand>()))
-                .Callback((MenuCommand command) => _command = command);
+            commands.Setup((x) => x.AddCommand(It.IsAny<MenuCommand>()));
 
             provider = new Mock<IFilterOptionsProvider>();
-            provider.Setup((x) => x.GetOptions()).Returns(() => _options);
+            provider.Setup((x) => x.GetOptionsAsync()).ReturnsAsync(() => _options);
 
             _filterService = new Mock<IFilterService>();
 
@@ -40,8 +36,10 @@ namespace ProjectFilter.Commands {
 
         [Fact]
         public async Task AppliesTheProvidedOptions() {
-            await CreateAsync();
-            VerifyCommand();
+            FilterProjectsCommand command;
+
+
+            command = await CreateAsync();
 
             _options = new FilterOptions(
                 Enumerable.Empty<Guid>(),
@@ -49,30 +47,22 @@ namespace ProjectFilter.Commands {
                 false
             );
 
-            _command!.Invoke();
+            await command!.ExecuteAsync();
 
-            _filterService.Verify((x) => x.Apply(_options), Times.Once());
+            _filterService.Verify((x) => x.ApplyAsync(_options), Times.Once());
         }
 
 
         [Fact]
         public async Task DoesNotApplyTheOptionsWhenOptionsAreNotProvided() {
-            await CreateAsync();
-            VerifyCommand();
-
-            _command!.Invoke();
-
-            _filterService.Verify((x) => x.Apply(It.IsAny<FilterOptions>()), Times.Never());
-        }
+            FilterProjectsCommand command;
 
 
-        private void VerifyCommand() {
-            Assert.NotNull(_command);
+            command = await CreateAsync();
 
-            Assert.Equal(
-                new CommandID(PackageGuids.ProjectFilterPackageCommandSet, PackageIds.FilterProjectsCommand),
-                _command!.CommandID
-            );
+            await command!.ExecuteAsync();
+
+            _filterService.Verify((x) => x.ApplyAsync(It.IsAny<FilterOptions>()), Times.Never());
         }
 
     }

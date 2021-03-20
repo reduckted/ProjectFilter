@@ -1,11 +1,12 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 
 namespace ProjectFilter.Services {
 
     public interface IHierarchyProvider {
 
-        IEnumerable<IHierarchyNode> GetHierarchy();
+        Task<IEnumerable<IHierarchyNode>> GetHierarchyAsync();
 
     }
 

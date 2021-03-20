@@ -12,7 +12,7 @@ namespace ProjectFilter.Services {
 
     public class ExtensionSettingsTests {
 
-        public class LoadProjectDependenciesProperty : InitializableTest<ExtensionSettings> {
+        public class LoadProjectDependenciesProperty : ServiceTest<ExtensionSettings> {
 
             readonly SettingsManager _manager;
 

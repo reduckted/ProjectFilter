@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
 using Task = System.Threading.Tasks.Task;
 
@@ -22,6 +23,9 @@ namespace ProjectFilter.Services {
         private const string UnhideFoldersCommand = "Project.UnhideFolders";
 
 
+        private readonly IAsyncServiceProvider _provider;
+
+
 #nullable disable
         private ILogger _logger;
         private IVsSolution4 _solution;
@@ -31,22 +35,27 @@ namespace ProjectFilter.Services {
 #nullable restore
 
 
-        public async Task InitializeAsync(IAsyncServiceProvider provider, CancellationToken cancellationToken) {
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-
-            _logger = await provider.GetServiceAsync<ILogger, ILogger>();
-            _solution = await provider.GetServiceAsync<SVsSolution, IVsSolution4>();
-            _dte = await provider.GetServiceAsync<DTE, DTE2>();
-            _solutionBuildManager = await provider.GetServiceAsync<SVsSolutionBuildManager, IVsSolutionBuildManager2>();
-            _waitDialogFactory = await provider.GetServiceAsync<IWaitDialogFactory, IWaitDialogFactory>();
+        public FilterService(IAsyncServiceProvider provider) {
+            _provider = provider;
         }
 
 
-        public void Apply(FilterOptions options) {
+        public async Task InitializeAsync(CancellationToken cancellationToken) {
+            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+
+            _logger = await _provider.GetServiceAsync<ILogger, ILogger>();
+            _solution = await _provider.GetServiceAsync<SVsSolution, IVsSolution4>();
+            _dte = await _provider.GetServiceAsync<DTE, DTE2>();
+            _solutionBuildManager = await _provider.GetServiceAsync<SVsSolutionBuildManager, IVsSolutionBuildManager2>();
+            _waitDialogFactory = await _provider.GetServiceAsync<IWaitDialogFactory, IWaitDialogFactory>();
+        }
+
+
+        public async Task ApplyAsync(FilterOptions options) {
             ThreadedWaitDialogProgressData progress;
 
 
-            ThreadHelper.ThrowIfNotOnUIThread();
+            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             if ((options.ProjectsToLoad.Count == 0) && (options.ProjectsToUnload.Count == 0)) {
                 return;
@@ -54,7 +63,7 @@ namespace ProjectFilter.Services {
 
             progress = new ThreadedWaitDialogProgressData("Filtering projects...", "Getting ready...", "", true);
 
-            using (var dialog = _waitDialogFactory.Create(Vsix.Name, progress)) {
+            using (var dialog = await _waitDialogFactory.CreateAsync(Vsix.Name, progress)) {
                 IEnumerable<string> selectedSolutionExplorerItems;
                 IEnumerable<Guid> projectsToUnload;
                 IEnumerable<Guid> projectsToLoad;
@@ -88,13 +97,13 @@ namespace ProjectFilter.Services {
                 // If we're loading dependencies, then we can add the unloaded
                 // dependencies of the loaded projects that were requested to be loaded.
                 if (options.LoadProjectDependencies) {
-                    state.AddProjectsToLoad(
-                        from identifier in projectsToLoad
-                        where IsLoaded(identifier)
-                        from dependency in GetProjectDependencies(identifier, state)
-                        where !IsLoaded(dependency)
-                        select dependency
-                    );
+                    foreach (var identifier in projectsToLoad.Where(IsLoaded)) {
+                        foreach (var dependency in await GetProjectDependenciesAsync(identifier, state)) {
+                            if (!IsLoaded(dependency)) {
+                                state.AddProjectToLoad(dependency);
+                            }
+                        }
+                    }
                 }
 
                 // Now we can start loading and unloading projects. We're
@@ -106,7 +115,7 @@ namespace ProjectFilter.Services {
                         break;
                     }
 
-                    UnloadProject(identifier, state);
+                    await UnloadProjectAsync(identifier, state);
                 }
 
                 foreach (var identifier in projectsToLoad) {
@@ -114,14 +123,14 @@ namespace ProjectFilter.Services {
                         break;
                     }
 
-                    LoadProject(identifier, options.LoadProjectDependencies, state);
+                    await LoadProjectAsync(identifier, options.LoadProjectDependencies, state);
                 }
 
                 // Even if we've been cancelled, we'll still hide the unloaded
                 // projects and show the loaded projects. This prevents us from
                 // getting into a state where we've loaded some projects but they
                 // remain hidden because the user cancelled half way through.
-                ShowOnlyLoadedProjects(selectedSolutionExplorerItems);
+                await ShowOnlyLoadedProjectsAsync(selectedSolutionExplorerItems);
 
                 // If a project has been loaded, then the user probably
                 // wants to see it, so expand any parent folders.
@@ -130,8 +139,8 @@ namespace ProjectFilter.Services {
         }
 
 
-        private void UnloadProject(Guid identifier, State state) {
-            ThreadHelper.ThrowIfNotOnUIThread();
+        private async Task UnloadProjectAsync(Guid identifier, State state) {
+            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             if (IsLoaded(identifier)) {
                 string name;
@@ -147,7 +156,7 @@ namespace ProjectFilter.Services {
                 );
 
                 if (ErrorHandler.Failed(result)) {
-                    LogFailure($"Failed to unload project '{name}'.", result);
+                    await LogFailureAsync($"Failed to unload project '{name}'.", result);
                 }
 
                 state.OnProjectUnloaded(identifier);
@@ -155,8 +164,8 @@ namespace ProjectFilter.Services {
         }
 
 
-        private void LoadProject(Guid identifier, bool loadProjectDependencies, State state) {
-            ThreadHelper.ThrowIfNotOnUIThread();
+        private async Task LoadProjectAsync(Guid identifier, bool loadProjectDependencies, State state) {
+            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             // Record that we've visited this project. We may have already visited
             // it as a dependency of another project, or maybe we're visiting
@@ -180,7 +189,7 @@ namespace ProjectFilter.Services {
                     result = _solution.ReloadProject(identifier);
 
                     if (ErrorHandler.Failed(result)) {
-                        LogFailure($"Failed to load project '{name}'.", result);
+                        await LogFailureAsync($"Failed to load project '{name}'.", result);
                     }
 
                     // Don't record that we've loaded the project _yet_. If we do that
@@ -209,7 +218,7 @@ namespace ProjectFilter.Services {
                     // that need to be loaded. This ensures that the progress
                     // is adjusted to account for the new projects that will
                     // be loaded before we actually start loading them.
-                    dependencies = GetProjectDependencies(identifier, state);
+                    dependencies = await GetProjectDependenciesAsync(identifier, state);
                     state.AddProjectsToLoad(dependencies.Where((x) => !IsLoaded(x)));
                 }
 
@@ -227,18 +236,18 @@ namespace ProjectFilter.Services {
                             break;
                         }
 
-                        LoadProject(dependency, true, state);
+                        await LoadProjectAsync(dependency, true, state);
                     }
                 }
             }
         }
 
 
-        private IEnumerable<Guid> GetProjectDependencies(Guid identifier, State state) {
+        private async Task<IEnumerable<Guid>> GetProjectDependenciesAsync(Guid identifier, State state) {
             List<Guid> output;
 
 
-            ThreadHelper.ThrowIfNotOnUIThread();
+            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             output = new List<Guid>();
 
@@ -254,7 +263,7 @@ namespace ProjectFilter.Services {
                     result = _solutionBuildManager.CalculateProjectDependencies();
 
                     if (ErrorHandler.Failed(result)) {
-                        LogFailure("Failed to calculate project dependencies.", result);
+                        await LogFailureAsync("Failed to calculate project dependencies.", result);
                     }
 
                     state.RequiresProjectDependencyCalculation = false;
@@ -282,7 +291,7 @@ namespace ProjectFilter.Services {
                     }
 
                 } else {
-                    LogFailure($"Failed to get project dependencies for '{GetName(identifier)}'.", result);
+                    await LogFailureAsync($"Failed to get project dependencies for '{GetName(identifier)}'.", result);
                 }
             }
 
@@ -290,18 +299,18 @@ namespace ProjectFilter.Services {
         }
 
 
-        public void ShowOnlyLoadedProjects() {
-            ThreadHelper.ThrowIfNotOnUIThread();
-            ShowOnlyLoadedProjects(GetSolutionExplorerSelection());
+        public async Task ShowOnlyLoadedProjectsAsync() {
+            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ShowOnlyLoadedProjectsAsync(GetSolutionExplorerSelection());
         }
 
 
-        private void ShowOnlyLoadedProjects(IEnumerable<string> selectedItems) {
+        private async Task ShowOnlyLoadedProjectsAsync(IEnumerable<string> selectedItems) {
             Window? activeWindow;
             bool solutionExplorerVisible;
 
 
-            ThreadHelper.ThrowIfNotOnUIThread();
+            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             // The commands may not be available unless the Solution Explorer
             // window is active, so make sure it's visible, then activate it.
@@ -323,16 +332,16 @@ namespace ProjectFilter.Services {
 
             // Show the unloaded projects so that all
             // projects are supposed to be visible.
-            TryExecuteCommand(ShowUnloadedProjectsCommand);
+            await TryExecuteCommandAsync(ShowUnloadedProjectsCommand);
 
             // Now run the "Unhide folders" command to make
             // sure the projects that were just made visible
             // from the previous command are actually shown.
-            TryExecuteCommand(UnhideFoldersCommand);
+            await TryExecuteCommandAsync(UnhideFoldersCommand);
 
             // Now we're back in a state where everything in Solution Explorer
             // is visible, so we can hide the unloaded projects.
-            TryExecuteCommand(HideUnloadedProjectsCommand);
+            await TryExecuteCommandAsync(HideUnloadedProjectsCommand);
 
             // Restore the original selection in Solution Explorer.
             SetSolutionExplorerSelection(selectedItems);
@@ -344,11 +353,11 @@ namespace ProjectFilter.Services {
         }
 
 
-        private void TryExecuteCommand(string commandName) {
+        private async Task TryExecuteCommandAsync(string commandName) {
             Command? command;
 
 
-            ThreadHelper.ThrowIfNotOnUIThread();
+            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             command = _dte.Commands.Item(commandName);
 
@@ -356,11 +365,11 @@ namespace ProjectFilter.Services {
                 if (command.IsAvailable) {
                     _dte.ExecuteCommand(commandName);
                 } else {
-                    _logger.WriteLine($"Command '{commandName}' is not available.");
+                    await _logger.WriteLineAsync($"Command '{commandName}' is not available.");
                 }
 
             } else {
-                _logger.WriteLine($"Could not find command '{commandName}'.");
+                await _logger.WriteLineAsync($"Could not find command '{commandName}'.");
             }
         }
 
@@ -540,8 +549,8 @@ namespace ProjectFilter.Services {
         }
 
 
-        private void LogFailure(string message, int result) {
-            _logger.WriteLine($"{message} {Marshal.GetExceptionForHR(result).Message}");
+        private async Task LogFailureAsync(string message, int result) {
+            await _logger.WriteLineAsync($"{message} {Marshal.GetExceptionForHR(result).Message}");
         }
 
     }

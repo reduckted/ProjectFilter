@@ -1,8 +1,11 @@
+using System.Threading.Tasks;
+
+
 namespace ProjectFilter.Services {
 
     public interface ILogger {
 
-        void WriteLine(string message);
+        Task WriteLineAsync(string message);
 
     }
 

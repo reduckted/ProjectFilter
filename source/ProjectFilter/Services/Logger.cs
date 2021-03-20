@@ -2,34 +2,41 @@ using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System;
-using System.Threading;
 using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
 using Task = System.Threading.Tasks.Task;
 
 
 namespace ProjectFilter.Services {
 
-    public class Logger : IAsyncInitializable, ILogger {
+    public class Logger : ILogger {
 
-#nullable disable
-        private IVsOutputWindow _output;
-#nullable restore
-
-
+        private readonly IAsyncServiceProvider _provider;
+        private IVsOutputWindow? _output;
         private IVsOutputWindowPane? _pane;
 
 
-        public async Task InitializeAsync(IAsyncServiceProvider provider, CancellationToken cancellationToken) {
-            _output = await provider.GetServiceAsync<SVsOutputWindow, IVsOutputWindow>();
+        public Logger(IAsyncServiceProvider provider) {
+            _provider = provider;
         }
 
 
-        public void WriteLine(string message) {
-            ThreadHelper.ThrowIfNotOnUIThread();
+        public async Task WriteLineAsync(string message) {
+            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             try {
+                if (_output == null) {
+                    _output = await _provider.GetServiceAsync<SVsOutputWindow, IVsOutputWindow>();
+                }
+
                 if (_pane == null) {
-                    CreatePane();
+                    Guid identifier;
+
+
+                    identifier = Guid.NewGuid();
+
+                    if (ErrorHandler.Succeeded(_output.CreatePane(ref identifier, Vsix.Name, 1, 1))) {
+                        _output.GetPane(ref identifier, out _pane);
+                    }
                 }
 
                 if (_pane != null) {
@@ -38,20 +45,6 @@ namespace ProjectFilter.Services {
 
             } catch (Exception ex) when (!ErrorHandler.IsCriticalException(ex)) {
                 System.Diagnostics.Debug.WriteLine(ex);
-            }
-        }
-
-
-        private void CreatePane() {
-            Guid identifier;
-
-
-            ThreadHelper.ThrowIfNotOnUIThread();
-
-            identifier = Guid.NewGuid();
-
-            if (ErrorHandler.Succeeded(_output.CreatePane(ref identifier, Vsix.Name, 1, 1))) {
-                _output.GetPane(ref identifier, out _pane);
             }
         }
 

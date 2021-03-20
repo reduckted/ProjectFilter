@@ -1,8 +1,7 @@
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using System.Threading;
+using System.Threading.Tasks;
 using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
-using Task = System.Threading.Tasks.Task;
 
 
 namespace ProjectFilter.Services {
@@ -10,22 +9,25 @@ namespace ProjectFilter.Services {
     /// <summary>
     /// Wrapper around <see cref="IVsThreadedWaitDialogFactory"/> to work around threading problems in unit tests.
     /// </summary>
-    public partial class WaitDialogFactory : IAsyncInitializable, IWaitDialogFactory {
+    public partial class WaitDialogFactory : IWaitDialogFactory {
 
-#nullable disable
-        private IVsThreadedWaitDialogFactory _waitDialogFactory;
-#nullable restore
+        private readonly IAsyncServiceProvider _provider;
 
 
-        public async Task InitializeAsync(IAsyncServiceProvider provider, CancellationToken cancellationToken) {
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-
-            _waitDialogFactory = await provider.GetServiceAsync<SVsThreadedWaitDialogFactory, IVsThreadedWaitDialogFactory>();
+        public WaitDialogFactory(IAsyncServiceProvider provider) {
+            _provider = provider;
         }
 
 
-        public IWaitDialog Create(string caption, ThreadedWaitDialogProgressData progress) {
-            return new Dialog(_waitDialogFactory.StartWaitDialog(caption, progress));
+        public async Task<IWaitDialog> CreateAsync(string caption, ThreadedWaitDialogProgressData progress) {
+            IVsThreadedWaitDialogFactory waitDialogFactory;
+
+
+            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            waitDialogFactory = await _provider.GetServiceAsync<SVsThreadedWaitDialogFactory, IVsThreadedWaitDialogFactory>();
+
+            return new Dialog(waitDialogFactory.StartWaitDialog(caption, progress));
         }
 
     }

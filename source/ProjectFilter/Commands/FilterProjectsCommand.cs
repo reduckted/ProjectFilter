@@ -1,6 +1,4 @@
-using System;
 using System.ComponentModel.Design;
-using System.Threading;
 using Microsoft.VisualStudio.Shell;
 using ProjectFilter.Services;
 using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
@@ -11,13 +9,10 @@ namespace ProjectFilter.Commands {
 
     public sealed class FilterProjectsCommand : MenuCommandBase {
 
-#nullable disable
-        private IFilterOptionsProvider _optionsProvider;
-        private IFilterService _filterService;
-#nullable restore
+        public FilterProjectsCommand(IAsyncServiceProvider provider) : base(provider) { }
 
 
-        protected override async Task InitializeAsync(IAsyncServiceProvider provider, IMenuCommandService commandService, CancellationToken cancellationToken) {
+        protected override void Initialize(IMenuCommandService commandService) {
             commandService.AddCommand(
                 new OleMenuCommand(
                     Execute,
@@ -25,20 +20,22 @@ namespace ProjectFilter.Commands {
                     false
                 )
             );
-
-            _optionsProvider = await provider.GetServiceAsync<IFilterOptionsProvider, IFilterOptionsProvider>();
-            _filterService = await provider.GetServiceAsync<IFilterService, IFilterService>();
         }
 
 
-        private void Execute(object sender, EventArgs e) {
+        public override async Task ExecuteAsync() {
+            IFilterOptionsProvider optionsProvider;
+            IFilterService filterService;
             FilterOptions? options;
 
 
-            options = _optionsProvider.GetOptions();
+            optionsProvider = await Provider.GetServiceAsync<IFilterOptionsProvider, IFilterOptionsProvider>();
+            filterService = await Provider.GetServiceAsync<IFilterService, IFilterService>();
+
+            options = await optionsProvider.GetOptionsAsync();
 
             if (options != null) {
-                _filterService.Apply(options);
+                await filterService.ApplyAsync(options);
             }
         }
 

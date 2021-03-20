@@ -1,11 +1,14 @@
+using System.Threading.Tasks;
+
+
 namespace ProjectFilter.Services {
 
     public interface IFilterService {
 
-        void Apply(FilterOptions options);
+        Task ApplyAsync(FilterOptions options);
 
 
-        void ShowOnlyLoadedProjects();
+        Task ShowOnlyLoadedProjectsAsync();
 
     }
 

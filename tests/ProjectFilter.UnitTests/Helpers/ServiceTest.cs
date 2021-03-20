@@ -17,13 +17,13 @@ using Task = System.Threading.Tasks.Task;
 namespace ProjectFilter.Helpers {
 
     [Collection(VisualStudioTests.Name)]
-    public class InitializableTest<T> : IAsyncServiceProvider where T : IAsyncInitializable {
+    public class ServiceTest<T> : IAsyncServiceProvider {
 
         private readonly Dictionary<string, object> _services = new Dictionary<string, object>();
 
 
         [SuppressMessage("Reliability", "VSSDK005:Avoid instantiating JoinableTaskContext", Justification = "Testing.")]
-        static InitializableTest() {
+        static ServiceTest() {
             ExtensionThreadHelper.JoinableTaskFactory = new JoinableTaskContext().Factory;
 
             // Work around the `ThreadHelper.ThrowIfNotOnUIThread()` always throwing in 
@@ -38,7 +38,7 @@ namespace ProjectFilter.Helpers {
         }
 
 
-        protected InitializableTest() {
+        protected ServiceTest() {
             AddService<ILogger, ILogger>(Mock.Of<ILogger>());
         }
 
@@ -51,8 +51,12 @@ namespace ProjectFilter.Helpers {
         protected async Task<T> CreateAsync() {
             T service;
 
-            service = Activator.CreateInstance<T>();
-            await service.InitializeAsync(this, CancellationToken.None);
+
+            service = (T)Activator.CreateInstance(typeof(T), this);
+
+            if (service is IAsyncInitializable initializable) {
+                await initializable.InitializeAsync(CancellationToken.None);
+            }
 
             return service;
         }

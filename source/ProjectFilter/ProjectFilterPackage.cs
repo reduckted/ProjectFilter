@@ -42,8 +42,8 @@ namespace ProjectFilter {
             _solution = await this.GetServiceAsync<SVsSolution, IVsSolution>();
 
             if (_solution != null) {
-                _solutionLoadObserver = new SolutionLoadObserver();
-                await _solutionLoadObserver.InitializeAsync(this, cancellationToken);
+                _solutionLoadObserver = new SolutionLoadObserver(this);
+                await _solutionLoadObserver.InitializeAsync(cancellationToken);
 
                 await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
                 _solution.AdviseSolutionEvents(_solutionLoadObserver, out _solutionEventsCookie);
@@ -60,24 +60,22 @@ namespace ProjectFilter {
 
 
         private void AddServices() {
-            AddService<ExtensionSettings, IExtensionSettings>();
-            AddService<FilterOptionsProvider, IFilterOptionsProvider>();
-            AddService<FilterService, IFilterService>();
-            AddService<HierarchyProvider, IHierarchyProvider>();
-            AddService<Logger, ILogger>();
-            AddService<WaitDialogFactory, IWaitDialogFactory>();
+            AddService<ExtensionSettings, IExtensionSettings>(new ExtensionSettings(this));
+            AddService<FilterOptionsProvider, IFilterOptionsProvider>(new FilterOptionsProvider(this));
+            AddService<FilterService, IFilterService>(new FilterService(this));
+            AddService<HierarchyProvider, IHierarchyProvider>(new HierarchyProvider(this));
+            AddService<Logger, ILogger>(new Logger(this));
+            AddService<WaitDialogFactory, IWaitDialogFactory>(new WaitDialogFactory(this));
         }
 
 
-        private void AddService<TService, TInterface>() where TService : TInterface, IAsyncInitializable, new() {
+        private void AddService<TService, TInterface>(TService service) where TService : TInterface {
             AddService(
                 typeof(TInterface),
                 async (container, cancellation, type) => {
-                    TService service;
-
-
-                    service = new TService();
-                    await service.InitializeAsync(this, cancellation);
+                    if (service is IAsyncInitializable initializable) {
+                        await initializable.InitializeAsync(cancellation);
+                    }
 
                     return service;
                 }
@@ -86,24 +84,19 @@ namespace ProjectFilter {
 
 
         private async Task AddCommandsAsync() {
-            await AddCommandAsync<FilterProjectsCommand>();
+            await AddCommandAsync(new FilterProjectsCommand(this));
         }
 
 
-        private async Task AddCommandAsync<T>() where T : MenuCommandBase, new() {
-            T command;
-
-
-            command = new T();
-            await command.InitializeAsync(this, DisposalToken);
-
+        private async Task AddCommandAsync<T>(T command) where T : MenuCommandBase {
+            await command.InitializeAsync(DisposalToken);
             _commands.Add(command);
         }
 
 
         [SuppressMessage("Usage", "VSTHRD104:Offer async methods", Justification = "No other way to use async code in Dispose().")]
         protected override void Dispose(bool disposing) {
-            ThreadHelper.JoinableTaskFactory.Run(DisposeAsync);
+            ExtensionThreadHelper.JoinableTaskFactory.Run(DisposeAsync);
             base.Dispose(disposing);
         }
 

@@ -16,7 +16,7 @@ namespace ProjectFilter.Services {
 
     public class HierarchyProviderTests {
 
-        public class GetHierarchyMethod : InitializableTest<HierarchyProvider> {
+        public class GetHierarchyMethod : ServiceTest<HierarchyProvider> {
 
             [Fact]
             public async Task UsesCorrectIdentifier() {
@@ -34,7 +34,7 @@ namespace ProjectFilter.Services {
                     "
                 );
 
-                node = (await CreateAsync()).GetHierarchy().First().Children[0];
+                node = (await (await CreateAsync()).GetHierarchyAsync()).First().Children[0];
 
                 Assert.Equal(
                     root.DescendantsAndSelf().First((x) => x.Data.Name.Equals("bar")).Data.Identifier,
@@ -59,7 +59,7 @@ namespace ProjectFilter.Services {
                     "
                 );
 
-                nodes = (await CreateAsync()).GetHierarchy().ToList();
+                nodes = (await (await CreateAsync()).GetHierarchyAsync()).ToList();
                 node = Flatten(nodes).First((x) => x.Name == "foo");
 
                 Assert.Equal(GetImageMoniker("FolderOpened"), node.ExpandedIcon);
@@ -239,7 +239,7 @@ namespace ProjectFilter.Services {
 
 
                 solution = XElement.Parse("<root/>");
-                solution.Add(ConvertToElements((await CreateAsync()).GetHierarchy()).ToArray());
+                solution.Add(ConvertToElements((await (await CreateAsync()).GetHierarchyAsync())).ToArray());
 
                 Assert.Equal(
                     XDocument.Parse(expected).Root.ToString(),

@@ -1,5 +1,6 @@
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Imaging.Interop;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
@@ -7,46 +8,46 @@ using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
 using Task = System.Threading.Tasks.Task;
 
 
 namespace ProjectFilter.Services {
 
-    public class HierarchyProvider : IAsyncInitializable, IHierarchyProvider {
+    public class HierarchyProvider : IHierarchyProvider {
 
-#nullable disable
-        private IVsSolution _solution;
-        private IVsImageService2 _imageService;
-#nullable restore
+        private readonly IAsyncServiceProvider _provider;
 
 
-        public async Task InitializeAsync(IAsyncServiceProvider provider, CancellationToken cancellationToken) {
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-
-            _solution = await provider.GetServiceAsync<SVsSolution, IVsSolution>();
-            _imageService = await provider.GetServiceAsync<SVsImageService, IVsImageService2>();
+        public HierarchyProvider(IAsyncServiceProvider provider) {
+            _provider = provider;
         }
 
 
-        public IEnumerable<IHierarchyNode> GetHierarchy() {
+        public async Task<IEnumerable<IHierarchyNode>> GetHierarchyAsync() {
+            IVsSolution solution;
+            IVsImageService2 imageService;
             List<(HierarchyNode Hierarchy, Guid Parent)> nodes;
             Dictionary<Guid, HierarchyNode> mapping;
             List<HierarchyNode> roots;
 
 
-            ThreadHelper.ThrowIfNotOnUIThread();
+            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            solution = await _provider.GetServiceAsync<SVsSolution, IVsSolution>();
+            imageService = await _provider.GetServiceAsync<SVsImageService, IVsImageService2>();
 
             nodes = new List<(HierarchyNode hierarchy, Guid parent)>();
             mapping = new Dictionary<Guid, HierarchyNode>();
 
-            foreach (var item in GetHierarchies()) {
+            foreach (var item in GetHierarchies(solution)) {
                 HierarchyNode node;
                 Guid parent;
 
 
-                node = CreateNode(item.Hierarchy, item.Identifier);
-                parent = GetParentIdentifier(item.Hierarchy);
+                node = CreateNode(item.Hierarchy, item.Identifier, imageService);
+                parent = GetParentIdentifier(solution, item.Hierarchy);
 
                 nodes.Add((node, parent));
                 mapping[node.Identifier] = node;
@@ -74,7 +75,7 @@ namespace ProjectFilter.Services {
         }
 
 
-        private IEnumerable<(IVsHierarchy Hierarchy, Guid Identifier)> GetHierarchies() {
+        private static IEnumerable<(IVsHierarchy Hierarchy, Guid Identifier)> GetHierarchies(IVsSolution solution) {
             Guid empty;
 
 
@@ -82,7 +83,7 @@ namespace ProjectFilter.Services {
 
             empty = default;
 
-            if (ErrorHandler.Succeeded(_solution.GetProjectEnum((uint)__VSENUMPROJFLAGS.EPF_ALLINSOLUTION, ref empty, out IEnumHierarchies enumerator))) {
+            if (ErrorHandler.Succeeded(solution.GetProjectEnum((uint)__VSENUMPROJFLAGS.EPF_ALLINSOLUTION, ref empty, out IEnumHierarchies enumerator))) {
                 IVsHierarchy[] hierarchy;
 
 
@@ -97,7 +98,7 @@ namespace ProjectFilter.Services {
                         break;
                     }
 
-                    if (TryGetIdentifier(hierarchy[0], out Guid identifier)) {
+                    if (TryGetIdentifier(solution, hierarchy[0], out Guid identifier)) {
                         // Always ignore the "Miscellaneous Files" project
                         // because the items in it are not part of the solution.
                         if (!identifier.Equals(VSConstants.CLSID.MiscellaneousFilesProject_guid)) {
@@ -109,12 +110,13 @@ namespace ProjectFilter.Services {
         }
 
 
-        private HierarchyNode CreateNode(IVsHierarchy hierarchy, Guid identifier) {
+        private static HierarchyNode CreateNode(IVsHierarchy hierarchy, Guid identifier, IVsImageService2 imageService) {
             ThreadHelper.ThrowIfNotOnUIThread();
 
             ImageMoniker collapsedIcon;
             ImageMoniker expandedIcon;
             string name;
+            bool isFolder;
 
 
             name = HierarchyUtilities.GetHierarchyProperty<string>(
@@ -123,21 +125,33 @@ namespace ProjectFilter.Services {
                 (int)__VSHPROPID.VSHPROPID_Name
             );
 
-            collapsedIcon = _imageService.GetImageMonikerForHierarchyItem(
+            isFolder = IsSolutionFolder(hierarchy);
+
+            collapsedIcon = imageService.GetImageMonikerForHierarchyItem(
                 hierarchy,
                 (uint)VSConstants.VSITEMID.Root,
                 (int)__VSHIERARCHYIMAGEASPECT.HIA_Icon
             );
 
-            expandedIcon = _imageService.GetImageMonikerForHierarchyItem(
+            expandedIcon = imageService.GetImageMonikerForHierarchyItem(
                 hierarchy,
                 (uint)VSConstants.VSITEMID.Root,
                 (int)__VSHIERARCHYIMAGEASPECT.HIA_OpenFolderIcon
             );
 
+            // Sometimes the icons can be blank.
+            // In those cases, use some default icons.
+            if (collapsedIcon.Id == 0 && collapsedIcon.Guid == default) {
+                collapsedIcon = isFolder ? KnownMonikers.FolderClosed : KnownMonikers.DocumentCollection;
+            }
+
+            if (expandedIcon.Id == 0 && expandedIcon.Guid == default) {
+                expandedIcon = isFolder ? KnownMonikers.FolderOpened : KnownMonikers.DocumentCollection;
+            }
+
             return new HierarchyNode(identifier, name, collapsedIcon, expandedIcon) {
                 IsLoaded = !HierarchyUtilities.IsStubHierarchy(hierarchy),
-                IsFolder = IsSolutionFolder(hierarchy)
+                IsFolder = isFolder
             };
         }
 
@@ -164,7 +178,7 @@ namespace ProjectFilter.Services {
         }
 
 
-        private Guid GetParentIdentifier(IVsHierarchy hierarchy) {
+        private static Guid GetParentIdentifier(IVsSolution solution, IVsHierarchy hierarchy) {
             IVsHierarchy? parentHierarchy;
 
 
@@ -177,7 +191,7 @@ namespace ProjectFilter.Services {
             );
 
             if (parentHierarchy != null) {
-                if (TryGetIdentifier(parentHierarchy, out Guid parentIdentifier)) {
+                if (TryGetIdentifier(solution, parentHierarchy, out Guid parentIdentifier)) {
                     return parentIdentifier;
                 }
             }
@@ -186,9 +200,9 @@ namespace ProjectFilter.Services {
         }
 
 
-        private bool TryGetIdentifier(IVsHierarchy hierarchy, out Guid identifier) {
+        private static bool TryGetIdentifier(IVsSolution solution, IVsHierarchy hierarchy, out Guid identifier) {
             ThreadHelper.ThrowIfNotOnUIThread();
-            return ErrorHandler.Succeeded(_solution.GetGuidOfProject(hierarchy, out identifier));
+            return ErrorHandler.Succeeded(solution.GetGuidOfProject(hierarchy, out identifier));
         }
 
 

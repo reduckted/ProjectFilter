@@ -12,17 +12,25 @@ namespace ProjectFilter.Services {
 
     public class SolutionLoadObserver : IAsyncInitializable, IVsSolutionEvents {
 
+        private readonly IAsyncServiceProvider _provider;
+
+
 #nullable disable
         private IFilterService _filterService;
         private DTE2 _dte;
 #nullable restore
 
 
-        public async Task InitializeAsync(IAsyncServiceProvider provider, CancellationToken cancellationToken) {
+        public SolutionLoadObserver(IAsyncServiceProvider provider) {
+            _provider = provider;
+        }
+
+
+        public async Task InitializeAsync(CancellationToken cancellationToken) {
             await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
-            _filterService = await provider.GetServiceAsync<IFilterService, IFilterService>();
-            _dte = await provider.GetServiceAsync<DTE, DTE2>();
+            _filterService = await _provider.GetServiceAsync<IFilterService, IFilterService>();
+            _dte = await _provider.GetServiceAsync<DTE, DTE2>();
         }
 
 
@@ -39,7 +47,7 @@ namespace ProjectFilter.Services {
                 await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
                 if (_dte.ToolWindows.SolutionExplorer.UIHierarchyItems.Count > 0) {
-                    _filterService.ShowOnlyLoadedProjects();
+                    await _filterService.ShowOnlyLoadedProjectsAsync();
                     return;
                 }
 

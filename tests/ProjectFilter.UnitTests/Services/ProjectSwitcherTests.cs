@@ -26,7 +26,7 @@ namespace ProjectFilter.Services {
         private static readonly Guid ProjectDelta = new Guid("4826a53b-4ea3-4fc6-ad1d-465614ed5137");
 
 
-        public class ApplyMethod : InitializableTest<FilterService> {
+        public class ApplyMethod : ServiceTest<FilterService> {
 
             private readonly Dictionary<Guid, List<string>> _dependencies = new Dictionary<Guid, List<string>>();
             private TestHierarchyItem? _root;
@@ -431,7 +431,7 @@ namespace ProjectFilter.Services {
                 dialog.SetupGet((x) => x.CancellationToken).Returns(CancellationToken.None);
 
                 factory = new Mock<IWaitDialogFactory>();
-                factory.Setup((x) => x.Create(It.IsAny<string>(), It.IsAny<ThreadedWaitDialogProgressData>())).Returns(dialog.Object);
+                factory.Setup((x) => x.CreateAsync(It.IsAny<string>(), It.IsAny<ThreadedWaitDialogProgressData>())).ReturnsAsync(dialog.Object);
 
                 return factory.Object;
             }
@@ -504,7 +504,7 @@ namespace ProjectFilter.Services {
 
 
             private async Task ApplyAsync(FilterOptions options) {
-                (await CreateAsync()).Apply(options);
+                await (await CreateAsync()).ApplyAsync(options);
             }
 
 

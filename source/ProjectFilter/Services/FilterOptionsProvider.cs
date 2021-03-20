@@ -2,44 +2,44 @@ using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
 using ProjectFilter.UI;
 using ProjectFilter.UI.Utilities;
-using System.Threading;
+using System.Threading.Tasks;
 using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
-using Task = System.Threading.Tasks.Task;
 
 
 namespace ProjectFilter.Services {
 
-    public class FilterOptionsProvider : IAsyncInitializable, IFilterOptionsProvider {
+    public class FilterOptionsProvider : IFilterOptionsProvider {
 
-#nullable disable
-        private IHierarchyProvider _hierarchyProvider;
-        private IExtensionSettings _settings;
-#nullable restore
+        private readonly IAsyncServiceProvider _provider;
 
 
-        public async Task InitializeAsync(IAsyncServiceProvider provider, CancellationToken cancellationToken) {
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-
-            _hierarchyProvider = await provider.GetServiceAsync<IHierarchyProvider, IHierarchyProvider>();
-            _settings = await provider.GetServiceAsync<IExtensionSettings, IExtensionSettings>();
+        public FilterOptionsProvider (IAsyncServiceProvider provider) {
+            _provider = provider;
         }
 
 
-        public FilterOptions? GetOptions() {
-            ThreadHelper.ThrowIfNotOnUIThread();
+        public async Task<FilterOptions?> GetOptionsAsync() {
+            IHierarchyProvider hierarchyProvider;
+            IExtensionSettings settings;
 
-            using (var vm = new FilterDialogViewModel(_hierarchyProvider.GetHierarchy(), Debouncer.Create, SearchUtilities.CreateSearchQuery)) {
+
+            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            hierarchyProvider = await _provider.GetServiceAsync<IHierarchyProvider, IHierarchyProvider>();
+            settings = await _provider.GetServiceAsync<IExtensionSettings, IExtensionSettings>();
+
+            using (var vm = new FilterDialogViewModel(await hierarchyProvider.GetHierarchyAsync(), Debouncer.Create, SearchUtilities.CreateSearchQuery)) {
                 FilterDialog dialog;
 
 
-                vm.LoadProjectDependencies = _settings.LoadProjectDependencies;
+                vm.LoadProjectDependencies = settings.LoadProjectDependencies;
 
                 dialog = new FilterDialog {
                     DataContext = vm
                 };
 
                 if (dialog.ShowModal().GetValueOrDefault() && (vm.Result != null)) {
-                    _settings.LoadProjectDependencies = vm.Result.LoadProjectDependencies;
+                    settings.LoadProjectDependencies = vm.Result.LoadProjectDependencies;
 
                     return vm.Result;
                 }
