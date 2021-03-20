@@ -117,6 +117,14 @@
         <Reference Include="WindowsBase" />
     </ItemGroup>
 
+    <PropertyGroup>
+        <!--
+        Configure the `PostBuildEvent` target to always run. This gives us a
+        target that we can restore the manifest file in, even if the build fails.
+        -->
+        <RunPostBuildEvent>Always</RunPostBuildEvent>
+    </PropertyGroup>
+
     <Target Name="SetVsixVersion" BeforeTargets="BeforeBuild">
         <!--
         We only want to change the version number during
@@ -131,7 +139,7 @@
         <XmlPoke XmlInputPath="source.extension.vsixmanifest" Query="/x:PackageManifest/x:Metadata/x:Identity/@Version" Value="$(Version)" Namespaces="&lt;Namespace Prefix='x' Uri='http://schemas.microsoft.com/developer/vsx-schema/2011' /&gt;" />
     </Target>
 
-    <Target Name="RestoreVsixVersion" BeforeTargets="AfterBuild">
+    <Target Name="RestoreVsixVersion" AfterTargets="PostBuildEvent">
         <!-- Restore the backup of the manifest file. -->
         <Move SourceFiles="$(VsixManifestBackup)" DestinationFiles="$(VsixManifestOriginal)" />
     </Target>
