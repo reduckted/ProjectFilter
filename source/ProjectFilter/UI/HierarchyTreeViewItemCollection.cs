@@ -32,7 +32,7 @@ namespace ProjectFilter.UI {
         }
 
 
-        public bool? GetCheckedState() {
+        public bool? CalculateCheckedState() {
             bool? allChecked;
 
 

@@ -19,7 +19,7 @@ namespace ProjectFilter.Services {
         }
 
 
-        public async Task<IWaitDialog> CreateAsync(string caption, ThreadedWaitDialogProgressData progress) {
+        public async Task<IWaitDialog> CreateAsync(string title, ThreadedWaitDialogProgressData progress) {
             IVsThreadedWaitDialogFactory waitDialogFactory;
 
 
@@ -27,7 +27,7 @@ namespace ProjectFilter.Services {
 
             waitDialogFactory = await _provider.GetServiceAsync<SVsThreadedWaitDialogFactory, IVsThreadedWaitDialogFactory>();
 
-            return new Dialog(waitDialogFactory.StartWaitDialog(caption, progress));
+            return new Dialog(waitDialogFactory.StartWaitDialog(title, progress));
         }
 
     }

@@ -44,7 +44,7 @@ namespace ProjectFilter.UI.Converters {
 
                 // If we reached the top of the visual tree of we reached 
                 // the `TreeView`, then there is no parent `TreeViewItem`.
-                if (obj == null || obj is TreeView) {
+                if (obj is null || obj is TreeView) {
                     return null;
                 }
 

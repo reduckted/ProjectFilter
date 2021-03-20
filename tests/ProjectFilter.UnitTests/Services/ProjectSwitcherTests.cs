@@ -18,7 +18,7 @@ using Task = System.Threading.Tasks.Task;
 
 namespace ProjectFilter.Services {
 
-    public class ProjectFilterTests {
+    public static class ProjectFilterTests {
 
         private static readonly Guid ProjectAlpha = new Guid("1959e9e4-da3c-4532-86c1-035615646892");
         private static readonly Guid ProjectBeta = new Guid("20bb948d-36ad-4814-9171-62c4163e750b");
@@ -512,7 +512,7 @@ namespace ProjectFilter.Services {
                 XElement solution;
 
 
-                if (_root == null) {
+                if (_root is null) {
                     throw new InvalidOperationException("You must setup the test before verifying.");
                 }
 

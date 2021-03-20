@@ -2,7 +2,6 @@ using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Imaging.Interop;
 using Microsoft.VisualStudio.PlatformUI;
 using ProjectFilter.Services;
-using ProjectFilter.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -96,6 +95,10 @@ namespace ProjectFilter.UI {
             bool isMatch;
 
 
+            if (evaluator is null) {
+                throw new ArgumentNullException(nameof(evaluator));
+            }
+
             Children.Filter(evaluator);
             isMatch = evaluator.IsSearchMatch(Name);
 
@@ -148,7 +151,7 @@ namespace ProjectFilter.UI {
 
 
         private void UpdateCheckedStateFromChildren(bool updateParent) {
-            SetIsChecked(Children.GetCheckedState(), false, updateParent);
+            SetIsChecked(Children.CalculateCheckedState(), false, updateParent);
         }
 
 

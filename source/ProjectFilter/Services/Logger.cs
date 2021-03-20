@@ -24,11 +24,11 @@ namespace ProjectFilter.Services {
             await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             try {
-                if (_output == null) {
+                if (_output is null) {
                     _output = await _provider.GetServiceAsync<SVsOutputWindow, IVsOutputWindow>();
                 }
 
-                if (_pane == null) {
+                if (_pane is null) {
                     Guid identifier;
 
 

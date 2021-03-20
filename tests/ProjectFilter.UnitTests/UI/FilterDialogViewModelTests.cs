@@ -10,7 +10,7 @@ using Xunit;
 
 namespace ProjectFilter.UI {
 
-    public class FilterDialogViewModelTests {
+    public static class FilterDialogViewModelTests {
 
         public class ItemsProperty {
 
@@ -527,7 +527,7 @@ namespace ProjectFilter.UI {
             Mock<IHierarchyNode> node;
 
 
-            if (children == null) {
+            if (children is null) {
                 children = Enumerable.Empty<IHierarchyNode>();
             }
 
@@ -548,7 +548,7 @@ namespace ProjectFilter.UI {
 
 
         private static FilterDialogViewModel CreateViewModel(IEnumerable<IHierarchyNode> hierarchy, IDebouncer? debouncer = null) {
-            if (debouncer == null) {
+            if (debouncer is null) {
                 debouncer = Mock.Of<IDebouncer>();
             }
 

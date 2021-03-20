@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -5,7 +6,7 @@ using System.Windows.Input;
 
 namespace ProjectFilter.UI.AttachedProperties {
 
-    public class ClearOnEscape {
+    public static class ClearOnEscape {
 
         public static readonly DependencyProperty EnabledProperty = DependencyProperty.RegisterAttached(
               "Enabled",
@@ -17,11 +18,19 @@ namespace ProjectFilter.UI.AttachedProperties {
 
 
         public static bool GetEnabled(DependencyObject obj) {
+            if (obj is null) {
+                throw new ArgumentNullException(nameof(obj));
+            }
+
             return (bool)obj.GetValue(EnabledProperty);
         }
 
 
         public static void SetEnabled(DependencyObject obj, bool value) {
+            if (obj is null) {
+                throw new ArgumentNullException(nameof(obj));
+            }
+
             obj.SetValue(EnabledProperty, value);
         }
 

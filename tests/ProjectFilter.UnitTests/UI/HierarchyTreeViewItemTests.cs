@@ -8,7 +8,7 @@ using Xunit;
 
 namespace ProjectFilter.UI {
 
-    public class HierarchyTreeViewItemTests {
+    public static class HierarchyTreeViewItemTests {
 
         public class IsCheckedProperty {
 

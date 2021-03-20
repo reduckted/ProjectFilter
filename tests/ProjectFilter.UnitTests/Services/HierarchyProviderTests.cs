@@ -4,7 +4,9 @@ using Microsoft.VisualStudio.Imaging.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
 using Moq;
 using ProjectFilter.Helpers;
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Xml.Linq;
@@ -14,7 +16,7 @@ using Task = System.Threading.Tasks.Task;
 
 namespace ProjectFilter.Services {
 
-    public class HierarchyProviderTests {
+    public static class HierarchyProviderTests {
 
         public class GetHierarchyMethod : ServiceTest<HierarchyProvider> {
 
@@ -37,7 +39,7 @@ namespace ProjectFilter.Services {
                 node = (await (await CreateAsync()).GetHierarchyAsync()).First().Children[0];
 
                 Assert.Equal(
-                    root.DescendantsAndSelf().First((x) => x.Data.Name.Equals("bar")).Data.Identifier,
+                    root.DescendantsAndSelf().First((x) => string.Equals(x.Data.Name, "bar", StringComparison.Ordinal)).Data.Identifier,
                     node.Identifier
                 );
             }
@@ -195,7 +197,8 @@ namespace ProjectFilter.Services {
                     BindingFlags.Public | BindingFlags.Static | BindingFlags.GetProperty,
                     null,
                     null,
-                    null
+                    null,
+                    CultureInfo.InvariantCulture
                 );
             }
 

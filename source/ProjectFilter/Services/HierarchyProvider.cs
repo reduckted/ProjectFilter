@@ -7,10 +7,9 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
-using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
-using Task = System.Threading.Tasks.Task;
 
 
 namespace ProjectFilter.Services {
@@ -206,6 +205,7 @@ namespace ProjectFilter.Services {
         }
 
 
+        [SuppressMessage("Globalization", "CA1309:Use ordinal string comparison", Justification = "Comparison should use current culture.")]
         private static int CompareNodes(HierarchyNode x, HierarchyNode y) {
             // Put folders before projects, then sub-sort by name.
             if (x.IsFolder) {
@@ -218,7 +218,7 @@ namespace ProjectFilter.Services {
                 }
             }
 
-            return string.Compare(x.Name, y.Name, true);
+            return string.Compare(x.Name, y.Name, StringComparison.CurrentCultureIgnoreCase);
         }
 
 

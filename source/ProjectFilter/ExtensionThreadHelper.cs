@@ -10,7 +10,7 @@ namespace ProjectFilter {
 
     public static class ExtensionThreadHelper {
 
-        private static JoinableTaskFactory? _testingTaskFactory = null;
+        private static JoinableTaskFactory? _testingTaskFactory;
 
 
         public static JoinableTaskFactory JoinableTaskFactory {

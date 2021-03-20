@@ -3,7 +3,7 @@ using System;
 
 namespace ProjectFilter.Helpers {
 
-    public class HierarchyData {
+    internal class HierarchyData {
 
         public HierarchyData(Guid identifier, string name, Guid? parent) {
             Identifier = identifier;

@@ -9,7 +9,7 @@ using Xunit;
 
 namespace ProjectFilter.Services {
 
-    public class HierarchyNodeTests {
+    public static class HierarchyNodeTests {
 
         public class IdentifierProperty {
 

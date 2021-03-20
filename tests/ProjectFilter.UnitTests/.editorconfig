@@ -7,3 +7,6 @@ dotnet_diagnostic.VSTHRD200.severity = none
 
 # VSTHRD010: Invoke single-threaded types on Main.
 dotnet_diagnostic.VSTHRD010.severity = none
+
+# CA1034: Nested types should not be visible
+dotnet_diagnostic.CA1034.severity = none

@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -25,18 +26,30 @@ namespace ProjectFilter.UI.AttachedProperties {
         public static readonly DependencyProperty HideProperty = HidePropertyKey.DependencyProperty;
 
 
-        public static string GetText(DependencyObject d) {
-            return (string)d.GetValue(TextProperty);
+        public static string GetText(DependencyObject obj) {
+            if (obj is null) {
+                throw new ArgumentNullException(nameof(obj));
+            }
+
+            return (string)obj.GetValue(TextProperty);
         }
 
 
-        public static void SetText(DependencyObject d, string value) {
-            d.SetValue(TextProperty, value);
+        public static void SetText(DependencyObject obj, string value) {
+            if (obj is null) {
+                throw new ArgumentNullException(nameof(obj));
+            }
+
+            obj.SetValue(TextProperty, value);
         }
 
 
-        public static bool GetHide(DependencyObject d) {
-            return (bool)d.GetValue(HideProperty);
+        public static bool GetHide(DependencyObject obj) {
+            if (obj is null) {
+                throw new ArgumentNullException(nameof(obj));
+            }
+
+            return (bool)obj.GetValue(HideProperty);
         }
 
 

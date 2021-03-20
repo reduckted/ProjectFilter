@@ -10,7 +10,7 @@ using Task = System.Threading.Tasks.Task;
 
 namespace ProjectFilter.Services {
 
-    public class ExtensionSettingsTests {
+    public static class ExtensionSettingsTests {
 
         public class LoadProjectDependenciesProperty : ServiceTest<ExtensionSettings> {
 

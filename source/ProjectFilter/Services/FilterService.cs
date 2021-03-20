@@ -55,6 +55,10 @@ namespace ProjectFilter.Services {
             ThreadedWaitDialogProgressData progress;
 
 
+            if (options is null) {
+                throw new ArgumentNullException(nameof(options));
+            }
+
             await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             if ((options.ProjectsToLoad.Count == 0) && (options.ProjectsToUnload.Count == 0)) {
@@ -448,7 +452,7 @@ namespace ProjectFilter.Services {
 
                         name = GetName(ancestor);
 
-                        if (item == null) {
+                        if (item is null) {
                             item = _dte.ToolWindows.SolutionExplorer.GetItem(name);
                         } else {
                             item = item.UIHierarchyItems.Item(name);

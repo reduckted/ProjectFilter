@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace ProjectFilter.UI {
 
-    public class FilterDialogViewModel : ObservableObject, IDisposable {
+    public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
 
         private readonly IDebouncer _debouncer;
         private readonly SearchQueryFactory _searchQueryFactory;
@@ -24,6 +24,10 @@ namespace ProjectFilter.UI {
             Func<TimeSpan, IDebouncer> debouncerFactory,
             SearchQueryFactory searchQueryFactory
         ) {
+            if (debouncerFactory is null) {
+                throw new ArgumentNullException(nameof(debouncerFactory));
+            }
+
             _searchQueryFactory = searchQueryFactory;
 
             Items = new HierarchyTreeViewItemCollection(hierarchy.Select(CreateItem));
@@ -58,16 +62,13 @@ namespace ProjectFilter.UI {
             // the children or parent because the children have already been initialized, 
             // and the parent will be initialized when we return from this method.
             item.SetIsChecked(
-                item.Children.Count > 0 ? item.Children.GetCheckedState() : node.IsLoaded,
+                item.Children.Count > 0 ? item.Children.CalculateCheckedState() : node.IsLoaded,
                 false,
                 false
             );
 
             return item;
         }
-
-
-        public string Title => Vsix.Name;
 
 
         public HierarchyTreeViewItemCollection Items { get; }
@@ -148,7 +149,7 @@ namespace ProjectFilter.UI {
         }
 
 
-        private void SetIsExpandedRecursively(IEnumerable<HierarchyTreeViewItem> nodes, bool value) {
+        private static void SetIsExpandedRecursively(IEnumerable<HierarchyTreeViewItem> nodes, bool value) {
             foreach (var node in nodes.SelectMany((x) => x.DescendantsAndSelf())) {
                 node.IsExpanded = value;
             }

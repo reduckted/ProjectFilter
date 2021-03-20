@@ -13,7 +13,7 @@ using System.Xml.Linq;
 
 namespace ProjectFilter.Helpers {
 
-    public static class Factory {
+    internal static class Factory {
 
         public static IVsSearchQuery CreateSearchQuery(string text) {
             Mock<IVsSearchQuery> query;
@@ -27,7 +27,7 @@ namespace ProjectFilter.Helpers {
                 token = new Mock<IVsSearchToken>();
                 token.SetupGet((x) => x.OriginalTokenText).Returns(segment);
                 token.SetupGet((x) => x.ParsedTokenText).Returns(segment);
-                token.SetupGet((x) => x.TokenStartPosition).Returns((uint)text.IndexOf(segment));
+                token.SetupGet((x) => x.TokenStartPosition).Returns((uint)text.IndexOf(segment, StringComparison.Ordinal));
 
                 return token.Object;
             }).ToArray();
@@ -38,7 +38,7 @@ namespace ProjectFilter.Helpers {
             query
                 .Setup((x) => x.GetTokens(It.IsAny<uint>(), It.IsAny<IVsSearchToken[]>()))
                 .Returns((uint max, IVsSearchToken[] output) => {
-                    if (output == null) {
+                    if (output is null) {
                         return (uint)tokens.Length;
 
                     } else {
@@ -65,7 +65,7 @@ namespace ProjectFilter.Helpers {
             Mock<IHierarchyNode> node;
 
 
-            if (children == null) {
+            if (children is null) {
                 children = Enumerable.Empty<HierarchyTreeViewItem>();
             }
 
@@ -208,7 +208,7 @@ namespace ProjectFilter.Helpers {
                     Guid parentIdentifier;
 
 
-                    if (data.Parent == null) {
+                    if (data.Parent is null) {
                         value = null;
                         return VSConstants.S_OK;
                     }
@@ -428,7 +428,7 @@ namespace ProjectFilter.Helpers {
 
 
         private static IVsHierarchy EnsureHierarchyExists(TreeItem item, IVsSolution solution) {
-            if (item.Hierarchy == null) {
+            if (item.Hierarchy is null) {
                 item.Hierarchy = CreateHierarchy(item.Data, solution);
             }
 
@@ -465,6 +465,6 @@ namespace ProjectFilter.Helpers {
     }
 
 
-    public delegate T TreeItemFactory<T>(XElement element, T? parent) where T : TreeItem;
+    internal delegate T TreeItemFactory<T>(XElement element, T? parent) where T : TreeItem;
 
 }

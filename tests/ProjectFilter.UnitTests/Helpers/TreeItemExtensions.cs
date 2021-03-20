@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace ProjectFilter.Helpers {
 
-    public static class TreeItemExtensions {
+    internal static class TreeItemExtensions {
 
         public static IEnumerable<T> DescendantsAndSelf<T>(this T item) where T : TreeItem {
             return new[] { item }.Concat(item.Descendants());

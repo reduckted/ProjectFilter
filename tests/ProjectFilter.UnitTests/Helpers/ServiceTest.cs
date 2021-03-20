@@ -5,6 +5,7 @@ using ProjectFilter.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,12 +20,15 @@ namespace ProjectFilter.Helpers {
     [Collection(VisualStudioTests.Name)]
     public class ServiceTest<T> : IAsyncServiceProvider {
 
+        [SuppressMessage("Reliability", "VSSDK005:Avoid instantiating JoinableTaskContext", Justification = "Testing.")]
+        private static readonly JoinableTaskContext Context = new JoinableTaskContext();
+
+
         private readonly Dictionary<string, object> _services = new Dictionary<string, object>();
 
 
-        [SuppressMessage("Reliability", "VSSDK005:Avoid instantiating JoinableTaskContext", Justification = "Testing.")]
         static ServiceTest() {
-            ExtensionThreadHelper.JoinableTaskFactory = new JoinableTaskContext().Factory;
+            ExtensionThreadHelper.JoinableTaskFactory = Context.Factory;
 
             // Work around the `ThreadHelper.ThrowIfNotOnUIThread()` always throwing in 
             // tests by setting the internal dispatcher that is used to check for access.
@@ -33,7 +37,8 @@ namespace ProjectFilter.Helpers {
                 BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.SetField,
                 null,
                 null,
-                new[] { Dispatcher.CurrentDispatcher }
+                new[] { Dispatcher.CurrentDispatcher },
+                CultureInfo.InvariantCulture
             );
         }
 
@@ -62,7 +67,11 @@ namespace ProjectFilter.Helpers {
         }
 
 
-        Task<object> IAsyncServiceProvider.GetServiceAsync(Type serviceType) {
+        public Task<object> GetServiceAsync(Type serviceType) {
+            if (serviceType is null) {
+                throw new ArgumentNullException(nameof(serviceType));
+            }
+
             if (_services.TryGetValue(serviceType.FullName, out object service)) {
                 return Task.FromResult(service);
             }

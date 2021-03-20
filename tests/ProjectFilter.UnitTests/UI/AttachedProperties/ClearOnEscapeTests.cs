@@ -9,7 +9,6 @@ namespace ProjectFilter.UI.AttachedProperties {
 
     public class ClearOnEscapeTests {
 
-
         [WpfFact]
         public void ClearsTextAndHandledEventWhenTextIsNotEmpty() {
             TextBox box;

@@ -214,7 +214,7 @@ namespace ProjectFilter.UI.AttachedProperties {
 
         private class ViewModel : ObservableObject {
 
-            private bool _isChecked = false;
+            private bool _isChecked;
 
 
             public bool IsChecked {

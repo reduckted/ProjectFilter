@@ -1,9 +1,10 @@
+using System;
 using System.Windows;
 
 
 namespace ProjectFilter.UI.AttachedProperties {
 
-    public class CloseDialog {
+    public static class CloseDialog {
 
         public static readonly DependencyProperty TriggerProperty = DependencyProperty.RegisterAttached(
              "Trigger",
@@ -14,11 +15,19 @@ namespace ProjectFilter.UI.AttachedProperties {
 
 
         public static bool GetTrigger(DependencyObject obj) {
+            if (obj is null) {
+                throw new ArgumentNullException(nameof(obj));
+            }
+
             return (bool)obj.GetValue(TriggerProperty);
         }
 
 
         public static void SetTrigger(DependencyObject obj, object value) {
+            if (obj is null) {
+                throw new ArgumentNullException(nameof(obj));
+            }
+
             obj.SetValue(TriggerProperty, value);
         }
 

@@ -1,11 +1,10 @@
 using Microsoft.VisualStudio.Shell.Interop;
-using System;
 using System.Collections.Generic;
 
 
 namespace ProjectFilter.Helpers {
 
-    public abstract class TreeItem {
+    internal abstract class TreeItem {
 
         protected TreeItem(HierarchyData data) {
             Data = data;
@@ -22,7 +21,7 @@ namespace ProjectFilter.Helpers {
         public TreeItem? Parent { get; set; }
 
 
-        public List<TreeItem> Children { get; }
+        public IList<TreeItem> Children { get; }
 
     }
 

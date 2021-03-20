@@ -6,7 +6,7 @@ using Xunit;
 
 namespace ProjectFilter.UI {
 
-    public class HierarchyTreeViewItemCollectionTests {
+    public static class HierarchyTreeViewItemCollectionTests {
 
         public class CountProperty {
 
@@ -34,7 +34,7 @@ namespace ProjectFilter.UI {
         }
 
 
-        public class GetCheckedStateMethod {
+        public class CalculateCheckedStateMethod {
 
             [Fact]
             public void ReturnsFalseWhenCollectionIsEmpty() {
@@ -43,7 +43,7 @@ namespace ProjectFilter.UI {
 
                 collection = new HierarchyTreeViewItemCollection(Enumerable.Empty<HierarchyTreeViewItem>());
 
-                Assert.False(collection.GetCheckedState());
+                Assert.False(collection.CalculateCheckedState());
             }
 
 
@@ -58,7 +58,7 @@ namespace ProjectFilter.UI {
                     Factory.CreateTreeViewItem(isChecked: false)
                 });
 
-                Assert.False(collection.GetCheckedState());
+                Assert.False(collection.CalculateCheckedState());
             }
 
 
@@ -73,7 +73,7 @@ namespace ProjectFilter.UI {
                     Factory.CreateTreeViewItem(isChecked: true),
                 });
 
-                Assert.True(collection.GetCheckedState());
+                Assert.True(collection.CalculateCheckedState());
             }
 
 
@@ -88,7 +88,7 @@ namespace ProjectFilter.UI {
                     Factory.CreateTreeViewItem(isChecked: true),
                 });
 
-                Assert.Null(collection.GetCheckedState());
+                Assert.Null(collection.CalculateCheckedState());
             }
 
 
@@ -103,7 +103,7 @@ namespace ProjectFilter.UI {
                     Factory.CreateTreeViewItem(isChecked: null),
                 });
 
-                Assert.Null(collection.GetCheckedState());
+                Assert.Null(collection.CalculateCheckedState());
             }
 
         }

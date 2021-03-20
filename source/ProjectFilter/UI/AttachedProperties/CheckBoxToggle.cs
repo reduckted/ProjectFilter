@@ -1,10 +1,11 @@
+using System;
 using System.Windows;
 using System.Windows.Input;
 
 
 namespace ProjectFilter.UI.AttachedProperties {
 
-    public class CheckBoxToggle {
+    public static class CheckBoxToggle {
 
         public static readonly DependencyProperty EnabledProperty = DependencyProperty.RegisterAttached(
             "Enabled",
@@ -31,31 +32,55 @@ namespace ProjectFilter.UI.AttachedProperties {
 
 
         public static bool GetEnabled(DependencyObject obj) {
+            if (obj is null) {
+                throw new ArgumentNullException(nameof(obj));
+            }
+
             return (bool)obj.GetValue(EnabledProperty);
         }
 
 
         public static void SetEnabled(DependencyObject obj, bool value) {
+            if (obj is null) {
+                throw new ArgumentNullException(nameof(obj));
+            }
+
             obj.SetValue(EnabledProperty, value);
         }
 
 
         public static bool? GetIsChecked(DependencyObject obj) {
+            if (obj is null) {
+                throw new ArgumentNullException(nameof(obj));
+            }
+
             return (bool?)obj.GetValue(IsCheckedProperty);
         }
 
 
         public static void SetIsChecked(DependencyObject obj, bool? value) {
+            if (obj is null) {
+                throw new ArgumentNullException(nameof(obj));
+            }
+
             obj.SetValue(IsCheckedProperty, value);
         }
 
 
         private static bool GetIsSpaceKeyDown(DependencyObject obj) {
+            if (obj is null) {
+                throw new ArgumentNullException(nameof(obj));
+            }
+
             return (bool)obj.GetValue(IsSpaceKeyDownProperty);
         }
 
 
         public static void SetIsSpaceKeyDown(DependencyObject obj, bool value) {
+            if (obj is null) {
+                throw new ArgumentNullException(nameof(obj));
+            }
+
             obj.SetValue(IsSpaceKeyDownProperty, value);
         }
 

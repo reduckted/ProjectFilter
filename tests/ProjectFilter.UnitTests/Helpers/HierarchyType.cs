@@ -1,6 +1,6 @@
 namespace ProjectFilter.Helpers {
 
-    public enum HierarchyType {
+    internal enum HierarchyType {
         Solution,
         Folder,
         Project,
