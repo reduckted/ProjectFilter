@@ -2,6 +2,8 @@ using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
 using ProjectFilter.UI;
 using ProjectFilter.UI.Utilities;
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
 
@@ -13,7 +15,7 @@ namespace ProjectFilter.Services {
         private readonly IAsyncServiceProvider _provider;
 
 
-        public FilterOptionsProvider (IAsyncServiceProvider provider) {
+        public FilterOptionsProvider(IAsyncServiceProvider provider) {
             _provider = provider;
         }
 
@@ -21,6 +23,7 @@ namespace ProjectFilter.Services {
         public async Task<FilterOptions?> GetOptionsAsync() {
             IHierarchyProvider hierarchyProvider;
             IExtensionSettings settings;
+            Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory;
 
 
             await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
@@ -28,7 +31,9 @@ namespace ProjectFilter.Services {
             hierarchyProvider = await _provider.GetServiceAsync<IHierarchyProvider, IHierarchyProvider>();
             settings = await _provider.GetServiceAsync<IExtensionSettings, IExtensionSettings>();
 
-            using (var vm = new FilterDialogViewModel(await hierarchyProvider.GetHierarchyAsync(), Debouncer.Create, SearchUtilities.CreateSearchQuery)) {
+            hierarchyFactory = async () => await hierarchyProvider.GetHierarchyAsync();
+
+            using (var vm = new FilterDialogViewModel(hierarchyFactory, Debouncer.Create, SearchUtilities.CreateSearchQuery)) {
                 FilterDialog dialog;
 
 

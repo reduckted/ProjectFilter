@@ -6,21 +6,27 @@ using ProjectFilter.UI.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
 
 
 namespace ProjectFilter.UI {
 
     public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
 
-        private readonly IDebouncer _debouncer;
+        private readonly Func<Task<IEnumerable<IHierarchyNode>>> _hierarchyFactory;
         private readonly SearchQueryFactory _searchQueryFactory;
+        private readonly IDebouncer _debouncer;
+        private HierarchyTreeViewItemCollection _items;
         private string _searchText;
         private bool _loadProjectDependencies;
         private FilterOptions? _result;
+        private Visibility _loadingVisibility;
+        private Visibility _loadedVisibility;
 
 
         public FilterDialogViewModel(
-            IEnumerable<IHierarchyNode> hierarchy,
+            Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory,
             Func<TimeSpan, IDebouncer> debouncerFactory,
             SearchQueryFactory searchQueryFactory
         ) {
@@ -28,9 +34,13 @@ namespace ProjectFilter.UI {
                 throw new ArgumentNullException(nameof(debouncerFactory));
             }
 
-            _searchQueryFactory = searchQueryFactory;
+            _hierarchyFactory = hierarchyFactory ?? throw new ArgumentNullException(nameof(hierarchyFactory));
+            _searchQueryFactory = searchQueryFactory ?? throw new ArgumentNullException(nameof(searchQueryFactory));
 
-            Items = new HierarchyTreeViewItemCollection(hierarchy.Select(CreateItem));
+            _items = new HierarchyTreeViewItemCollection(Enumerable.Empty<HierarchyTreeViewItem>());
+            _searchText = "";
+            _loadingVisibility = Visibility.Visible;
+            _loadedVisibility = Visibility.Collapsed;
 
             ToggleLoadProjectDependenciesCommand = new DelegateCommand(() => LoadProjectDependencies = !LoadProjectDependencies);
             CollapseAllCommand = new DelegateCommand<HierarchyTreeViewItem>(CollapseAll);
@@ -39,13 +49,24 @@ namespace ProjectFilter.UI {
             UncheckAllCommand = new DelegateCommand(() => SetAllChecked(false));
             AcceptCommand = new DelegateCommand(AcceptSelection);
 
-            _searchText = "";
-
             // Use a `DispatcherTimer` constructor without a callback
             // so that the timer doesn't start immediately. We only
             // want to start the timer when the search text changes.
             _debouncer = debouncerFactory.Invoke(TimeSpan.FromMilliseconds(500));
             _debouncer.Stable += OnSearchStable;
+        }
+
+
+        public async Task OnLoadedAsync() {
+            IEnumerable<IHierarchyNode> hierarchy;
+
+
+            hierarchy = await _hierarchyFactory.Invoke();
+
+            Items = new HierarchyTreeViewItemCollection(hierarchy.Select(CreateItem));
+
+            LoadedVisibility = Visibility.Visible;
+            LoadingVisibility = Visibility.Collapsed;
         }
 
 
@@ -71,7 +92,22 @@ namespace ProjectFilter.UI {
         }
 
 
-        public HierarchyTreeViewItemCollection Items { get; }
+        public Visibility LoadingVisibility {
+            get { return _loadingVisibility; }
+            private set { SetProperty(ref _loadingVisibility, value); }
+        }
+
+
+        public Visibility LoadedVisibility {
+            get { return _loadedVisibility; }
+            private set { SetProperty(ref _loadedVisibility, value); }
+        }
+
+
+        public HierarchyTreeViewItemCollection Items {
+            get { return _items; }
+            private set { SetProperty(ref _items, value); }
+        }
 
 
         public DelegateCommand ToggleLoadProjectDependenciesCommand { get; }

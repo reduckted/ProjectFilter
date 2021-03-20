@@ -24,6 +24,7 @@
     properties:CloseDialog.Trigger="{Binding Result}"
     MinWidth="250"
     FocusManager.FocusedElement="{Binding ElementName=SearchBox}"
+    Loaded="OnLoaded"
     >
 
     <platform:DialogWindow.Resources>
@@ -45,179 +46,190 @@
     </platform:DialogWindow.InputBindings>
 
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        <Grid Visibility="{Binding LoadingVisibility}">
+            <TextBlock
+                Text="Loading..."
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                Foreground="{DynamicResource {x:Static platform:ThemedDialogColors.HeaderTextBrushKey}}"
+                />
+        </Grid>
+        
+        <Grid Visibility="{Binding LoadedVisibility}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <StackPanel 
-            Grid.Row="0"
-            Orientation="Vertical"
-            Background="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarGradientBrushKey}}"
-            platformImaging:ImageThemingUtilities.ImageBackgroundColor="{Binding RelativeSource={RelativeSource Mode=Self}, Path=Background, Converter={StaticResource BrushToColorConverter}}"
-            >
-
-            <ToolBar 
+            <StackPanel 
                 Grid.Row="0"
-                Style="{StaticResource ToolBarStyle}"
+                Orientation="Vertical"
+                Background="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarGradientBrushKey}}"
+                platformImaging:ImageThemingUtilities.ImageBackgroundColor="{Binding RelativeSource={RelativeSource Mode=Self}, Path=Background, Converter={StaticResource BrushToColorConverter}}"
                 >
 
-                <ToggleButton
-                    ToolTip="Load dependencies of loaded projects (Alt+L)"
-                    IsChecked="{Binding LoadProjectDependencies}"
+                <ToolBar 
+                    Grid.Row="0"
+                    Style="{StaticResource ToolBarStyle}"
                     >
 
-                    <imaging:CrispImage Moniker="{x:Static catalog:KnownMonikers.DependancyGraph}"/>
-                </ToggleButton>
+                    <ToggleButton
+                        ToolTip="Load dependencies of loaded projects (Alt+L)"
+                        IsChecked="{Binding LoadProjectDependencies}"
+                        >
 
-                <Separator/>
+                        <imaging:CrispImage Moniker="{x:Static catalog:KnownMonikers.DependancyGraph}"/>
+                    </ToggleButton>
 
-                <Button 
-                    Command="{Binding CheckAllCommand}"
-                    ToolTip="Check all (Alt+A)"
-                    >
+                    <Separator/>
 
-                    <imaging:CrispImage Moniker="{x:Static catalog:KnownMonikers.RecursivelyCheckAll}"/>
-                </Button>
+                    <Button 
+                        Command="{Binding CheckAllCommand}"
+                        ToolTip="Check all (Alt+A)"
+                        >
 
-                <Button
-                    Command="{Binding UncheckAllCommand}"
-                    ToolTip="Uncheck all (Alt+Z)"
-                    >
+                        <imaging:CrispImage Moniker="{x:Static catalog:KnownMonikers.RecursivelyCheckAll}"/>
+                    </Button>
 
-                    <imaging:CrispImage Moniker="{x:Static catalog:KnownMonikers.RecursivelyUncheckAll}"/>
-                </Button>
+                    <Button
+                        Command="{Binding UncheckAllCommand}"
+                        ToolTip="Uncheck all (Alt+Z)"
+                        >
 
-                <Separator/>
+                        <imaging:CrispImage Moniker="{x:Static catalog:KnownMonikers.RecursivelyUncheckAll}"/>
+                    </Button>
 
-                <Button 
-                    Command="{Binding ExpandAllCommand}"
-                    ToolTip="Expand All (Alt+=)"
-                    >
+                    <Separator/>
 
-                    <imaging:CrispImage Moniker="{x:Static catalog:KnownMonikers.ExpandAll}"/>
-                </Button>
+                    <Button 
+                        Command="{Binding ExpandAllCommand}"
+                        ToolTip="Expand All (Alt+=)"
+                        >
 
-                <Button 
-                    Command="{Binding CollapseAllCommand}"
-                    ToolTip="Collapse All (Alt+-)"
-                    >
+                        <imaging:CrispImage Moniker="{x:Static catalog:KnownMonikers.ExpandAll}"/>
+                    </Button>
 
-                    <imaging:CrispImage 
-                        Moniker="{x:Static catalog:KnownMonikers.CollapseAll}"
-                        imaging:CrispImage.Dpi="96"
+                    <Button 
+                        Command="{Binding CollapseAllCommand}"
+                        ToolTip="Collapse All (Alt+-)"
+                        >
+
+                        <imaging:CrispImage 
+                            Moniker="{x:Static catalog:KnownMonikers.CollapseAll}"
+                            imaging:CrispImage.Dpi="96"
+                            />
+                    </Button>
+                </ToolBar>
+
+                <TextBox
+                    x:Name="SearchBox"
+                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                    Margin="0,0,0,2"
+                    Style="{StaticResource SearchTextBoxStyle}"
+                    properties:Watermark.Text="Filter projects..."
+                    properties:ClearOnEscape.Enabled="True"
+                    />
+            </StackPanel>
+
+            <TreeView 
+                Grid.Row="1"
+                ItemsSource="{Binding Items}" 
+                Style="{StaticResource TreeViewStyle}"
+                BorderThickness="0,0,0,1"
+                >
+
+                <TreeView.InputBindings>
+                    <KeyBinding 
+                        Key="Left" 
+                        Modifiers="Ctrl" 
+                        Command="{Binding CollapseAllCommand}" 
+                        CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type TreeView}}, Path=SelectedItem}"
                         />
-                </Button>
-            </ToolBar>
 
-            <TextBox
-                x:Name="SearchBox"
-                Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                Margin="0,0,0,2"
-                Style="{StaticResource SearchTextBoxStyle}"
-                properties:Watermark.Text="Filter projects..."
-                properties:ClearOnEscape.Enabled="True"
-                />
-        </StackPanel>
+                    <KeyBinding 
+                        Key="Right" 
+                        Modifiers="Ctrl" 
+                        Command="{Binding ExpandAllCommand}" 
+                        CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type TreeView}}, Path=SelectedItem}"
+                        />
+                </TreeView.InputBindings>
 
-        <TreeView 
-            Grid.Row="1"
-            ItemsSource="{Binding Items}" 
-            Style="{StaticResource TreeViewStyle}"
-            BorderThickness="0,0,0,1"
-            >
+                <TreeView.Resources>
+                    <HierarchicalDataTemplate 
+                        DataType="{x:Type ui:HierarchyTreeViewItem}"
+                        ItemsSource="{Binding Children}"
+                        >
 
-            <TreeView.InputBindings>
-                <KeyBinding 
-                    Key="Left" 
-                    Modifiers="Ctrl" 
-                    Command="{Binding CollapseAllCommand}" 
-                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type TreeView}}, Path=SelectedItem}"
+                        <Grid SnapsToDevicePixels="True">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="23"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <CheckBox
+                                Grid.Column="0"
+                                IsChecked="{Binding IsChecked}" 
+                                Focusable="False"
+                                Style="{StaticResource TreeViewCheckBoxStyle}"
+                                />
+
+                            <imaging:CrispImage
+                                x:Name="Icon"
+                                Grid.Column="1"
+                                Height="16"
+                                Width="16"
+                                SnapsToDevicePixels="True"
+                                Moniker="{Binding Icon}"
+                                />
+
+                            <internal:HighlightTextBlock
+                                Grid.Column="2"
+                                TextSource="{Binding Name}"
+                                internal:HighlightTextBlock.HighlightText="{Binding HighlightText}"
+                                HighlightBackground="{DynamicResource {x:Static platform:TreeViewColors.HighlightedSpanBrushKey}}"
+                                HighlightForeground="{DynamicResource {x:Static platform:TreeViewColors.HighlightedSpanTextBrushKey}}"
+                                HighlightFontWeight="Normal"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Padding="0,2"
+                                platform:TextToolTipService.AutoShowToolTipWhenObscured="True"
+                                platform:TextToolTipService.ToolTipText="{Binding Name}"
+                                />
+                        </Grid>
+                    </HierarchicalDataTemplate>
+                </TreeView.Resources>
+
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem" BasedOn="{StaticResource TreeViewItemStyle}">
+                        <Setter Property="properties:CheckBoxToggle.Enabled" Value="True" />
+                        <Setter Property="properties:CheckBoxToggle.IsChecked" Value="{Binding IsChecked}" />
+                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                    </Style>
+                </TreeView.ItemContainerStyle>
+            </TreeView>
+
+            <StackPanel 
+                Grid.Row="4"
+                Orientation="Horizontal"
+                Margin="12"
+                HorizontalAlignment="Right"
+                >
+
+                <Button 
+                    Command="{Binding AcceptCommand}"
+                    Content="OK"
+                    IsDefault="True"
                     />
 
-                <KeyBinding 
-                    Key="Right" 
-                    Modifiers="Ctrl" 
-                    Command="{Binding ExpandAllCommand}" 
-                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type TreeView}}, Path=SelectedItem}"
+                <Button 
+                    Content="Cancel"
+                    IsCancel="True"
+                    Margin="8,0,0,0"
                     />
-            </TreeView.InputBindings>
-
-            <TreeView.Resources>
-                <HierarchicalDataTemplate 
-                    DataType="{x:Type ui:HierarchyTreeViewItem}"
-                    ItemsSource="{Binding Children}"
-                    >
-
-                    <Grid SnapsToDevicePixels="True">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="23"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <CheckBox
-                            Grid.Column="0"
-                            IsChecked="{Binding IsChecked}" 
-                            Focusable="False"
-                            Style="{StaticResource TreeViewCheckBoxStyle}"
-                            />
-
-                        <imaging:CrispImage
-                            x:Name="Icon"
-                            Grid.Column="1"
-                            Height="16"
-                            Width="16"
-                            SnapsToDevicePixels="True"
-                            Moniker="{Binding Icon}"
-                            />
-
-                        <internal:HighlightTextBlock
-                            Grid.Column="2"
-                            TextSource="{Binding Name}"
-                            internal:HighlightTextBlock.HighlightText="{Binding HighlightText}"
-                            HighlightBackground="{DynamicResource {x:Static platform:TreeViewColors.HighlightedSpanBrushKey}}"
-                            HighlightForeground="{DynamicResource {x:Static platform:TreeViewColors.HighlightedSpanTextBrushKey}}"
-                            HighlightFontWeight="Normal"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Padding="0,2"
-                            platform:TextToolTipService.AutoShowToolTipWhenObscured="True"
-                            platform:TextToolTipService.ToolTipText="{Binding Name}"
-                            />
-                    </Grid>
-                </HierarchicalDataTemplate>
-            </TreeView.Resources>
-
-            <TreeView.ItemContainerStyle>
-                <Style TargetType="TreeViewItem" BasedOn="{StaticResource TreeViewItemStyle}">
-                    <Setter Property="properties:CheckBoxToggle.Enabled" Value="True" />
-                    <Setter Property="properties:CheckBoxToggle.IsChecked" Value="{Binding IsChecked}" />
-                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-                </Style>
-            </TreeView.ItemContainerStyle>
-        </TreeView>
-
-        <StackPanel 
-            Grid.Row="4"
-            Orientation="Horizontal"
-            Margin="12"
-            HorizontalAlignment="Right"
-            >
-
-            <Button 
-                Command="{Binding AcceptCommand}"
-                Content="OK"
-                IsDefault="True"
-                />
-
-            <Button 
-                Content="Cancel"
-                IsCancel="True"
-                Margin="8,0,0,0"
-                />
-        </StackPanel>
+            </StackPanel>
+        </Grid>
     </Grid>
 </platform:DialogWindow>

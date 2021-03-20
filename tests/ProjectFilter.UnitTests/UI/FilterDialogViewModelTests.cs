@@ -5,6 +5,8 @@ using ProjectFilter.UI.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
 using Xunit;
 
 
@@ -12,10 +14,117 @@ namespace ProjectFilter.UI {
 
     public static class FilterDialogViewModelTests {
 
+        public class LoadingVisibilityProperty {
+
+            [Fact]
+            public async Task IsVisibleUntilHierarchyIsRetrieved() {
+                TaskCompletionSource<IEnumerable<IHierarchyNode>> hierarchy;
+
+
+                hierarchy = new TaskCompletionSource<IEnumerable<IHierarchyNode>>();
+
+                using (var vm = CreateViewModel(() => hierarchy.Task)) {
+                    Task loaded;
+
+
+                    Assert.Equal(Visibility.Visible, vm.LoadingVisibility);
+
+                    loaded = vm.OnLoadedAsync();
+
+                    Assert.Equal(Visibility.Visible, vm.LoadingVisibility);
+
+                    hierarchy.SetResult(
+                        new[] {
+                            CreateNode("a", isLoaded: true),
+                            CreateNode("b", isLoaded: false)
+                        }
+                    );
+
+                    await loaded;
+
+                    Assert.Equal(Visibility.Collapsed, vm.LoadingVisibility);
+                }
+            }
+
+        }
+
+
+        public class LoadedVisibilityProperty {
+
+            [Fact]
+            public async Task IsCollapsedUntilHierarchyIsRetrieved() {
+                TaskCompletionSource<IEnumerable<IHierarchyNode>> hierarchy;
+
+
+                hierarchy = new TaskCompletionSource<IEnumerable<IHierarchyNode>>();
+
+                using (var vm = CreateViewModel(() => hierarchy.Task)) {
+                    Task loaded;
+
+
+                    Assert.Equal(Visibility.Collapsed, vm.LoadedVisibility);
+
+                    loaded = vm.OnLoadedAsync();
+
+                    Assert.Equal(Visibility.Collapsed, vm.LoadedVisibility);
+
+                    hierarchy.SetResult(
+                        new[] {
+                            CreateNode("a", isLoaded: true),
+                            CreateNode("b", isLoaded: false)
+                        }
+                    );
+
+                    await loaded;
+
+                    Assert.Equal(Visibility.Visible, vm.LoadedVisibility);
+                }
+            }
+
+        }
+
+
         public class ItemsProperty {
 
             [Fact]
-            public void InitiallyChecksItemsBasedOnWhetherTheyAreLoadedOrTheirChildrenAreChecked() {
+            public async Task IsEmptyUntilHierarchyIsRetrieved() {
+                TaskCompletionSource<IEnumerable<IHierarchyNode>> hierarchy;
+
+
+                hierarchy = new TaskCompletionSource<IEnumerable<IHierarchyNode>>();
+
+                using (var vm = CreateViewModel(() => hierarchy.Task)) {
+                    Task loaded;
+
+
+                    Assert.Empty(vm.Items);
+
+                    loaded = vm.OnLoadedAsync();
+
+                    Assert.Empty(vm.Items);
+
+                    hierarchy.SetResult(
+                        new[] {
+                            CreateNode("a", isLoaded: true),
+                            CreateNode("b", isLoaded: false)
+                        }
+                    );
+
+                    await loaded;
+
+                    Assert.Equal(
+                        new[] {
+                            ("a", (bool?)true),
+                            ("b", (bool?)false)
+                        },
+                        vm.Items.Select((x) => (x.Name, x.IsChecked))
+                    );
+                }
+            }
+
+
+            [Fact]
+            public async Task InitiallyChecksItemsBasedOnWhetherTheyAreLoadedOrTheirChildrenAreChecked() {
                 IEnumerable<IHierarchyNode> hierarchy;
 
 
@@ -27,6 +136,8 @@ namespace ProjectFilter.UI {
                 };
 
                 using (var vm = CreateViewModel(hierarchy)) {
+                    await vm.OnLoadedAsync();
+
                     Assert.Equal(
                         new[] {
                             ("a",true),
@@ -45,8 +156,10 @@ namespace ProjectFilter.UI {
         public class ToggleLoadProjectDependenciesCommandProperty {
 
             [Fact]
-            public void TogglesTheLoadProjectDependenciesProperty() {
+            public async Task TogglesTheLoadProjectDependenciesProperty() {
                 using (var vm = CreateViewModel(Enumerable.Empty<IHierarchyNode>())) {
+                    await vm.OnLoadedAsync();
+
                     Assert.False(vm.LoadProjectDependencies);
 
                     vm.ToggleLoadProjectDependenciesCommand.Execute(null);
@@ -65,7 +178,7 @@ namespace ProjectFilter.UI {
         public class CollapseAllCommandProperty {
 
             [Fact]
-            public void CollapsesAllItemsWhenNoParameterIsSpecified() {
+            public async Task CollapsesAllItemsWhenNoParameterIsSpecified() {
                 IEnumerable<IHierarchyNode> hierarchy;
 
 
@@ -83,6 +196,8 @@ namespace ProjectFilter.UI {
                 };
 
                 using (var vm = CreateViewModel(hierarchy)) {
+                    await vm.OnLoadedAsync();
+
                     vm.CollapseAllCommand.Execute(null);
                     Assert.All(vm.Items.GetFullHierarchy(), (x) => Assert.False(x.IsExpanded));
                 }
@@ -90,7 +205,7 @@ namespace ProjectFilter.UI {
 
 
             [Fact]
-            public void CollapsesSpecifiedItemAndAllOfItsDescendantsWhenItHasChildren() {
+            public async Task CollapsesSpecifiedItemAndAllOfItsDescendantsWhenItHasChildren() {
                 IEnumerable<IHierarchyNode> hierarchy;
 
 
@@ -108,6 +223,8 @@ namespace ProjectFilter.UI {
                 };
 
                 using (var vm = CreateViewModel(hierarchy)) {
+                    await vm.OnLoadedAsync();
+
                     vm.CollapseAllCommand.Execute(GetItem(vm, "b"));
 
                     Assert.Equal(
@@ -126,7 +243,7 @@ namespace ProjectFilter.UI {
 
 
             [Fact]
-            public void CollapsesParentOfSpecifiedItemWhenSpecifiedItemHasNoChildren() {
+            public async Task CollapsesParentOfSpecifiedItemWhenSpecifiedItemHasNoChildren() {
                 IEnumerable<IHierarchyNode> hierarchy;
 
 
@@ -144,6 +261,8 @@ namespace ProjectFilter.UI {
                 };
 
                 using (var vm = CreateViewModel(hierarchy)) {
+                    await vm.OnLoadedAsync();
+
                     vm.CollapseAllCommand.Execute(GetItem(vm, "f"));
 
                     Assert.Equal(
@@ -166,7 +285,7 @@ namespace ProjectFilter.UI {
         public class ExpandAllCommandProperty {
 
             [Fact]
-            public void ExpandsAllItemsWhenNoParameterIsSpecified() {
+            public async Task ExpandsAllItemsWhenNoParameterIsSpecified() {
                 IEnumerable<IHierarchyNode> hierarchy;
 
 
@@ -184,6 +303,8 @@ namespace ProjectFilter.UI {
                 };
 
                 using (var vm = CreateViewModel(hierarchy)) {
+                    await vm.OnLoadedAsync();
+
                     vm.CollapseAllCommand.Execute(null);
                     vm.ExpandAllCommand.Execute(null);
                     Assert.All(vm.Items.GetFullHierarchy(), (x) => Assert.True(x.IsExpanded));
@@ -192,7 +313,7 @@ namespace ProjectFilter.UI {
 
 
             [Fact]
-            public void ExpandsTheSpecifiedItemAndAllOfItsDescendants() {
+            public async Task ExpandsTheSpecifiedItemAndAllOfItsDescendants() {
                 IEnumerable<IHierarchyNode> hierarchy;
 
 
@@ -210,6 +331,8 @@ namespace ProjectFilter.UI {
                 };
 
                 using (var vm = CreateViewModel(hierarchy)) {
+                    await vm.OnLoadedAsync();
+
                     vm.CollapseAllCommand.Execute(null);
                     vm.ExpandAllCommand.Execute(GetItem(vm, "b"));
 
@@ -233,7 +356,7 @@ namespace ProjectFilter.UI {
         public class CheckAllCommandProperty {
 
             [Fact]
-            public void ChecksAllItems() {
+            public async Task ChecksAllItems() {
                 IEnumerable<IHierarchyNode> hierarchy;
 
 
@@ -251,6 +374,8 @@ namespace ProjectFilter.UI {
                 };
 
                 using (var vm = CreateViewModel(hierarchy)) {
+                    await vm.OnLoadedAsync();
+
                     Assert.All(vm.Items.GetFullHierarchy(), (x) => Assert.False(x.IsChecked));
 
                     vm.CheckAllCommand.Execute(null);
@@ -265,7 +390,7 @@ namespace ProjectFilter.UI {
         public class UncheckAllCommandProperty {
 
             [Fact]
-            public void UnchecksAllItems() {
+            public async Task UnchecksAllItems() {
                 IEnumerable<IHierarchyNode> hierarchy;
 
 
@@ -283,6 +408,8 @@ namespace ProjectFilter.UI {
                 };
 
                 using (var vm = CreateViewModel(hierarchy)) {
+                    await vm.OnLoadedAsync();
+
                     Assert.All(vm.Items.GetFullHierarchy(), (x) => Assert.True(x.IsChecked));
 
                     vm.UncheckAllCommand.Execute(null);
@@ -299,7 +426,7 @@ namespace ProjectFilter.UI {
             [Theory]
             [InlineData(true)]
             [InlineData(false)]
-            public void SetsOptionsFromProperties(bool loadDependencies) {
+            public async Task SetsOptionsFromProperties(bool loadDependencies) {
                 IEnumerable<IHierarchyNode> hierarchy;
 
 
@@ -309,6 +436,8 @@ namespace ProjectFilter.UI {
                 };
 
                 using (var vm = CreateViewModel(hierarchy)) {
+                    await vm.OnLoadedAsync();
+
                     vm.LoadProjectDependencies = loadDependencies;
 
                     vm.AcceptCommand.Execute(null);
@@ -320,7 +449,7 @@ namespace ProjectFilter.UI {
 
 
             [Fact]
-            public void SetsProjectsBasedOnCheckedState() {
+            public async Task SetsProjectsBasedOnCheckedState() {
                 IEnumerable<IHierarchyNode> hierarchy;
 
 
@@ -340,6 +469,8 @@ namespace ProjectFilter.UI {
                 };
 
                 using (var vm = CreateViewModel(hierarchy)) {
+                    await vm.OnLoadedAsync();
+
                     GetItem(vm, "b").IsChecked = true;
                     GetItem(vm, "d").IsChecked = false;
                     GetItem(vm, "f").IsChecked = false;
@@ -363,7 +494,7 @@ namespace ProjectFilter.UI {
 
 
             [Fact]
-            public void InculdesProjectsThatHaveBeenFilteredOut() {
+            public async Task InculdesProjectsThatHaveBeenFilteredOut() {
                 IEnumerable<IHierarchyNode> hierarchy;
                 Mock<IDebouncer> debouncer;
 
@@ -386,6 +517,8 @@ namespace ProjectFilter.UI {
                 debouncer = new Mock<IDebouncer>();
 
                 using (var vm = CreateViewModel(hierarchy, debouncer: debouncer.Object)) {
+                    await vm.OnLoadedAsync();
+
                     GetItem(vm, "b").IsChecked = false;
                     GetItem(vm, "d").IsChecked = true;
                     GetItem(vm, "f").IsChecked = true;
@@ -419,7 +552,7 @@ namespace ProjectFilter.UI {
         public class SearchTextProperty {
 
             [Fact]
-            public void WaitsBeforeFilteringWhenTextIsNotEmpty() {
+            public async Task WaitsBeforeFilteringWhenTextIsNotEmpty() {
                 IEnumerable<IHierarchyNode> hierarchy;
                 Mock<IDebouncer> debouncer;
 
@@ -438,6 +571,8 @@ namespace ProjectFilter.UI {
                 debouncer = new Mock<IDebouncer>();
 
                 using (var vm = CreateViewModel(hierarchy, debouncer: debouncer.Object)) {
+                    await vm.OnLoadedAsync();
+
                     debouncer.Verify((x) => x.Start(), Times.Never);
 
                     vm.SearchText = "d";
@@ -458,7 +593,7 @@ namespace ProjectFilter.UI {
 
 
             [Fact]
-            public void CancelsDebouncerWhenTextIsEmpty() {
+            public async Task CancelsDebouncerWhenTextIsEmpty() {
                 IEnumerable<IHierarchyNode> hierarchy;
                 Mock<IDebouncer> debouncer;
 
@@ -477,6 +612,8 @@ namespace ProjectFilter.UI {
                 debouncer = new Mock<IDebouncer>();
 
                 using (var vm = CreateViewModel(hierarchy, debouncer: debouncer.Object)) {
+                    await vm.OnLoadedAsync();
+
                     debouncer.Verify((x) => x.Start(), Times.Never);
 
                     vm.SearchText = "d";
@@ -491,7 +628,7 @@ namespace ProjectFilter.UI {
 
 
             [Fact]
-            public void ClearsFilterImmediatelyWhenTextIsEmpty() {
+            public async Task ClearsFilterImmediatelyWhenTextIsEmpty() {
                 IEnumerable<IHierarchyNode> hierarchy;
                 Mock<IDebouncer> debouncer;
 
@@ -510,6 +647,8 @@ namespace ProjectFilter.UI {
                 debouncer = new Mock<IDebouncer>();
 
                 using (var vm = CreateViewModel(hierarchy, debouncer: debouncer.Object)) {
+                    await vm.OnLoadedAsync();
+
                     vm.SearchText = "d";
                     debouncer.Raise((x) => x.Stable += null, EventArgs.Empty);
 
@@ -548,11 +687,16 @@ namespace ProjectFilter.UI {
 
 
         private static FilterDialogViewModel CreateViewModel(IEnumerable<IHierarchyNode> hierarchy, IDebouncer? debouncer = null) {
+            return CreateViewModel(() => Task.FromResult(hierarchy), debouncer);
+        }
+
+
+        private static FilterDialogViewModel CreateViewModel(Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory, IDebouncer? debouncer = null) {
             if (debouncer is null) {
                 debouncer = Mock.Of<IDebouncer>();
             }
 
-            return new FilterDialogViewModel(hierarchy, (x) => debouncer, Factory.CreateSearchQuery);
+            return new FilterDialogViewModel(hierarchyFactory, (x) => debouncer, Factory.CreateSearchQuery);
         }
 
     }

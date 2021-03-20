@@ -1,4 +1,5 @@
 using Microsoft.VisualStudio.PlatformUI;
+using Microsoft.VisualStudio.Shell;
 
 
 namespace ProjectFilter.UI {
@@ -7,6 +8,11 @@ namespace ProjectFilter.UI {
 
         public FilterDialog() {
             InitializeComponent();
+        }
+
+
+        private void OnLoaded(object sender, System.Windows.RoutedEventArgs e) {
+            ((FilterDialogViewModel)DataContext).OnLoadedAsync().FileAndForget(nameof(FilterDialog), faultDescription: nameof(OnLoaded));
         }
 
     }
