@@ -19,7 +19,7 @@ jobs:
             - name: Setup MSBuild
               uses: microsoft/setup-msbuild@v1.0.2
               with:
-                  vs-version: "[16.8,16.9)"
+                  vs-version: "[16.9,16.10)"
 
             - name: Build
               run: msbuild /t:Rebuild /Restore /v:Minimal
