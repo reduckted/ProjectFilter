@@ -54,7 +54,7 @@
                 Foreground="{DynamicResource {x:Static platform:ThemedDialogColors.HeaderTextBrushKey}}"
                 />
         </Grid>
-        
+
         <Grid Visibility="{Binding LoadedVisibility}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -130,6 +130,7 @@
                     Style="{StaticResource SearchTextBoxStyle}"
                     properties:Watermark.Text="Filter projects..."
                     properties:ClearOnEscape.Enabled="True"
+                    properties:FocusWhenVisible.Enabled="True"
                     />
             </StackPanel>
 
