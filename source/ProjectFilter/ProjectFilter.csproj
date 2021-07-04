@@ -7,7 +7,7 @@
         <RootNamespace>ProjectFilter</RootNamespace>
         <UseWPF>true</UseWPF>
         <Nullable>enable</Nullable>
-        <LangVersion>8.0</LangVersion>
+        <LangVersion>9.0</LangVersion>
         <AnalysisMode>AllEnabledByDefault</AnalysisMode>
     </PropertyGroup>
 

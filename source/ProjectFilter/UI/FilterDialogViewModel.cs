@@ -159,14 +159,14 @@ namespace ProjectFilter.UI {
 
 
         private void CollapseAll(HierarchyTreeViewItem? root) {
-            if (root != null) {
+            if (root is not null) {
                 // If the given item doesn't have any children to collapse,
                 // then step up to the parent and collapse it.
                 if (root.Children.Count == 0) {
                     root = root.Parent;
                 }
 
-                if (root != null) {
+                if (root is not null) {
                     SetIsExpandedRecursively(new[] { root }, false);
                 }
 
@@ -177,7 +177,7 @@ namespace ProjectFilter.UI {
 
 
         private void ExpandAll(HierarchyTreeViewItem? root) {
-            if (root != null) {
+            if (root is not null) {
                 SetIsExpandedRecursively(new[] { root }, true);
             } else {
                 SetIsExpandedRecursively(Items, true);
@@ -242,7 +242,7 @@ namespace ProjectFilter.UI {
                 query = null;
             }
 
-            if (query != null) {
+            if (query is not null) {
                 Items.Filter(new HierarchySearchMatchEvaluator(query));
             } else {
                 Items.ClearFilter();

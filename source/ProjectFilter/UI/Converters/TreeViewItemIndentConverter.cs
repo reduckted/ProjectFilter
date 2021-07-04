@@ -21,10 +21,10 @@ namespace ProjectFilter.UI.Converters {
             item = value as TreeViewItem;
             depth = 0;
 
-            while (item != null) {
+            while (item is not null) {
                 item = GetParentItem(item);
 
-                if (item != null) {
+                if (item is not null) {
                     depth += 1;
                 }
             }

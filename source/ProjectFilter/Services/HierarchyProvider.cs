@@ -166,7 +166,7 @@ namespace ProjectFilter.Services {
 
                 persist = hierarchy as IPersist;
 
-                if (persist != null) {
+                if (persist is not null) {
                     if (ErrorHandler.Succeeded(persist.GetClassID(out Guid guid))) {
                         return guid == VSConstants.CLSID.SolutionFolderProject_guid;
                     }
@@ -189,7 +189,7 @@ namespace ProjectFilter.Services {
                 (int)__VSHPROPID.VSHPROPID_ParentHierarchy
             );
 
-            if (parentHierarchy != null) {
+            if (parentHierarchy is not null) {
                 if (TryGetIdentifier(solution, parentHierarchy, out Guid parentIdentifier)) {
                     return parentIdentifier;
                 }

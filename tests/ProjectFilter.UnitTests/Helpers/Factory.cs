@@ -89,7 +89,7 @@ namespace ProjectFilter.Helpers {
 
             item = factory(element, parent);
 
-            if (parent != null) {
+            if (parent is not null) {
                 parent.Children.Add(item);
                 item.Parent = parent;
             }
@@ -183,7 +183,7 @@ namespace ProjectFilter.Helpers {
 
             identifier = element.Attribute("guid")?.Value;
 
-            return identifier != null ? new Guid(identifier) : Guid.NewGuid();
+            return identifier is not null ? new Guid(identifier) : Guid.NewGuid();
         }
 
 

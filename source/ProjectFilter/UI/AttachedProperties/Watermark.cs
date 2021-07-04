@@ -59,13 +59,13 @@ namespace ProjectFilter.UI.AttachedProperties {
 
             box = d as TextBox;
 
-            if (box != null) {
-                if (e.OldValue != null) {
+            if (box is not null) {
+                if (e.OldValue is not null) {
                     box.TextChanged -= OnTextBoxTextChanged;
                     box.ClearValue(HidePropertyKey);
                 }
 
-                if (e.NewValue != null) {
+                if (e.NewValue is not null) {
                     box.TextChanged += OnTextBoxTextChanged;
                     UpdateHideProperty(box);
                 }

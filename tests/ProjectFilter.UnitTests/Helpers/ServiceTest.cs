@@ -20,11 +20,10 @@ namespace ProjectFilter.Helpers {
     [Collection(VisualStudioTests.Name)]
     public class ServiceTest<T> : IAsyncServiceProvider {
 
-        [SuppressMessage("Reliability", "VSSDK005:Avoid instantiating JoinableTaskContext", Justification = "Testing.")]
-        private static readonly JoinableTaskContext Context = new JoinableTaskContext();
+        private static readonly JoinableTaskContext Context = new();
 
 
-        private readonly Dictionary<string, object> _services = new Dictionary<string, object>();
+        private readonly Dictionary<string, object> _services = new();
 
 
         static ServiceTest() {

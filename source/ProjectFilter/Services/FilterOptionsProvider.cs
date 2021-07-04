@@ -43,7 +43,7 @@ namespace ProjectFilter.Services {
                     DataContext = vm
                 };
 
-                if (dialog.ShowModal().GetValueOrDefault() && (vm.Result != null)) {
+                if (dialog.ShowModal().GetValueOrDefault() && (vm.Result is not null)) {
                     settings.LoadProjectDependencies = vm.Result.LoadProjectDependencies;
 
                     return vm.Result;

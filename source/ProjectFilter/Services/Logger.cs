@@ -39,7 +39,7 @@ namespace ProjectFilter.Services {
                     }
                 }
 
-                if (_pane != null) {
+                if (_pane is not null) {
                     _pane.OutputStringThreadSafe($"{DateTime.Now:HH:mm:ss} - {message}{Environment.NewLine}");
                 }
 

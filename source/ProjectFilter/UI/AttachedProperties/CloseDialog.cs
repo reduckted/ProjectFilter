@@ -38,7 +38,7 @@ namespace ProjectFilter.UI.AttachedProperties {
 
             dialog = d as Window;
 
-            if (dialog != null) {
+            if (dialog is not null) {
                 // Set the dialog result to true when the trigger value 
                 // changes. The property is initially null, so as soon as 
                 // it's set to a non-null value, the dialog should close.

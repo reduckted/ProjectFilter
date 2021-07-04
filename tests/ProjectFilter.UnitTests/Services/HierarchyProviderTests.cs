@@ -224,7 +224,7 @@ namespace ProjectFilter.Services {
                             .Where((x) => x.Hierarchy == hierarchy)
                             .FirstOrDefault();
 
-                        if (data != null) {
+                        if (data is not null) {
                             if (data.Icons.TryGetValue(((VSConstants.VSITEMID)itemID, (__VSHIERARCHYIMAGEASPECT)aspect), out ImageMoniker icon)) {
                                 return icon;
                             }

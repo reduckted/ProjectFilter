@@ -234,7 +234,7 @@ namespace ProjectFilter.Services {
                     state.OnProjectLoaded(identifier);
                 }
 
-                if (dependencies != null) {
+                if (dependencies is not null) {
                     foreach (var dependency in dependencies) {
                         if (state.IsCancellationRequested) {
                             break;
@@ -365,7 +365,7 @@ namespace ProjectFilter.Services {
 
             command = _dte.Commands.Item(commandName);
 
-            if (command != null) {
+            if (command is not null) {
                 if (command.IsAvailable) {
                     _dte.ExecuteCommand(commandName);
                 } else {
@@ -400,7 +400,7 @@ namespace ProjectFilter.Services {
                 do {
                     segments.Push(node.Name);
                     node = node.Collection?.Parent as UIHierarchyItem;
-                } while (node != null);
+                } while (node is not null);
 
                 output.Add(string.Join("\\", segments));
             }
@@ -419,7 +419,7 @@ namespace ProjectFilter.Services {
 
                     item = _dte.ToolWindows.SolutionExplorer.GetItem(path);
 
-                    if (item != null) {
+                    if (item is not null) {
                         item.Select(vsUISelectionType.vsUISelectionTypeSelect);
 
                         // There doesn't seem to be a way to programatically select multiple
@@ -522,7 +522,7 @@ namespace ProjectFilter.Services {
         private static string GetName(IVsHierarchy? hierarchy) {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            if (hierarchy != null) {
+            if (hierarchy is not null) {
                 int result;
 
 

@@ -91,7 +91,7 @@ namespace ProjectFilter.UI.AttachedProperties {
 
             element = d as UIElement;
 
-            if (element != null) {
+            if (element is not null) {
                 if ((bool)e.OldValue) {
                     element.KeyDown -= OnElementKeyDown;
                     element.KeyUp -= OnElementKeyUp;

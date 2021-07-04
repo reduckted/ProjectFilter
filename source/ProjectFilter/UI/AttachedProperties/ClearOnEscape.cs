@@ -41,7 +41,7 @@ namespace ProjectFilter.UI.AttachedProperties {
 
             box = d as TextBox;
 
-            if (box != null) {
+            if (box is not null) {
                 if ((bool)e.OldValue) {
                     box.KeyDown -= OnTextBoxKeyDown;
                 }

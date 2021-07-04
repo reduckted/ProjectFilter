@@ -39,7 +39,7 @@ namespace ProjectFilter.UI.AttachedProperties {
 
             target = d as UIElement;
 
-            if (target != null) {
+            if (target is not null) {
                 if ((bool)e.OldValue) {
                     target.IsVisibleChanged -= OnIsVisibleChanged;
                 }
@@ -57,7 +57,7 @@ namespace ProjectFilter.UI.AttachedProperties {
 
             target = sender as UIElement;
 
-            if (target != null && target.IsVisible) {
+            if (target is not null && target.IsVisible) {
                 try {
                     target.Focus();
                 } catch (Exception ex) when (!ErrorHandler.IsCriticalException(ex)) {

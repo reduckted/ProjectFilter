@@ -90,7 +90,7 @@ namespace ProjectFilter {
 
 
         private async Task DisposeAsync() {
-            if (_solution != null && _solutionEventsCookie != 0) {
+            if (_solution is not null && _solutionEventsCookie != 0) {
                 await JoinableTaskFactory.SwitchToMainThreadAsync();
                 _solution.UnadviseSolutionEvents(_solutionEventsCookie);
                 _solutionEventsCookie = 0;

@@ -20,15 +20,15 @@ namespace ProjectFilter.Services {
 
     public static class ProjectFilterTests {
 
-        private static readonly Guid ProjectAlpha = new Guid("1959e9e4-da3c-4532-86c1-035615646892");
-        private static readonly Guid ProjectBeta = new Guid("20bb948d-36ad-4814-9171-62c4163e750b");
-        private static readonly Guid ProjectGamma = new Guid("33049b07-b3f7-4cc3-aa03-040307074b97");
-        private static readonly Guid ProjectDelta = new Guid("4826a53b-4ea3-4fc6-ad1d-465614ed5137");
+        private static readonly Guid ProjectAlpha = new("1959e9e4-da3c-4532-86c1-035615646892");
+        private static readonly Guid ProjectBeta = new("20bb948d-36ad-4814-9171-62c4163e750b");
+        private static readonly Guid ProjectGamma = new("33049b07-b3f7-4cc3-aa03-040307074b97");
+        private static readonly Guid ProjectDelta = new("4826a53b-4ea3-4fc6-ad1d-465614ed5137");
 
 
         public class ApplyMethod : ServiceTest<FilterService> {
 
-            private readonly Dictionary<Guid, List<string>> _dependencies = new Dictionary<Guid, List<string>>();
+            private readonly Dictionary<Guid, List<string>> _dependencies = new();
             private TestHierarchyItem? _root;
 
 
@@ -396,7 +396,7 @@ namespace ProjectFilter.Services {
 
                 dependencies = element.Attribute("dependsOn")?.Value;
 
-                if (dependencies != null) {
+                if (dependencies is not null) {
                     _dependencies[data.Identifier] = dependencies.Split(',').ToList();
                 }
 
@@ -495,8 +495,8 @@ namespace ProjectFilter.Services {
                     return item
                         .Children
                         .Cast<TestHierarchyItem>()
-                        .Select((x) => GetItem(x, parts[0])).Where((x) => x != null)
-                        .FirstOrDefault();
+                        .Select((x) => GetItem(x, parts[0]))
+                        .FirstOrDefault((x) => x is not null);
                 }
 
                 return null!;
@@ -600,7 +600,7 @@ namespace ProjectFilter.Services {
 
             private class TestUIItems : UIHierarchyItems {
 
-                private readonly List<UIHierarchyItem> _items = new List<UIHierarchyItem>();
+                private readonly List<UIHierarchyItem> _items = new();
 
                 public TestUIItems(TestUIItem? parent) {
                     Parent = parent;

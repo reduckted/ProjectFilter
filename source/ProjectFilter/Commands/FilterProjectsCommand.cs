@@ -20,7 +20,7 @@ namespace ProjectFilter.Commands {
 
             options = await optionsProvider.GetOptionsAsync();
 
-            if (options != null) {
+            if (options is not null) {
                 await filterService.ApplyAsync(options);
             }
         }
