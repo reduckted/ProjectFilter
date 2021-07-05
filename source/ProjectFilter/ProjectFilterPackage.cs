@@ -58,7 +58,7 @@ namespace ProjectFilter {
             AddService<FilterOptionsProvider, IFilterOptionsProvider>(new FilterOptionsProvider(this));
             AddService<FilterService, IFilterService>(new FilterService(this));
             AddService<HierarchyProvider, IHierarchyProvider>(new HierarchyProvider(this));
-            AddService<Logger, ILogger>(new Logger(this));
+            AddService<Logger, ILogger>(new Logger());
             AddService<WaitDialogFactory, IWaitDialogFactory>(new WaitDialogFactory(this));
         }
 
