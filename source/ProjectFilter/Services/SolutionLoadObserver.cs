@@ -1,6 +1,6 @@
+using Community.VisualStudio.Toolkit;
 using EnvDTE;
 using EnvDTE80;
-using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System.Threading;
@@ -10,15 +10,9 @@ using Task = System.Threading.Tasks.Task;
 
 namespace ProjectFilter.Services {
 
-    public class SolutionLoadObserver : IAsyncInitializable, IVsSolutionEvents {
+    public class SolutionLoadObserver : IAsyncInitializable {
 
         private readonly IAsyncServiceProvider _provider;
-
-
-#nullable disable
-        private IFilterService _filterService;
-        private DTE2 _dte;
-#nullable restore
 
 
         public SolutionLoadObserver(IAsyncServiceProvider provider) {
@@ -29,75 +23,45 @@ namespace ProjectFilter.Services {
         public async Task InitializeAsync(CancellationToken cancellationToken) {
             await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
-            _filterService = await _provider.GetServiceAsync<IFilterService, IFilterService>();
-            _dte = await _provider.GetServiceAsync<DTE, DTE2>();
+            VS.Events.SolutionEvents.OnAfterOpenSolution += OnAfterOpenSolution;
+
+            // If a solution is already open, then we need to tell the solution
+            // observer to do whatever it does after a solution is opened.
+            if ((await VS.Services.GetSolutionAsync()).IsOpen()) {
+                await HideUnloadedProjectsInSolutionExplorerAsync();
+            }
         }
 
 
-        public int OnAfterOpenSolution(object pUnkReserved, int fNewSolution) {
-            HideUnloadedProjectsInSolutionExplorerAsync().FileAndForget(nameof(SolutionLoadObserver));
-            return VSConstants.S_OK;
+        private void OnAfterOpenSolution(SolutionItem? item) {
+            HideUnloadedProjectsInSolutionExplorerAsync().FireAndForget();
         }
 
 
         private async Task HideUnloadedProjectsInSolutionExplorerAsync() {
+            DTE2? dte;
+            IFilterService filterService;
+
+
+            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            dte = await VS.GetServiceAsync<DTE, DTE2>();
+
+            if (dte is null) {
+                return;
+            }
+
+            filterService = await _provider.GetServiceAsync<IFilterService, IFilterService>();
+
             // The solution has opened, but Solution Explorer may not have been populated
             // yet, so keep looping until there is something in Solution Explorer.
             while (true) {
-                await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
-                if (_dte.ToolWindows.SolutionExplorer.UIHierarchyItems.Count > 0) {
-                    await _filterService.ShowOnlyLoadedProjectsAsync();
+                if (dte.ToolWindows.SolutionExplorer.UIHierarchyItems.Count > 0) {
+                    await filterService.ShowOnlyLoadedProjectsAsync();
                     return;
                 }
 
                 await Task.Delay(500);
             }
-        }
-
-
-        public int OnAfterOpenProject(IVsHierarchy pHierarchy, int fAdded) {
-            return VSConstants.S_OK;
-        }
-
-
-        public int OnQueryCloseProject(IVsHierarchy pHierarchy, int fRemoving, ref int pfCancel) {
-            return VSConstants.S_OK;
-        }
-
-
-        public int OnBeforeCloseProject(IVsHierarchy pHierarchy, int fRemoved) {
-            return VSConstants.S_OK;
-        }
-
-
-        public int OnAfterLoadProject(IVsHierarchy pStubHierarchy, IVsHierarchy pRealHierarchy) {
-            return VSConstants.S_OK;
-        }
-
-
-        public int OnQueryUnloadProject(IVsHierarchy pRealHierarchy, ref int pfCancel) {
-            return VSConstants.S_OK;
-        }
-
-
-        public int OnBeforeUnloadProject(IVsHierarchy pRealHierarchy, IVsHierarchy pStubHierarchy) {
-            return VSConstants.S_OK;
-        }
-
-
-        public int OnQueryCloseSolution(object pUnkReserved, ref int pfCancel) {
-            return VSConstants.S_OK;
-        }
-
-
-        public int OnBeforeCloseSolution(object pUnkReserved) {
-            return VSConstants.S_OK;
-        }
-
-
-        public int OnAfterCloseSolution(object pUnkReserved) {
-            return VSConstants.S_OK;
         }
 
     }
