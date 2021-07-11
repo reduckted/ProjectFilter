@@ -1,7 +1,7 @@
+using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System.Threading.Tasks;
-using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
 
 
 namespace ProjectFilter.Services {
@@ -11,21 +11,13 @@ namespace ProjectFilter.Services {
     /// </summary>
     public partial class WaitDialogFactory : IWaitDialogFactory {
 
-        private readonly IAsyncServiceProvider _provider;
-
-
-        public WaitDialogFactory(IAsyncServiceProvider provider) {
-            _provider = provider;
-        }
-
-
         public async Task<IWaitDialog> CreateAsync(string title, ThreadedWaitDialogProgressData progress) {
             IVsThreadedWaitDialogFactory waitDialogFactory;
 
 
             await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            waitDialogFactory = await _provider.GetServiceAsync<SVsThreadedWaitDialogFactory, IVsThreadedWaitDialogFactory>();
+            waitDialogFactory = (IVsThreadedWaitDialogFactory)await VS.Services.GetThreadedWaitDialogAsync();
 
             return new Dialog(waitDialogFactory.StartWaitDialog(title, progress));
         }

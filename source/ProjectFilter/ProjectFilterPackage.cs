@@ -43,7 +43,7 @@ namespace ProjectFilter {
             AddService<FilterService, IFilterService>(new FilterService(this));
             AddService<HierarchyProvider, IHierarchyProvider>(new HierarchyProvider(this));
             AddService<Logger, ILogger>(new Logger());
-            AddService<WaitDialogFactory, IWaitDialogFactory>(new WaitDialogFactory(this));
+            AddService<WaitDialogFactory, IWaitDialogFactory>(new WaitDialogFactory());
         }
 
 
