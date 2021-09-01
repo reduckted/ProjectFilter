@@ -37,6 +37,7 @@ namespace ProjectFilter.Services {
                 FilterDialog dialog;
 
 
+                await settings.LoadAsync();
                 vm.LoadProjectDependencies = settings.LoadProjectDependencies;
 
                 dialog = new FilterDialog {
@@ -45,6 +46,7 @@ namespace ProjectFilter.Services {
 
                 if (dialog.ShowModal().GetValueOrDefault() && (vm.Result is not null)) {
                     settings.LoadProjectDependencies = vm.Result.LoadProjectDependencies;
+                    await settings.SaveAsync();
 
                     return vm.Result;
                 }

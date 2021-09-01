@@ -38,7 +38,7 @@ namespace ProjectFilter {
 
 
         private void AddServices() {
-            AddService<ExtensionSettings, IExtensionSettings>(new ExtensionSettings(this));
+            AddService(typeof(IExtensionSettings), async (container, cancellation, type) => await ExtensionSettings.CreateAsync());
             AddService<FilterOptionsProvider, IFilterOptionsProvider>(new FilterOptionsProvider(this));
             AddService<FilterService, IFilterService>(new FilterService(this));
             AddService<HierarchyProvider, IHierarchyProvider>(new HierarchyProvider(this));
