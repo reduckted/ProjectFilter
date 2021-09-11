@@ -41,7 +41,7 @@ namespace ProjectFilter {
             AddService(typeof(IExtensionSettings), async (container, cancellation, type) => await ExtensionSettings.CreateAsync());
             AddService<FilterOptionsProvider, IFilterOptionsProvider>(new FilterOptionsProvider(this));
             AddService<FilterService, IFilterService>(new FilterService(this));
-            AddService<HierarchyProvider, IHierarchyProvider>(new HierarchyProvider(this));
+            AddService<HierarchyProvider, IHierarchyProvider>(new HierarchyProvider());
             AddService<Logger, ILogger>(new Logger());
             AddService<WaitDialogFactory, IWaitDialogFactory>(new WaitDialogFactory());
         }
