@@ -1,24 +1,16 @@
+using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.PlatformUI;
-using Microsoft.VisualStudio.Shell;
 using ProjectFilter.UI;
 using ProjectFilter.UI.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
+
 
 
 namespace ProjectFilter.Services {
 
     public class FilterOptionsProvider : IFilterOptionsProvider {
-
-        private readonly IAsyncServiceProvider _provider;
-
-
-        public FilterOptionsProvider(IAsyncServiceProvider provider) {
-            _provider = provider;
-        }
-
 
         public async Task<FilterOptions?> GetOptionsAsync() {
             IHierarchyProvider hierarchyProvider;
@@ -28,8 +20,8 @@ namespace ProjectFilter.Services {
 
             await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            hierarchyProvider = await _provider.GetServiceAsync<IHierarchyProvider, IHierarchyProvider>();
-            settings = await _provider.GetServiceAsync<IExtensionSettings, IExtensionSettings>();
+            hierarchyProvider = await VS.GetRequiredServiceAsync<IHierarchyProvider, IHierarchyProvider>();
+            settings = await VS.GetRequiredServiceAsync<IExtensionSettings, IExtensionSettings>();
 
             hierarchyFactory = async () => await hierarchyProvider.GetHierarchyAsync();
 
