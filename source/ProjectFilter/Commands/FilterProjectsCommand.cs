@@ -1,36 +1,22 @@
-using System.ComponentModel.Design;
+using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Shell;
 using ProjectFilter.Services;
-using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
 using Task = System.Threading.Tasks.Task;
 
 
 namespace ProjectFilter.Commands {
 
-    public sealed class FilterProjectsCommand : MenuCommandBase {
+    [Command(PackageIds.FilterProjectsCommand)]
+    public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
 
-        public FilterProjectsCommand(IAsyncServiceProvider provider) : base(provider) { }
-
-
-        protected override void Initialize(IMenuCommandService commandService) {
-            commandService.AddCommand(
-                new OleMenuCommand(
-                    Execute,
-                    new CommandID(PackageGuids.ProjectFilterPackageCommandSet, PackageIds.FilterProjectsCommand),
-                    false
-                )
-            );
-        }
-
-
-        public override async Task ExecuteAsync() {
+        protected async override Task ExecuteAsync(OleMenuCmdEventArgs e) {
             IFilterOptionsProvider optionsProvider;
             IFilterService filterService;
             FilterOptions? options;
 
 
-            optionsProvider = await Provider.GetServiceAsync<IFilterOptionsProvider, IFilterOptionsProvider>();
-            filterService = await Provider.GetServiceAsync<IFilterService, IFilterService>();
+            optionsProvider = await VS.GetRequiredServiceAsync<IFilterOptionsProvider, IFilterOptionsProvider>();
+            filterService = await VS.GetRequiredServiceAsync<IFilterService, IFilterService>();
 
             options = await optionsProvider.GetOptionsAsync();
 

@@ -7,7 +7,7 @@
 
     <Commands package="ProjectFilterPackage">
         <Buttons>
-            <Button guid="ProjectFilterPackageCommandSet" id="FilterProjectsCommand" priority="0xf000" type="Button">
+            <Button guid="ProjectFilterPackage" id="FilterProjectsCommand" priority="0xf000" type="Button">
                 <Parent guid="guidSHLMainMenu" id="IDG_VS_TOOLBAR_PROJWIN_NAVIGATION"/>
                 <Icon guid="ImageCatalogGuid" id="Filter"/>
                 <CommandFlag>IconIsMoniker</CommandFlag>
@@ -24,13 +24,11 @@
     </Commands>
 
     <VisibilityConstraints>
-        <VisibilityItem guid="ProjectFilterPackageCommandSet" id="FilterProjectsCommand" context="UICONTEXT_SolutionExistsAndFullyLoaded"/>
+        <VisibilityItem guid="ProjectFilterPackage" id="FilterProjectsCommand" context="UICONTEXT_SolutionExistsAndFullyLoaded"/>
     </VisibilityConstraints>
 
     <Symbols>
-        <GuidSymbol name="ProjectFilterPackage" value="{ef4f8800-6a91-41d3-9c6b-44d13fc9c487}" />
-
-        <GuidSymbol name="ProjectFilterPackageCommandSet" value="{39bac074-cfa1-457b-9b0b-9c2711705fc7}">
+        <GuidSymbol name="ProjectFilterPackage" value="{ef4f8800-6a91-41d3-9c6b-44d13fc9c487}">
             <IDSymbol name="FilterProjectsCommand" value="0x0001" />
         </GuidSymbol>
 

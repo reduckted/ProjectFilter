@@ -1,8 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -23,9 +23,8 @@ namespace ProjectFilter {
     [ProvideService(typeof(IHierarchyProvider), IsAsyncQueryable = true)]
     [ProvideService(typeof(ILogger), IsAsyncQueryable = true)]
     [ProvideService(typeof(IWaitDialogFactory), IsAsyncQueryable = true)]
-    public sealed class ProjectFilterPackage : AsyncPackage {
+    public sealed class ProjectFilterPackage : ToolkitPackage {
 
-        private readonly List<MenuCommandBase> _commands = new List<MenuCommandBase>();
         private IVsSolution? _solution;
         private SolutionLoadObserver? _solutionLoadObserver;
         private uint _solutionEventsCookie;
@@ -35,26 +34,21 @@ namespace ProjectFilter {
             await base.InitializeAsync(cancellationToken, progress);
 
             AddServices();
-
-            await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             await AddCommandsAsync();
 
-            _solution = await this.GetServiceAsync<SVsSolution, IVsSolution>();
+            await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            _solution = await VS.Services.GetSolutionAsync();
 
-            if (_solution != null) {
-                _solutionLoadObserver = new SolutionLoadObserver(this);
-                await _solutionLoadObserver.InitializeAsync(cancellationToken);
+            _solutionLoadObserver = new SolutionLoadObserver(this);
+            await _solutionLoadObserver.InitializeAsync(cancellationToken);
 
-                await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-                _solution.AdviseSolutionEvents(_solutionLoadObserver, out _solutionEventsCookie);
+            await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            _solution.AdviseSolutionEvents(_solutionLoadObserver, out _solutionEventsCookie);
 
-                // If a solution is already open, then we need to tell the
-                // solution observer to do whatever it does after a solution is opened.
-                if (ErrorHandler.Succeeded(_solution.GetProperty((int)__VSPROPID.VSPROPID_IsSolutionOpen, out object value))) {
-                    if (value is bool isOpen && isOpen) {
-                        _solutionLoadObserver.OnAfterOpenSolution(0, 0);
-                    }
-                }
+            // If a solution is already open, then we need to tell the solution
+            // observer to do whatever it does after a solution is opened.
+            if (_solution.IsOpen()) {
+                _solutionLoadObserver.OnAfterOpenSolution(0, 0);
             }
         }
 
@@ -84,13 +78,7 @@ namespace ProjectFilter {
 
 
         private async Task AddCommandsAsync() {
-            await AddCommandAsync(new FilterProjectsCommand(this));
-        }
-
-
-        private async Task AddCommandAsync<T>(T command) where T : MenuCommandBase {
-            await command.InitializeAsync(DisposalToken);
-            _commands.Add(command);
+            await FilterProjectsCommand.InitializeAsync(this);
         }
 
 
