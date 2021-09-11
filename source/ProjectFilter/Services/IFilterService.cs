@@ -7,9 +7,6 @@ namespace ProjectFilter.Services {
 
         Task ApplyAsync(FilterOptions options);
 
-
-        Task ShowOnlyLoadedProjectsAsync();
-
     }
 
 }

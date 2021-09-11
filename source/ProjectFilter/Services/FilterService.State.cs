@@ -1,4 +1,5 @@
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,10 +17,10 @@ namespace ProjectFilter.Services {
             private readonly HashSet<Guid> _unloadedProjects;
             private ThreadedWaitDialogProgressData _currentProgress;
 
-
-            public State(IWaitDialog waitDialog, ThreadedWaitDialogProgressData initialProgress) {
+            public State(IWaitDialog waitDialog, ThreadedWaitDialogProgressData initialProgress, IVsSolution4 solution) {
                 _waitDialog = waitDialog;
                 _currentProgress = initialProgress;
+                Solution = solution;
 
                 _projectsToLoad = new HashSet<Guid>();
                 _loadedProjects = new HashSet<Guid>();
@@ -30,6 +31,9 @@ namespace ProjectFilter.Services {
                 ProjectsVisitedWhileLoading = new HashSet<Guid>();
                 RequiresProjectDependencyCalculation = true;
             }
+
+
+            public IVsSolution4 Solution { get; }
 
 
             public void AddProjectToLoad(Guid project) {

@@ -1,27 +1,16 @@
 using Community.VisualStudio.Toolkit;
-using EnvDTE;
-using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System.Threading;
-using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
 using Task = System.Threading.Tasks.Task;
 
 
 namespace ProjectFilter.Services {
 
-    public class SolutionLoadObserver : IAsyncInitializable {
+    public static class SolutionLoadObserver {
 
-        private readonly IAsyncServiceProvider _provider;
-
-
-        public SolutionLoadObserver(IAsyncServiceProvider provider) {
-            _provider = provider;
-        }
-
-
-        public async Task InitializeAsync(CancellationToken cancellationToken) {
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+        public static async Task InitializeAsync() {
+            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             VS.Events.SolutionEvents.OnAfterOpenSolution += OnAfterOpenSolution;
 
@@ -33,35 +22,40 @@ namespace ProjectFilter.Services {
         }
 
 
-        private void OnAfterOpenSolution(SolutionItem? item) {
+        private static void OnAfterOpenSolution(SolutionItem? item) {
             HideUnloadedProjectsInSolutionExplorerAsync().FireAndForget();
         }
 
 
-        private async Task HideUnloadedProjectsInSolutionExplorerAsync() {
-            DTE2? dte;
-            IFilterService filterService;
+        private static async Task HideUnloadedProjectsInSolutionExplorerAsync() {
+            ISolutionExplorer solutionExplorer;
 
 
             await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            dte = await VS.GetServiceAsync<DTE, DTE2>();
 
-            if (dte is null) {
-                return;
-            }
-
-            filterService = await _provider.GetServiceAsync<IFilterService, IFilterService>();
+            solutionExplorer = await VS.GetRequiredServiceAsync<ISolutionExplorer, ISolutionExplorer>();
 
             // The solution has opened, but Solution Explorer may not have been populated
             // yet, so keep looping until there is something in Solution Explorer.
             while (true) {
-                if (dte.ToolWindows.SolutionExplorer.UIHierarchyItems.Count > 0) {
-                    await filterService.ShowOnlyLoadedProjectsAsync();
-                    return;
-                }
+                bool? empty;
 
-                await Task.Delay(500);
+
+                empty = await solutionExplorer.IsEmptyAsync();
+
+                // If we know for sure that Solution Explorer is empty, then wait
+                // a bit and try again. If we know it's not empty then we can hide
+                // the unloaded projects. If we don't know if it's empty or not, then
+                // we'll still try to hide the unloaded projects because if we don't now,
+                // then we may never know, and then we'd end up looping here forever.
+                if (empty.GetValueOrDefault()) {
+                    await Task.Delay(1000);
+                } else {
+                    break;
+                }
             }
+
+            await solutionExplorer.HideUnloadedProjectsAsync();
         }
 
     }

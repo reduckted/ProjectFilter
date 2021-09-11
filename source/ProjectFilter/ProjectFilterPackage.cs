@@ -21,48 +21,32 @@ namespace ProjectFilter {
     [ProvideService(typeof(IHierarchyProvider), IsAsyncQueryable = true)]
     [ProvideService(typeof(ILogger), IsAsyncQueryable = true)]
     [ProvideService(typeof(IWaitDialogFactory), IsAsyncQueryable = true)]
+    [ProvideService(typeof(ISolutionExplorer), IsAsyncQueryable = true)]
     public sealed class ProjectFilterPackage : ToolkitPackage {
-
-        private SolutionLoadObserver? _solutionLoadObserver;
-
 
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress) {
             await base.InitializeAsync(cancellationToken, progress);
 
-            AddServices();
-            await AddCommandsAsync();
-
-            _solutionLoadObserver = new SolutionLoadObserver(this);
-            await _solutionLoadObserver.InitializeAsync(cancellationToken);
-        }
-
-
-        private void AddServices() {
-            AddService(typeof(IExtensionSettings), async (container, cancellation, type) => await ExtensionSettings.CreateAsync());
+            AddService(typeof(IExtensionSettings), async (container, cancellation, type) => await ExtensionSettings.CreateAsync(), true);
             AddService<FilterOptionsProvider, IFilterOptionsProvider>(new FilterOptionsProvider(this));
-            AddService<FilterService, IFilterService>(new FilterService(this));
+            AddService<FilterService, IFilterService>(new FilterService());
             AddService<HierarchyProvider, IHierarchyProvider>(new HierarchyProvider());
             AddService<Logger, ILogger>(new Logger());
+            AddService<SolutionExplorer, ISolutionExplorer>(new SolutionExplorer());
             AddService<WaitDialogFactory, IWaitDialogFactory>(new WaitDialogFactory());
+
+            await FilterProjectsCommand.InitializeAsync(this);
+
+            await SolutionLoadObserver.InitializeAsync();
         }
 
 
-        private void AddService<TService, TInterface>(TService service) where TService : TInterface {
+        private void AddService<TService, TInterface>(TService service) where TService : class, TInterface {
             AddService(
                 typeof(TInterface),
-                async (container, cancellation, type) => {
-                    if (service is IAsyncInitializable initializable) {
-                        await initializable.InitializeAsync(cancellation);
-                    }
-
-                    return service;
-                }
+                (container, cancellation, type) => Task.FromResult<object>(service),
+                true
             );
-        }
-
-
-        private async Task AddCommandsAsync() {
-            await FilterProjectsCommand.InitializeAsync(this);
         }
 
     }

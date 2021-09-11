@@ -99,7 +99,7 @@ namespace ProjectFilter.Services {
 
             name = HierarchyUtilities.GetHierarchyProperty<string>(
                 hierarchy,
-                (uint)VSConstants.VSITEMID.Root,
+                VSConstants.VSITEMID_ROOT,
                 (int)__VSHPROPID.VSHPROPID_Name
             );
 
@@ -109,13 +109,13 @@ namespace ProjectFilter.Services {
 
             collapsedIcon = imageService.GetImageMonikerForHierarchyItem(
                 hierarchy,
-                (uint)VSConstants.VSITEMID.Root,
+                VSConstants.VSITEMID_ROOT,
                 (int)__VSHIERARCHYIMAGEASPECT.HIA_Icon
             );
 
             expandedIcon = imageService.GetImageMonikerForHierarchyItem(
                 hierarchy,
-                (uint)VSConstants.VSITEMID.Root,
+                VSConstants.VSITEMID_ROOT,
                 (int)__VSHIERARCHYIMAGEASPECT.HIA_OpenFolderIcon
             );
 
@@ -144,7 +144,7 @@ namespace ProjectFilter.Services {
 
             parentHierarchy = HierarchyUtilities.GetHierarchyProperty<IVsHierarchy?>(
                 hierarchy,
-                (uint)VSConstants.VSITEMID.Root,
+                VSConstants.VSITEMID_ROOT,
                 (int)__VSHPROPID.VSHPROPID_ParentHierarchy
             );
 
