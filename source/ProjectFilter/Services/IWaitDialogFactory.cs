@@ -2,11 +2,11 @@ using Microsoft.VisualStudio.Shell;
 using System.Threading.Tasks;
 
 
-namespace ProjectFilter.Services {
+namespace ProjectFilter.Services;
 
-    public interface IWaitDialogFactory {
 
-        Task<IWaitDialog> CreateAsync(string title, ThreadedWaitDialogProgressData progress);
+public interface IWaitDialogFactory {
 
-    }
+    Task<IWaitDialog> CreateAsync(string title, ThreadedWaitDialogProgressData progress);
+
 }

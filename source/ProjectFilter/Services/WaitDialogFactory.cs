@@ -4,24 +4,23 @@ using Microsoft.VisualStudio.Shell.Interop;
 using System.Threading.Tasks;
 
 
-namespace ProjectFilter.Services {
-
-    /// <summary>
-    /// Wrapper around <see cref="IVsThreadedWaitDialogFactory"/> to work around threading problems in unit tests.
-    /// </summary>
-    public partial class WaitDialogFactory : IWaitDialogFactory {
-
-        public async Task<IWaitDialog> CreateAsync(string title, ThreadedWaitDialogProgressData progress) {
-            IVsThreadedWaitDialogFactory waitDialogFactory;
+namespace ProjectFilter.Services;
 
 
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+/// <summary>
+/// Wrapper around <see cref="IVsThreadedWaitDialogFactory"/> to work around threading problems in unit tests.
+/// </summary>
+public partial class WaitDialogFactory : IWaitDialogFactory {
 
-            waitDialogFactory = (IVsThreadedWaitDialogFactory)await VS.Services.GetThreadedWaitDialogAsync();
+    public async Task<IWaitDialog> CreateAsync(string title, ThreadedWaitDialogProgressData progress) {
+        IVsThreadedWaitDialogFactory waitDialogFactory;
 
-            return new Dialog(waitDialogFactory.StartWaitDialog(title, progress));
-        }
 
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+        waitDialogFactory = (IVsThreadedWaitDialogFactory)await VS.Services.GetThreadedWaitDialogAsync();
+
+        return new Dialog(waitDialogFactory.StartWaitDialog(title, progress));
     }
 
 }

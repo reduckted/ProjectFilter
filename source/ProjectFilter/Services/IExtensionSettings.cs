@@ -1,18 +1,17 @@
 using Task = System.Threading.Tasks.Task;
 
 
-namespace ProjectFilter.Services {
-
-    public interface IExtensionSettings {
-
-        bool LoadProjectDependencies { get; set; }
+namespace ProjectFilter.Services;
 
 
-        Task LoadAsync();
+public interface IExtensionSettings {
+
+    bool LoadProjectDependencies { get; set; }
 
 
-        Task SaveAsync();
+    Task LoadAsync();
 
-    }
+
+    Task SaveAsync();
 
 }

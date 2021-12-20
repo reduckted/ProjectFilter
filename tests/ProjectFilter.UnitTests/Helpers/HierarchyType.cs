@@ -1,11 +1,10 @@
-namespace ProjectFilter.Helpers {
+namespace ProjectFilter.Helpers;
 
-    internal enum HierarchyType {
-        Solution,
-        Folder,
-        Project,
-        UnloadedProject,
-        MiscellaneousFiles
-    }
 
+internal enum HierarchyType {
+    Solution,
+    Folder,
+    Project,
+    UnloadedProject,
+    MiscellaneousFiles
 }

@@ -1,18 +1,17 @@
 using System;
 
 
-namespace ProjectFilter.UI.Utilities {
-
-    public interface IDebouncer : IDisposable {
-
-        void Start();
+namespace ProjectFilter.UI.Utilities;
 
 
-        void Cancel();
+public interface IDebouncer : IDisposable {
+
+    void Start();
 
 
-        public event EventHandler Stable;
+    void Cancel();
 
-    }
+
+    public event EventHandler Stable;
 
 }

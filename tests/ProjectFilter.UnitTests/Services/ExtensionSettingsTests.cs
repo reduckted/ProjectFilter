@@ -1,18 +1,16 @@
-using System.Threading.Tasks;
 using Xunit;
 
 
-namespace ProjectFilter.Services {
+namespace ProjectFilter.Services;
 
-    public static class ExtensionSettingsTests {
 
-        public class LoadProjectDependenciesProperty {
+public static class ExtensionSettingsTests {
 
-            [Fact]
-            public void DefaultsToTrue() {
-                Assert.True(new ExtensionSettings().LoadProjectDependencies);
-            }
+    public class LoadProjectDependenciesProperty {
 
+        [Fact]
+        public void DefaultsToTrue() {
+            Assert.True(new ExtensionSettings().LoadProjectDependencies);
         }
 
     }

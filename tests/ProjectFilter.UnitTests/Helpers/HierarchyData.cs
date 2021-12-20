@@ -1,41 +1,40 @@
 using System;
 
 
-namespace ProjectFilter.Helpers {
-
-    internal class HierarchyData {
-
-        public HierarchyData(Guid identifier, string name, Guid? parent) {
-            Identifier = identifier;
-            Name = name;
-            Parent = parent;
-        }
+namespace ProjectFilter.Helpers;
 
 
-        public Guid Identifier { get; }
+internal class HierarchyData {
+
+    public HierarchyData(Guid identifier, string name, Guid? parent) {
+        Identifier = identifier;
+        Name = name;
+        Parent = parent;
+    }
 
 
-        public string Name { get; }
+    public Guid Identifier { get; }
 
 
-        public Guid? Parent { get; }
+    public string Name { get; }
 
 
-        public HierarchyType Type { get; private set; }
+    public Guid? Parent { get; }
 
 
-        public Guid CLSID { get; private set; }
+    public HierarchyType Type { get; private set; }
 
 
-        public bool IsProject { get; private set; }
+    public Guid CLSID { get; private set; }
 
 
-        public void SetType(HierarchyType type, Guid clsid, bool isProject) {
-            Type = type;
-            CLSID = clsid;
-            IsProject = isProject;
-        }
+    public bool IsProject { get; private set; }
 
+
+    public void SetType(HierarchyType type, Guid clsid, bool isProject) {
+        Type = type;
+        CLSID = clsid;
+        IsProject = isProject;
     }
 
 }

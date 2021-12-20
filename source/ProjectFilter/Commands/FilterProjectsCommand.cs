@@ -4,27 +4,26 @@ using ProjectFilter.Services;
 using Task = System.Threading.Tasks.Task;
 
 
-namespace ProjectFilter.Commands {
-
-    [Command(PackageIds.FilterProjectsCommand)]
-    public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
-
-        protected async override Task ExecuteAsync(OleMenuCmdEventArgs e) {
-            IFilterOptionsProvider optionsProvider;
-            IFilterService filterService;
-            FilterOptions? options;
+namespace ProjectFilter.Commands;
 
 
-            optionsProvider = await VS.GetRequiredServiceAsync<IFilterOptionsProvider, IFilterOptionsProvider>();
-            filterService = await VS.GetRequiredServiceAsync<IFilterService, IFilterService>();
+[Command(PackageIds.FilterProjectsCommand)]
+public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
 
-            options = await optionsProvider.GetOptionsAsync();
+    protected async override Task ExecuteAsync(OleMenuCmdEventArgs e) {
+        IFilterOptionsProvider optionsProvider;
+        IFilterService filterService;
+        FilterOptions? options;
 
-            if (options is not null) {
-                await filterService.ApplyAsync(options);
-            }
+
+        optionsProvider = await VS.GetRequiredServiceAsync<IFilterOptionsProvider, IFilterOptionsProvider>();
+        filterService = await VS.GetRequiredServiceAsync<IFilterService, IFilterService>();
+
+        options = await optionsProvider.GetOptionsAsync();
+
+        if (options is not null) {
+            await filterService.ApplyAsync(options);
         }
-
     }
 
 }

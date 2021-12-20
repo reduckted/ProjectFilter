@@ -3,33 +3,32 @@ using System;
 using System.Collections.Generic;
 
 
-namespace ProjectFilter.Services {
-
-    public interface IHierarchyNode {
-
-        Guid Identifier { get; }
+namespace ProjectFilter.Services;
 
 
-        string Name { get; }
+public interface IHierarchyNode {
+
+    Guid Identifier { get; }
 
 
-        bool IsFolder { get; }
+    string Name { get; }
 
 
-        bool IsLoaded { get; }
+    bool IsFolder { get; }
 
 
-        ImageMoniker CollapsedIcon { get; }
+    bool IsLoaded { get; }
 
 
-        ImageMoniker ExpandedIcon { get; }
+    ImageMoniker CollapsedIcon { get; }
 
 
-        IHierarchyNode? Parent { get; }
+    ImageMoniker ExpandedIcon { get; }
 
 
-        IReadOnlyList<IHierarchyNode> Children { get; }
+    IHierarchyNode? Parent { get; }
 
-    }
+
+    IReadOnlyList<IHierarchyNode> Children { get; }
 
 }

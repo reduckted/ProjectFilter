@@ -3,15 +3,14 @@ using System;
 using System.Threading;
 
 
-namespace ProjectFilter.Services {
-
-    public interface IWaitDialog : IDisposable {
-
-        CancellationToken CancellationToken { get; }
+namespace ProjectFilter.Services;
 
 
-        void ReportProgress(ThreadedWaitDialogProgressData progress);
+public interface IWaitDialog : IDisposable {
 
-    }
+    CancellationToken CancellationToken { get; }
+
+
+    void ReportProgress(ThreadedWaitDialogProgressData progress);
 
 }

@@ -1,22 +1,19 @@
 using Community.VisualStudio.Toolkit;
 
 
-namespace ProjectFilter.Services {
-
-    public class ExtensionSettings : BaseOptionModel<ExtensionSettings>, IExtensionSettings {
-
-        protected override string CollectionName => "ProjectFilter_ed6f0249-446a-4ddf-a8e8-b545113ba58f";
+namespace ProjectFilter.Services;
 
 
-        public ExtensionSettings() {
-            LoadProjectDependencies = true;
-        }
+public class ExtensionSettings : BaseOptionModel<ExtensionSettings>, IExtensionSettings {
+
+    protected override string CollectionName => "ProjectFilter_ed6f0249-446a-4ddf-a8e8-b545113ba58f";
 
 
-        public bool LoadProjectDependencies { get; set; }
-
+    public ExtensionSettings() {
+        LoadProjectDependencies = true;
     }
 
+
+    public bool LoadProjectDependencies { get; set; }
+
 }
-
-

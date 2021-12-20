@@ -3,18 +3,17 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 
 
-namespace ProjectFilter.Services {
-
-    public interface ISolutionExplorer {
-
-        Task<bool?> IsEmptyAsync();
+namespace ProjectFilter.Services;
 
 
-        Task HideUnloadedProjectsAsync();
+public interface ISolutionExplorer {
+
+    Task<bool?> IsEmptyAsync();
 
 
-        Task ExpandAsync(IEnumerable<Guid> projects);
+    Task HideUnloadedProjectsAsync();
 
-    }
+
+    Task ExpandAsync(IEnumerable<Guid> projects);
 
 }

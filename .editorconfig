@@ -63,6 +63,9 @@ dotnet_code_quality_unused_parameters = all:suggestion
 # Suppression preferences
 dotnet_remove_unnecessary_suppression_exclusions = none
 
+# Namespace preferences
+csharp_style_namespace_declarations=file_scoped:suggestion
+
 #### C# Coding Conventions ####
 
 # var preferences

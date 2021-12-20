@@ -2,32 +2,31 @@ using Microsoft.VisualStudio.Shell;
 using System.Threading;
 
 
-namespace ProjectFilter.Services {
-
-    partial class WaitDialogFactory {
-
-        private class Dialog : IWaitDialog {
-
-            private readonly ThreadedWaitDialogHelper.Session _session;
+namespace ProjectFilter.Services;
 
 
-            public Dialog(ThreadedWaitDialogHelper.Session session) {
-                _session = session;
-            }
+partial class WaitDialogFactory {
+
+    private class Dialog : IWaitDialog {
+
+        private readonly ThreadedWaitDialogHelper.Session _session;
 
 
-            public CancellationToken CancellationToken => _session.UserCancellationToken;
+        public Dialog(ThreadedWaitDialogHelper.Session session) {
+            _session = session;
+        }
 
 
-            public void ReportProgress(ThreadedWaitDialogProgressData progress) {
-                _session.Progress.Report(progress);
-            }
+        public CancellationToken CancellationToken => _session.UserCancellationToken;
 
 
-            public void Dispose() {
-                _session.Dispose();
-            }
+        public void ReportProgress(ThreadedWaitDialogProgressData progress) {
+            _session.Progress.Report(progress);
+        }
 
+
+        public void Dispose() {
+            _session.Dispose();
         }
 
     }

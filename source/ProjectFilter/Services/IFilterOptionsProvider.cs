@@ -1,12 +1,11 @@
 using System.Threading.Tasks;
 
 
-namespace ProjectFilter.Services {
+namespace ProjectFilter.Services;
 
-    public interface IFilterOptionsProvider {
 
-        Task<FilterOptions?> GetOptionsAsync();
+public interface IFilterOptionsProvider {
 
-    }
+    Task<FilterOptions?> GetOptionsAsync();
 
 }

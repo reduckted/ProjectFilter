@@ -5,42 +5,41 @@ using Microsoft.VisualStudio.Shell.Interop;
 using System;
 
 
-namespace ProjectFilter.Extensions {
+namespace ProjectFilter.Extensions;
 
-    public static class SolutionExtensions {
 
-        public static bool TryGetHierarchy(this IVsSolution4 solution, Guid identifier, out IVsHierarchy hierarchy) {
-            if (solution is null) {
-                throw new ArgumentNullException(nameof(solution));
-            }
+public static class SolutionExtensions {
 
-            ThreadHelper.ThrowIfNotOnUIThread();
-            return ErrorHandler.Succeeded(((IVsSolution)solution).GetProjectOfGuid(identifier, out hierarchy));
+    public static bool TryGetHierarchy(this IVsSolution4 solution, Guid identifier, out IVsHierarchy hierarchy) {
+        if (solution is null) {
+            throw new ArgumentNullException(nameof(solution));
         }
 
+        ThreadHelper.ThrowIfNotOnUIThread();
+        return ErrorHandler.Succeeded(((IVsSolution)solution).GetProjectOfGuid(identifier, out hierarchy));
+    }
 
-        public static bool TryGetIdentifier(this IVsSolution4 solution, IVsHierarchy hierarchy, out Guid identifier) {
-            if (solution is null) {
-                throw new ArgumentNullException(nameof(solution));
-            }
 
-            ThreadHelper.ThrowIfNotOnUIThread();
-            return ErrorHandler.Succeeded(((IVsSolution)solution).GetGuidOfProject(hierarchy, out identifier));
+    public static bool TryGetIdentifier(this IVsSolution4 solution, IVsHierarchy hierarchy, out Guid identifier) {
+        if (solution is null) {
+            throw new ArgumentNullException(nameof(solution));
         }
 
+        ThreadHelper.ThrowIfNotOnUIThread();
+        return ErrorHandler.Succeeded(((IVsSolution)solution).GetGuidOfProject(hierarchy, out identifier));
+    }
 
-        public static string GetName(this IVsSolution4 solution, Guid identifier) {
-            ThreadHelper.ThrowIfNotOnUIThread();
 
-            TryGetHierarchy(solution, identifier, out IVsHierarchy hierarchy);
+    public static string GetName(this IVsSolution4 solution, Guid identifier) {
+        ThreadHelper.ThrowIfNotOnUIThread();
 
-            if (HierarchyUtilities.TryGetHierarchyProperty(hierarchy, VSConstants.VSITEMID_ROOT, (int)__VSHPROPID.VSHPROPID_Name, out string name)) {
-                return name;
-            }
+        TryGetHierarchy(solution, identifier, out IVsHierarchy hierarchy);
 
-            return "?";
+        if (HierarchyUtilities.TryGetHierarchyProperty(hierarchy, VSConstants.VSITEMID_ROOT, (int)__VSHPROPID.VSHPROPID_Name, out string name)) {
+            return name;
         }
 
+        return "?";
     }
 
 }

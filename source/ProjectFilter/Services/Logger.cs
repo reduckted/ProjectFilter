@@ -4,26 +4,25 @@ using System;
 using Task = System.Threading.Tasks.Task;
 
 
-namespace ProjectFilter.Services {
-
-    public class Logger : ILogger {
-
-        private OutputWindowPane? _pane;
+namespace ProjectFilter.Services;
 
 
-        public async Task WriteLineAsync(string message) {
-            try {
-                if (_pane is null) {
-                    _pane = await OutputWindowPane.CreateAsync(Vsix.Name);
-                }
+public class Logger : ILogger {
 
-                await _pane.WriteLineAsync($"{DateTime.Now:HH:mm:ss} - {message}");
+    private OutputWindowPane? _pane;
 
-            } catch (Exception ex) when (!ErrorHandler.IsCriticalException(ex)) {
-                System.Diagnostics.Debug.WriteLine(ex);
+
+    public async Task WriteLineAsync(string message) {
+        try {
+            if (_pane is null) {
+                _pane = await OutputWindowPane.CreateAsync(Vsix.Name);
             }
-        }
 
+            await _pane.WriteLineAsync($"{DateTime.Now:HH:mm:ss} - {message}");
+
+        } catch (Exception ex) when (!ErrorHandler.IsCriticalException(ex)) {
+            System.Diagnostics.Debug.WriteLine(ex);
+        }
     }
 
 }
