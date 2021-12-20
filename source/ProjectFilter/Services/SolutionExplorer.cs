@@ -26,7 +26,7 @@ namespace ProjectFilter.Services {
 
 
         public async Task<bool?> IsEmptyAsync() {
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             SolutionExplorerWindow? solutionExplorer;
 
@@ -53,7 +53,7 @@ namespace ProjectFilter.Services {
 
 
         public async Task HideUnloadedProjectsAsync() {
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             Solution? solution;
 
@@ -142,7 +142,7 @@ namespace ProjectFilter.Services {
             SolutionExplorerWindow? solutionExplorer;
 
 
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             solutionExplorer = await VS.Windows.GetSolutionExplorerWindowAsync();
 

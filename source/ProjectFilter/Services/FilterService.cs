@@ -1,5 +1,4 @@
 using Community.VisualStudio.Toolkit;
-using EnvDTE;
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
@@ -26,7 +25,7 @@ namespace ProjectFilter.Services {
                 throw new ArgumentNullException(nameof(options));
             }
 
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             if ((options.ProjectsToLoad.Count == 0) && (options.ProjectsToUnload.Count == 0)) {
                 return;
@@ -110,7 +109,7 @@ namespace ProjectFilter.Services {
 
 
         private static async Task UnloadProjectAsync(Guid identifier, State state) {
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             if (IsLoaded(state.Solution, identifier)) {
                 string name;
@@ -135,7 +134,7 @@ namespace ProjectFilter.Services {
 
 
         private async Task LoadProjectAsync(Guid identifier, bool loadProjectDependencies, State state) {
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             // Record that we've visited this project. We may have already visited
             // it as a dependency of another project, or maybe we're visiting
@@ -218,7 +217,7 @@ namespace ProjectFilter.Services {
             IVsSolutionBuildManager2 solutionBuildManager;
 
 
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             solutionBuildManager = (IVsSolutionBuildManager2)await VS.Services.GetSolutionBuildManagerAsync();
 

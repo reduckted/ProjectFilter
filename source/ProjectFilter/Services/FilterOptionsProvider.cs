@@ -1,5 +1,7 @@
 using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.PlatformUI;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
 using ProjectFilter.UI;
 using ProjectFilter.UI.Utilities;
 using System;
@@ -12,20 +14,28 @@ namespace ProjectFilter.Services {
 
     public class FilterOptionsProvider : IFilterOptionsProvider {
 
+        private readonly JoinableTaskFactory _joinableTaskFactory;
+
+
+        public FilterOptionsProvider(JoinableTaskFactory joinableTaskFactory) {
+            _joinableTaskFactory = joinableTaskFactory;
+        }
+
+
         public async Task<FilterOptions?> GetOptionsAsync() {
             IHierarchyProvider hierarchyProvider;
             IExtensionSettings settings;
             Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory;
 
 
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             hierarchyProvider = await VS.GetRequiredServiceAsync<IHierarchyProvider, IHierarchyProvider>();
             settings = await VS.GetRequiredServiceAsync<IExtensionSettings, IExtensionSettings>();
 
             hierarchyFactory = async () => await hierarchyProvider.GetHierarchyAsync();
 
-            using (var vm = new FilterDialogViewModel(hierarchyFactory, Debouncer.Create, SearchUtilities.CreateSearchQuery)) {
+            using (var vm = new FilterDialogViewModel(hierarchyFactory, Debouncer.Create, SearchUtilities.CreateSearchQuery, _joinableTaskFactory)) {
                 FilterDialog dialog;
 
 

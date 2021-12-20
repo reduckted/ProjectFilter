@@ -3,11 +3,11 @@
     <Import Sdk="Microsoft.NET.Sdk.WindowsDesktop" Project="Sdk.props" />
 
     <PropertyGroup>
-        <TargetFramework>net472</TargetFramework>
+        <TargetFramework>net48</TargetFramework>
         <RootNamespace>ProjectFilter</RootNamespace>
         <UseWPF>true</UseWPF>
         <Nullable>enable</Nullable>
-        <LangVersion>9.0</LangVersion>
+        <LangVersion>10.0</LangVersion>
         <AnalysisMode>AllEnabledByDefault</AnalysisMode>
     </PropertyGroup>
 
@@ -96,15 +96,15 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Community.VisualStudio.Toolkit" Version="16.0.76.280-pre" />
-        <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="5.0.3">
+        <PackageReference Include="Community.VisualStudio.Toolkit.17" Version="17.0.339" />
+        <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="6.0.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.VisualStudio.SDK" Version="16.0.206" ExcludeAssets="runtime">
+        <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.0.31902.203" ExcludeAssets="runtime">
             <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="16.10.1055">
+        <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.0.5233">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>

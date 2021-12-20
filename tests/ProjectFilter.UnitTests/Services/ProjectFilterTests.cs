@@ -1,11 +1,9 @@
-using EnvDTE;
-using EnvDTE80;
+using Microsoft.VisualStudio.Sdk.TestFramework;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Moq;
 using ProjectFilter.Helpers;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -32,11 +30,14 @@ namespace ProjectFilter.Services {
             private TestHierarchyItem? _root;
 
 
+            public ApplyMethod(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
+
+
             [Fact]
             public async Task LoadsSpecifiedProjects() {
                 Setup(
                     $@"
-                    <solution name='root' expanded='true'>
+                    <solution name='root'>
                         <unloaded name='alpha' guid='{ProjectAlpha}'/>
                         <unloaded name='beta' guid='{ProjectBeta}'/>
                         <unloaded name='gamma' guid='{ProjectGamma}'/>
@@ -55,7 +56,7 @@ namespace ProjectFilter.Services {
 
                 Verify(
                     $@"
-                    <solution name='root' expanded='true'>
+                    <solution name='root'>
                         <project name='alpha'/>
                         <project name='beta'/>
                         <unloaded name='gamma'/>
@@ -70,7 +71,7 @@ namespace ProjectFilter.Services {
             public async Task UnloadsSpecifiedProjects() {
                 Setup(
                     $@"
-                    <solution name='root' expanded='true'>
+                    <solution name='root'>
                         <project name='alpha' guid='{ProjectAlpha}'/>
                         <project name='beta' guid='{ProjectBeta}'/>
                         <project name='gamma' guid='{ProjectGamma}'/>
@@ -89,7 +90,7 @@ namespace ProjectFilter.Services {
 
                 Verify(
                     $@"
-                    <solution name='root' expanded='true'>
+                    <solution name='root'>
                         <unloaded name='alpha'/>
                         <unloaded name='beta'/>
                         <project name='gamma'/>
@@ -104,7 +105,7 @@ namespace ProjectFilter.Services {
             public async Task LoadsAndUnloadsSpecifiedProjects() {
                 Setup(
                     $@"
-                    <solution name='root' expanded='true'>
+                    <solution name='root'>
                         <project name='alpha' guid='{ProjectAlpha}'/>
                         <unloaded name='beta' guid='{ProjectBeta}'/>
                         <project name='gamma' guid='{ProjectGamma}'/>
@@ -123,7 +124,7 @@ namespace ProjectFilter.Services {
 
                 Verify(
                     $@"
-                    <solution name='root' expanded='true'>
+                    <solution name='root'>
                         <unloaded name='alpha'/>
                         <project name='beta'/>
                         <project name='gamma'/>
@@ -138,7 +139,7 @@ namespace ProjectFilter.Services {
             public async Task LoadsDependenciesOfProjectsThatAreLoadedWhenRequested() {
                 Setup(
                     $@"
-                    <solution name='root' expanded='true'>
+                    <solution name='root'>
                         <unloaded name='alpha' guid='{ProjectAlpha}' dependsOn='beta,gamma' />
                         <unloaded name='beta' guid='{ProjectBeta}'/>
                         <unloaded name='gamma' guid='{ProjectGamma}'/>
@@ -157,7 +158,7 @@ namespace ProjectFilter.Services {
 
                 Verify(
                     $@"
-                    <solution name='root' expanded='true'>
+                    <solution name='root'>
                         <project name='alpha'/>
                         <project name='beta'/>
                         <project name='gamma'/>
@@ -172,7 +173,7 @@ namespace ProjectFilter.Services {
             public async Task DoesNotLoadDependenciesOfProjectsThatAreLoadedWhenNotRequested() {
                 Setup(
                     $@"
-                    <solution name='root' expanded='true'>
+                    <solution name='root'>
                         <unloaded name='alpha' guid='{ProjectAlpha}' dependsOn='beta' />
                         <unloaded name='beta' guid='{ProjectBeta}'/>
                         <unloaded name='gamma' guid='{ProjectGamma}'/>
@@ -191,7 +192,7 @@ namespace ProjectFilter.Services {
 
                 Verify(
                     $@"
-                    <solution name='root' expanded='true'>
+                    <solution name='root'>
                         <project name='alpha'/>
                         <unloaded name='beta'/>
                         <unloaded name='gamma'/>
@@ -206,7 +207,7 @@ namespace ProjectFilter.Services {
             public async Task LoadsDependencyOfProjectThatIsLoadedWhenThatProjectShouldBeUnloaded() {
                 Setup(
                     $@"
-                    <solution name='root' expanded='true'>
+                    <solution name='root'>
                         <unloaded name='alpha' guid='{ProjectAlpha}' dependsOn='beta' />
                         <project name='beta' guid='{ProjectBeta}'/>
                     </solution>
@@ -223,7 +224,7 @@ namespace ProjectFilter.Services {
 
                 Verify(
                     $@"
-                    <solution name='root' expanded='true'>
+                    <solution name='root'>
                         <project name='alpha'/>
                         <project name='beta'/>
                     </solution>
@@ -236,7 +237,7 @@ namespace ProjectFilter.Services {
             public async Task LoadsDependenciesOfDependenciesOfProjectsThatAreLoadedWhenRequested() {
                 Setup(
                     $@"
-                    <solution name='root' expanded='true'>
+                    <solution name='root'>
                         <unloaded name='alpha' guid='{ProjectAlpha}' dependsOn='beta' />
                         <unloaded name='beta' guid='{ProjectBeta}' dependsOn='delta'/>
                         <unloaded name='gamma' guid='{ProjectGamma}'/>
@@ -255,7 +256,7 @@ namespace ProjectFilter.Services {
 
                 Verify(
                     $@"
-                    <solution name='root' expanded='true'>
+                    <solution name='root'>
                         <project name='alpha'/>
                         <project name='beta'/>
                         <unloaded name='gamma'/>
@@ -267,49 +268,24 @@ namespace ProjectFilter.Services {
 
 
             [Fact]
-            public async Task KeepsSelectedProjectSelected() {
-                Setup(
-                    $@"
-                    <solution name='root' expanded='true'>
-                        <unloaded name='alpha' guid='{ProjectAlpha}'/>
-                        <project name='beta' guid='{ProjectBeta}'/>
-                        <project name='gamma' guid='{ProjectGamma}' selected='true'/>
-                    </solution>
-                    "
-                );
-
-                await ApplyAsync(
-                    new FilterOptions(
-                        new Guid[] { ProjectAlpha },
-                        new Guid[] { ProjectBeta },
-                        false
-                    )
-                );
-
-                Verify(
-                    $@"
-                    <solution name='root' expanded='true'>
-                        <project name='alpha'/>
-                        <unloaded name='beta'/>
-                        <project name='gamma' selected='true'/>
-                    </solution>
-                    "
-                );
-            }
-
-
-            [Fact]
             public async Task ExpandsFolderOfProjectsThatWereLoaded() {
+                Mock<ISolutionExplorer> solutionExplorer;
+
+
+                solutionExplorer = new Mock<ISolutionExplorer>();
+
                 Setup(
                     $@"
                     <solution name='root'>
                         <folder name='core'>
                             <folder name='test'>
                                 <unloaded name='alpha' guid='{ProjectAlpha}'/>
+                                <project name='beta' guid='{ProjectBeta}'/>
                             </folder>
                         </folder>
                     </solution>
-                    "
+                    ",
+                    solutionExplorer: solutionExplorer.Object
                 );
 
                 await ApplyAsync(
@@ -320,22 +296,17 @@ namespace ProjectFilter.Services {
                     )
                 );
 
-                Verify(
-                    $@"
-                    <solution name='root' expanded='true'>
-                        <folder name='core' expanded='true'>
-                            <folder name='test' expanded='true'>
-                                <project name='alpha'/>
-                            </folder>
-                        </folder>
-                    </solution>
-                    "
-                );
+                solutionExplorer.Verify((x) => x.ExpandAsync(new[] { ProjectAlpha }), Times.Once);
             }
 
 
             [Fact]
             public async Task DoesNotExpandFolderOfProjectsThatWereUnloaded() {
+                Mock<ISolutionExplorer> solutionExplorer;
+
+
+                solutionExplorer = new Mock<ISolutionExplorer>();
+
                 Setup(
                     $@"
                     <solution name='root'>
@@ -343,7 +314,8 @@ namespace ProjectFilter.Services {
                             <project name='alpha' guid='{ProjectAlpha}'/>
                         </folder>
                     </solution>
-                    "
+                    ",
+                    solutionExplorer: solutionExplorer.Object
                 );
 
                 await ApplyAsync(
@@ -354,19 +326,12 @@ namespace ProjectFilter.Services {
                     )
                 );
 
-                Verify(
-                    $@"
-                    <solution name='root'>
-                        <folder name='core'>
-                            <unloaded name='alpha'/>
-                        </folder>
-                    </solution>
-                    "
-                );
+                solutionExplorer.Verify((x) => x.ExpandAsync(It.IsAny<IEnumerable<Guid>>()), Times.Once);
+                solutionExplorer.Verify((x) => x.ExpandAsync(It.Is<IEnumerable<Guid>>((items) => !items.Any())), Times.Once);
             }
 
 
-            private void Setup(string data) {
+            private void Setup(string data, ISolutionExplorer? solutionExplorer = null) {
                 IVsSolution solution;
                 IVsSolutionBuildManager2 buildManager;
 
@@ -376,23 +341,19 @@ namespace ProjectFilter.Services {
 
                 buildManager = Factory.CreateBuildManager(_root, _dependencies, solution);
 
-                AddService<SVsSolution, IVsSolution>(solution);
-                AddService<DTE, DTE2>(MockDTE(_root));
-                AddService<SVsSolutionBuildManager, IVsSolutionBuildManager2>(buildManager);
-                AddService<IWaitDialogFactory, IWaitDialogFactory>(MockWaitDialogFactory());
+                AddService<SVsSolution>(solution);
+                AddService<SVsSolutionBuildManager>(buildManager);
+                AddService<IWaitDialogFactory>(MockWaitDialogFactory());
+                AddService<ISolutionExplorer>(solutionExplorer ?? Mock.Of<ISolutionExplorer>());
             }
 
 
             private TestHierarchyItem CreateNode(XElement element, TestHierarchyItem? parent) {
                 HierarchyData data;
-                TestUIItem ui;
                 string? dependencies;
 
 
                 data = Factory.CreateHierarchyData(element, parent?.Data);
-
-                ui = CreateUIHierarchyItem(element, data.Name, parent?.UI);
-                parent?.UI.Add(ui);
 
                 dependencies = element.Attribute("dependsOn")?.Value;
 
@@ -400,25 +361,7 @@ namespace ProjectFilter.Services {
                     _dependencies[data.Identifier] = dependencies.Split(',').ToList();
                 }
 
-                return new TestHierarchyItem(data, ui);
-            }
-
-
-            private static TestUIItem CreateUIHierarchyItem(XElement element, string name, TestUIItem? parent) {
-                TestUIItem item;
-
-
-                item = new TestUIItem(name, parent?.UIHierarchyItems);
-
-                if (element.Attribute("selected")?.Value == "true") {
-                    item.IsSelected = true;
-                }
-
-                if (element.Attribute("expanded")?.Value == "true") {
-                    item.UIHierarchyItems.Expanded = true;
-                }
-
-                return item;
+                return new TestHierarchyItem(data);
             }
 
 
@@ -437,74 +380,8 @@ namespace ProjectFilter.Services {
             }
 
 
-            private DTE2 MockDTE(TestHierarchyItem root) {
-                Mock<DTE> dte;
-                Mock<DTE2> dte2;
-                Mock<ToolWindows> toolWindows;
-                Mock<UIHierarchy> solutionExplorer;
-                Mock<Window> solutionExplorerWindow;
-                Mock<Solution> solution;
-                Mock<EnvDTE.Commands> commands;
-                Mock<Command> command;
-
-
-                solutionExplorerWindow = new Mock<Window>();
-                solutionExplorerWindow.SetupProperty((x) => x.Visible);
-
-                solutionExplorer = new Mock<UIHierarchy>();
-                solutionExplorer.SetupGet((x) => x.Parent).Returns(solutionExplorerWindow.Object);
-                solutionExplorer.Setup((x) => x.GetItem(It.IsAny<string>())).Returns((string path) => GetItem(root, path));
-                solutionExplorer
-                    .SetupGet((x) => x.SelectedItems)
-                    .Returns(() => root.DescendantsAndSelf().Where((x) => x.UI.IsSelected).Select((x) => x.UI).ToArray());
-
-                toolWindows = new Mock<ToolWindows>();
-                toolWindows.SetupGet((x) => x.SolutionExplorer).Returns(solutionExplorer.Object);
-
-                solution = new Mock<Solution>();
-                solution.Setup((x) => x.Properties);
-
-                command = new Mock<Command>();
-                command.SetupGet((x) => x.IsAvailable).Returns(true);
-
-                commands = new Mock<EnvDTE.Commands>();
-                commands.Setup((x) => x.Item(It.IsAny<object>(), It.IsAny<int>())).Returns(command.Object);
-
-                dte = new Mock<DTE>();
-                dte2 = dte.As<DTE2>();
-                dte2.SetupGet((x) => x.ToolWindows).Returns(toolWindows.Object);
-                dte2.SetupGet((x) => x.Commands).Returns(commands.Object);
-
-                dte.SetupGet((x) => x.Solution).Returns(solution.Object);
-
-                return dte2.Object;
-            }
-
-
-            private UIHierarchyItem GetItem(TestHierarchyItem item, string path) {
-                string[] parts;
-
-
-                parts = path.Split(new[] { '\\' }, 2);
-
-                if (item.Data.Name == parts[0]) {
-                    if (parts.Length == 1) {
-                        return item.UI;
-                    }
-
-                    return item
-                        .Children
-                        .Cast<TestHierarchyItem>()
-                        .Select((x) => GetItem(x, parts[0]))
-                        .FirstOrDefault((x) => x is not null);
-                }
-
-                return null!;
-            }
-
-
             private async Task ApplyAsync(FilterOptions options) {
-                await (await CreateAsync()).ApplyAsync(options);
+                await CreateService().ApplyAsync(options);
             }
 
 
@@ -534,112 +411,13 @@ namespace ProjectFilter.Services {
 
                 element.Add(node.Children.Cast<TestHierarchyItem>().Select(ConvertToElement).ToArray());
 
-                if (node.UI.IsSelected) {
-                    element.SetAttributeValue("selected", "true");
-                }
-                if (node.UI.UIHierarchyItems.Expanded) {
-                    element.SetAttributeValue("expanded", "true");
-                }
-
                 return element;
             }
 
 
             private class TestHierarchyItem : TreeItem {
 
-                public TestHierarchyItem(HierarchyData data, TestUIItem ui) : base(data) {
-                    UI = ui;
-                }
-
-
-                public TestUIItem UI { get; set; }
-
-            }
-
-
-            private class TestUIItem : UIHierarchyItem {
-
-                private readonly TestUIItems _children;
-
-
-                public TestUIItem(string name, UIHierarchyItems? owner) {
-                    Name = name;
-                    _children = new TestUIItems(this);
-                    Collection = owner;
-                }
-
-
-                public void Select(vsUISelectionType How) {
-                    IsSelected = true;
-                }
-
-
-                public DTE DTE => throw new NotSupportedException();
-
-
-                public UIHierarchyItems? Collection { get; }
-
-
-                public string Name { get; }
-
-
-                public UIHierarchyItems UIHierarchyItems => _children;
-
-
-                public object Object => throw new NotSupportedException();
-
-
-                public bool IsSelected { get; set; }
-
-
-                public void Add(TestUIItem child) {
-                    _children.Add(child);
-                }
-            }
-
-
-            private class TestUIItems : UIHierarchyItems {
-
-                private readonly List<UIHierarchyItem> _items = new();
-
-                public TestUIItems(TestUIItem? parent) {
-                    Parent = parent;
-                }
-
-
-                public UIHierarchyItem Item(object index) {
-                    if (index is int i) {
-                        return _items[i];
-                    }
-
-                    if (index is string name) {
-                        return _items.FirstOrDefault((x) => x.Name == name) ?? throw new ArgumentException("Not found.", nameof(index));
-                    }
-
-                    throw new NotSupportedException();
-                }
-
-
-                public IEnumerator GetEnumerator() {
-                    throw new NotSupportedException();
-                }
-
-
-                public DTE DTE => throw new NotSupportedException();
-
-
-                public object? Parent { get; }
-
-
-                public int Count => _items.Count;
-
-
-                public bool Expanded { get; set; }
-
-
-                public void Add(TestUIItem item) {
-                    _items.Add(item);
-                }
+                public TestHierarchyItem(HierarchyData data) : base(data) { }
 
             }
 

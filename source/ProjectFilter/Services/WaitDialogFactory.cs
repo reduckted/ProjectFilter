@@ -15,7 +15,7 @@ namespace ProjectFilter.Services {
             IVsThreadedWaitDialogFactory waitDialogFactory;
 
 
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             waitDialogFactory = (IVsThreadedWaitDialogFactory)await VS.Services.GetThreadedWaitDialogAsync();
 

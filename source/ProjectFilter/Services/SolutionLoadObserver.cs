@@ -10,7 +10,7 @@ namespace ProjectFilter.Services {
     public static class SolutionLoadObserver {
 
         public static async Task InitializeAsync() {
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             VS.Events.SolutionEvents.OnAfterOpenSolution += OnAfterOpenSolution;
 
@@ -31,7 +31,7 @@ namespace ProjectFilter.Services {
             ISolutionExplorer solutionExplorer;
 
 
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             solutionExplorer = await VS.GetRequiredServiceAsync<ISolutionExplorer, ISolutionExplorer>();
 

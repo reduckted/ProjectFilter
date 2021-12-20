@@ -1,6 +1,8 @@
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Imaging.Interop;
+using Microsoft.VisualStudio.Sdk.TestFramework;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Moq;
 using ProjectFilter.Helpers;
@@ -20,6 +22,9 @@ namespace ProjectFilter.Services {
 
         public class GetHierarchyMethod : ServiceTest<HierarchyProvider> {
 
+            public GetHierarchyMethod(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
+
+
             [Fact]
             public async Task UsesCorrectIdentifier() {
                 IHierarchyNode node;
@@ -36,7 +41,7 @@ namespace ProjectFilter.Services {
                     "
                 );
 
-                node = (await (await CreateAsync()).GetHierarchyAsync()).First().Children[0];
+                node = (await CreateService().GetHierarchyAsync()).First().Children[0];
 
                 Assert.Equal(
                     root.DescendantsAndSelf().First((x) => string.Equals(x.Data.Name, "bar", StringComparison.Ordinal)).Data.Identifier,
@@ -61,7 +66,7 @@ namespace ProjectFilter.Services {
                     "
                 );
 
-                nodes = (await (await CreateAsync()).GetHierarchyAsync()).ToList();
+                nodes = (await CreateService().GetHierarchyAsync()).ToList();
                 node = Flatten(nodes).First((x) => x.Name == "foo");
 
                 Assert.Equal(GetImageMoniker("FolderOpened"), node.ExpandedIcon);
@@ -166,8 +171,9 @@ namespace ProjectFilter.Services {
                 root = Factory.ParseHierarchies<HierarchyItem>(data, CreateNode);
                 solution = Factory.CreateSolution(root);
 
-                AddService<SVsSolution, IVsSolution>(solution);
-                AddService<SVsImageService, IVsImageService2>(CreateImageService(root));
+                AddService<SVsSolution>(solution);
+                AddService<SVsImageService>(CreateImageService(root));
+                AddMefService(CreateHierarchyItemManager(root));
 
                 return root;
             }
@@ -237,12 +243,50 @@ namespace ProjectFilter.Services {
             }
 
 
+            private static IVsHierarchyItemManager CreateHierarchyItemManager(HierarchyItem root) {
+                Mock<IVsHierarchyItemManager> manager;
+
+                manager = new Mock<IVsHierarchyItemManager>();
+
+                manager
+                    .Setup((x) => x.GetHierarchyItem(It.IsAny<IVsHierarchy>(), It.IsAny<uint>()))
+                    .Returns((IVsHierarchy hierarchy, uint itemID) => {
+                        HierarchyItem? data;
+
+
+                        data = root
+                            .DescendantsAndSelf()
+                            .Where((x) => x.Hierarchy == hierarchy)
+                            .FirstOrDefault();
+
+                        if (data is not null) {
+                            Mock<IVsHierarchyItem> item;
+                            Mock<IVsHierarchyItemIdentity> identity;
+
+
+                            identity = new Mock<IVsHierarchyItemIdentity>();
+                            identity.SetupGet((x) => x.NestedHierarchy).Returns(hierarchy);
+                            identity.SetupGet((x) => x.NestedItemID).Returns(itemID);
+
+                            item = new Mock<IVsHierarchyItem>();
+                            item.SetupGet((x) => x.HierarchyIdentity).Returns(identity.Object);
+
+                            return item.Object;
+                        }
+
+                        return null!;
+                    });
+
+                return manager.Object;
+            }
+
+
             private async Task VerifyAsync(string expected) {
                 XElement solution;
 
 
                 solution = XElement.Parse("<root/>");
-                solution.Add(ConvertToElements((await (await CreateAsync()).GetHierarchyAsync())).ToArray());
+                solution.Add(ConvertToElements(await CreateService().GetHierarchyAsync()).ToArray());
 
                 Assert.Equal(
                     XDocument.Parse(expected).Root.ToString(),

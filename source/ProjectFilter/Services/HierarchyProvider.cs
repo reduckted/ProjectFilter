@@ -57,7 +57,7 @@ namespace ProjectFilter.Services {
             List<(HierarchyNode Hierarchy, Guid Parent)> output;
 
 
-            await ExtensionThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             solution = await VS.Services.GetSolutionAsync();
             imageService = (IVsImageService2)await VS.Services.GetImageServiceAsync();
@@ -65,7 +65,7 @@ namespace ProjectFilter.Services {
 
             output = new List<(HierarchyNode Hierarchy, Guid Parent)>();
 
-            foreach (var hierarchy in solution.GetAllProjectHierarchys(__VSENUMPROJFLAGS.EPF_ALLINSOLUTION)) {
+            foreach (var hierarchy in solution.GetAllProjectHierarchies(ProjectStateFilter.All)) {
                 if (!TryGetIdentifier(solution, hierarchy, out Guid identifier)) {
                     continue;
                 }

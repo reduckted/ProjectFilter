@@ -2,14 +2,14 @@ using Microsoft.VisualStudio.Sdk.TestFramework;
 using Xunit;
 
 
-namespace Community.VisualStudio.Toolkit.Testing
+namespace ProjectFilter
 {
 
-    [CollectionDefinition(Collection, DisableParallelization = true)]
-    public class xVisualStudioTests : ICollectionFixture<GlobalServiceProvider>, ICollectionFixture<MefHostingFixture>
+    [CollectionDefinition(CollectionName, DisableParallelization = true)]
+    public class VisualStudioTests : ICollectionFixture<GlobalServiceProvider>, ICollectionFixture<MefHostingFixture>
     {
 
-        public const string Collection = nameof(xVisualStudioTests);
+        public const string CollectionName = nameof(VisualStudioTests);
 
     }
 

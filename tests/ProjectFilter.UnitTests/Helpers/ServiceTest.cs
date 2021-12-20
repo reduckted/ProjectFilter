@@ -1,81 +1,45 @@
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Threading;
+using Microsoft.VisualStudio.ComponentModelHost;
+using Microsoft.VisualStudio.Sdk.TestFramework;
 using Moq;
 using ProjectFilter.Services;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Threading;
 using Xunit;
-using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
-using Task = System.Threading.Tasks.Task;
 
 
 namespace ProjectFilter.Helpers {
 
-    [Collection(VisualStudioTests.Name)]
-    public class ServiceTest<T> : IAsyncServiceProvider {
+    [Collection(VisualStudioTests.CollectionName)]
+    public class ServiceTest<T> where T : class, new() {
 
-        private static readonly JoinableTaskContext Context = new();
-
-
-        private readonly Dictionary<string, object> _services = new();
+        private readonly GlobalServiceProvider _serviceProvider;
+        private TestComponentModel? _componentModel;
 
 
-        static ServiceTest() {
-            ExtensionThreadHelper.JoinableTaskFactory = Context.Factory;
+        protected ServiceTest(GlobalServiceProvider serviceProvider) {
+            _serviceProvider = serviceProvider;
+            _serviceProvider.Reset();
 
-            // Work around the `ThreadHelper.ThrowIfNotOnUIThread()` always throwing in 
-            // tests by setting the internal dispatcher that is used to check for access.
-            typeof(ThreadHelper).InvokeMember(
-                "uiThreadDispatcher",
-                BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.SetField,
-                null,
-                null,
-                new[] { Dispatcher.CurrentDispatcher },
-                CultureInfo.InvariantCulture
-            );
+            AddService<ILogger>(Mock.Of<ILogger>());
         }
 
 
-        protected ServiceTest() {
-            AddService<ILogger, ILogger>(Mock.Of<ILogger>());
+        protected T CreateService() {
+            return Activator.CreateInstance<T>();
         }
 
 
-        protected void AddService<TInterface, TImplementation>(TImplementation service) where TImplementation : class {
-            _services[typeof(TInterface).FullName] = service;
+        public void AddService<TService>(object implementation) {
+            _serviceProvider.AddService(typeof(TService), implementation);
         }
 
 
-        protected async Task<T> CreateAsync() {
-            T service;
-
-
-            service = (T)Activator.CreateInstance(typeof(T), this);
-
-            if (service is IAsyncInitializable initializable) {
-                await initializable.InitializeAsync(CancellationToken.None);
+        public void AddMefService<TService>(TService service) where TService : class {
+            if (_componentModel is null) {
+                _componentModel = new TestComponentModel();
+                AddService<SComponentModel>(_componentModel);
             }
 
-            return service;
-        }
-
-
-        public Task<object> GetServiceAsync(Type serviceType) {
-            if (serviceType is null) {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
-
-            if (_services.TryGetValue(serviceType.FullName, out object service)) {
-                return Task.FromResult(service);
-            }
-
-            throw new NotSupportedException($"Service '{serviceType.Name}' has not been registered.");
+            _componentModel.AddService(service);
         }
 
     }

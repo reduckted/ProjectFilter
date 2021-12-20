@@ -4,9 +4,9 @@ using System.Collections.Generic;
 
 namespace ProjectFilter.Helpers {
 
-    internal abstract class TreeItem {
+    internal class TreeItem {
 
-        protected TreeItem(HierarchyData data) {
+        public TreeItem(HierarchyData data) {
             Data = data;
             Children = new List<TreeItem>();
         }

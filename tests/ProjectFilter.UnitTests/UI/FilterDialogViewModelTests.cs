@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.Threading;
 using Moq;
 using ProjectFilter.Helpers;
 using ProjectFilter.Services;
@@ -14,7 +15,7 @@ namespace ProjectFilter.UI {
 
     public static class FilterDialogViewModelTests {
 
-        public class LoadingVisibilityProperty {
+        public class LoadingVisibilityProperty : TestBase {
 
             [Fact]
             public async Task IsVisibleUntilHierarchyIsRetrieved() {
@@ -49,7 +50,7 @@ namespace ProjectFilter.UI {
         }
 
 
-        public class LoadedVisibilityProperty {
+        public class LoadedVisibilityProperty : TestBase {
 
             [Fact]
             public async Task IsCollapsedUntilHierarchyIsRetrieved() {
@@ -84,7 +85,7 @@ namespace ProjectFilter.UI {
         }
 
 
-        public class ItemsProperty {
+        public class ItemsProperty : TestBase {
 
             [Fact]
             public async Task IsEmptyUntilHierarchyIsRetrieved() {
@@ -153,7 +154,7 @@ namespace ProjectFilter.UI {
         }
 
 
-        public class ToggleLoadProjectDependenciesCommandProperty {
+        public class ToggleLoadProjectDependenciesCommandProperty : TestBase {
 
             [Fact]
             public async Task TogglesTheLoadProjectDependenciesProperty() {
@@ -175,7 +176,7 @@ namespace ProjectFilter.UI {
         }
 
 
-        public class CollapseAllCommandProperty {
+        public class CollapseAllCommandProperty : TestBase {
 
             [Fact]
             public async Task CollapsesAllItemsWhenNoParameterIsSpecified() {
@@ -282,7 +283,7 @@ namespace ProjectFilter.UI {
         }
 
 
-        public class ExpandAllCommandProperty {
+        public class ExpandAllCommandProperty : TestBase {
 
             [Fact]
             public async Task ExpandsAllItemsWhenNoParameterIsSpecified() {
@@ -353,7 +354,7 @@ namespace ProjectFilter.UI {
         }
 
 
-        public class CheckAllCommandProperty {
+        public class CheckAllCommandProperty : TestBase {
 
             [Fact]
             public async Task ChecksAllItems() {
@@ -387,7 +388,7 @@ namespace ProjectFilter.UI {
         }
 
 
-        public class UncheckAllCommandProperty {
+        public class UncheckAllCommandProperty : TestBase {
 
             [Fact]
             public async Task UnchecksAllItems() {
@@ -421,7 +422,7 @@ namespace ProjectFilter.UI {
         }
 
 
-        public class AcceptCommandProperty {
+        public class AcceptCommandProperty : TestBase {
 
             [Theory]
             [InlineData(true)]
@@ -549,7 +550,7 @@ namespace ProjectFilter.UI {
         }
 
 
-        public class SearchTextProperty {
+        public class SearchTextProperty : TestBase {
 
             [Fact]
             public async Task WaitsBeforeFilteringWhenTextIsNotEmpty() {
@@ -662,6 +663,51 @@ namespace ProjectFilter.UI {
         }
 
 
+        public abstract class TestBase : IDisposable {
+
+            private readonly JoinableTaskContext _joinableTaskContext;
+            private readonly JoinableTaskFactory _joinableTaskFactory;
+
+
+            protected TestBase() {
+                _joinableTaskContext = new JoinableTaskContext();
+                _joinableTaskFactory = new JoinableTaskFactory(_joinableTaskContext);
+            }
+
+
+            protected FilterDialogViewModel CreateViewModel(IEnumerable<IHierarchyNode> hierarchy, IDebouncer? debouncer = null) {
+                return CreateViewModel(() => Task.FromResult(hierarchy), debouncer);
+            }
+
+
+            protected FilterDialogViewModel CreateViewModel(Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory, IDebouncer? debouncer = null) {
+                if (debouncer is null) {
+                    debouncer = Mock.Of<IDebouncer>();
+                }
+
+
+                return new FilterDialogViewModel(
+                    hierarchyFactory,
+                    (x) => debouncer,
+                    Factory.CreateSearchQuery,
+                    _joinableTaskFactory
+                );
+            }
+
+
+            protected virtual void Dispose(bool disposing) {
+                _joinableTaskContext.Dispose();
+            }
+
+
+            public void Dispose() {
+                Dispose(disposing: true);
+                GC.SuppressFinalize(this);
+            }
+
+        }
+
+
         private static IHierarchyNode CreateNode(string name, bool isLoaded = true, IEnumerable<IHierarchyNode>? children = null) {
             Mock<IHierarchyNode> node;
 
@@ -683,20 +729,6 @@ namespace ProjectFilter.UI {
 
         private static HierarchyTreeViewItem GetItem(FilterDialogViewModel viewModel, string name) {
             return viewModel.Items.GetFullHierarchy().First((x) => x.Name == name);
-        }
-
-
-        private static FilterDialogViewModel CreateViewModel(IEnumerable<IHierarchyNode> hierarchy, IDebouncer? debouncer = null) {
-            return CreateViewModel(() => Task.FromResult(hierarchy), debouncer);
-        }
-
-
-        private static FilterDialogViewModel CreateViewModel(Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory, IDebouncer? debouncer = null) {
-            if (debouncer is null) {
-                debouncer = Mock.Of<IDebouncer>();
-            }
-
-            return new FilterDialogViewModel(hierarchyFactory, (x) => debouncer, Factory.CreateSearchQuery);
         }
 
     }

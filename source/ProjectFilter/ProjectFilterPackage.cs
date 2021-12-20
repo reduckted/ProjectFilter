@@ -28,7 +28,7 @@ namespace ProjectFilter {
             await base.InitializeAsync(cancellationToken, progress);
 
             AddService(typeof(IExtensionSettings), async (container, cancellation, type) => await ExtensionSettings.CreateAsync(), true);
-            AddService<FilterOptionsProvider, IFilterOptionsProvider>(new FilterOptionsProvider());
+            AddService<FilterOptionsProvider, IFilterOptionsProvider>(new FilterOptionsProvider(JoinableTaskFactory));
             AddService<FilterService, IFilterService>(new FilterService());
             AddService<HierarchyProvider, IHierarchyProvider>(new HierarchyProvider());
             AddService<Logger, ILogger>(new Logger());

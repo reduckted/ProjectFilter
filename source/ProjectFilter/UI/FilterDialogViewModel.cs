@@ -1,6 +1,7 @@
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
 using ProjectFilter.Services;
 using ProjectFilter.UI.Utilities;
 using System;
@@ -13,6 +14,9 @@ using System.Windows;
 namespace ProjectFilter.UI {
 
     public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
+
+        private static readonly Predicate<object> CanAlwaysExecute = (x) => true;
+
 
         private readonly Func<Task<IEnumerable<IHierarchyNode>>> _hierarchyFactory;
         private readonly SearchQueryFactory _searchQueryFactory;
@@ -28,7 +32,8 @@ namespace ProjectFilter.UI {
         public FilterDialogViewModel(
             Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory,
             Func<TimeSpan, IDebouncer> debouncerFactory,
-            SearchQueryFactory searchQueryFactory
+            SearchQueryFactory searchQueryFactory,
+            JoinableTaskFactory joinableTaskFactory
         ) {
             if (debouncerFactory is null) {
                 throw new ArgumentNullException(nameof(debouncerFactory));
@@ -42,12 +47,41 @@ namespace ProjectFilter.UI {
             _loadingVisibility = Visibility.Visible;
             _loadedVisibility = Visibility.Collapsed;
 
-            ToggleLoadProjectDependenciesCommand = new DelegateCommand(() => LoadProjectDependencies = !LoadProjectDependencies);
-            CollapseAllCommand = new DelegateCommand<HierarchyTreeViewItem>(CollapseAll);
-            ExpandAllCommand = new DelegateCommand<HierarchyTreeViewItem>(ExpandAll);
-            CheckAllCommand = new DelegateCommand(() => SetAllChecked(true));
-            UncheckAllCommand = new DelegateCommand(() => SetAllChecked(false));
-            AcceptCommand = new DelegateCommand(AcceptSelection);
+            ToggleLoadProjectDependenciesCommand = new DelegateCommand(
+                (_) => LoadProjectDependencies = !LoadProjectDependencies,
+                CanAlwaysExecute,
+                joinableTaskFactory
+            );
+
+            CollapseAllCommand = new DelegateCommand<HierarchyTreeViewItem>(
+                CollapseAll,
+                CanAlwaysExecute,
+                joinableTaskFactory
+            );
+
+            ExpandAllCommand = new DelegateCommand<HierarchyTreeViewItem>(
+                ExpandAll,
+                CanAlwaysExecute,
+                joinableTaskFactory
+            );
+
+            CheckAllCommand = new DelegateCommand(
+                (_) => SetAllChecked(true),
+                CanAlwaysExecute,
+                joinableTaskFactory
+            );
+
+            UncheckAllCommand = new DelegateCommand(
+                (_) => SetAllChecked(false),
+                CanAlwaysExecute,
+                joinableTaskFactory
+            );
+
+            AcceptCommand = new DelegateCommand(
+                (_) => AcceptSelection(),
+                CanAlwaysExecute,
+                joinableTaskFactory
+            );
 
             // Use a `DispatcherTimer` constructor without a callback
             // so that the timer doesn't start immediately. We only
