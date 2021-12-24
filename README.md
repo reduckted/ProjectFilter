@@ -1,10 +1,12 @@
 # Project Filter
 
-A Visual Studio extension to quickly load and unload projects. Perfect for large solutions.
+A Visual Studio 2022 extension to quickly load and unload projects. Perfect for large solutions.
 
 ## Installation
 
 Get the extension from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=reduckted.ProjectFilter), or search for "Project Filter" in Visual Studio's _Manage Extensions_ dialog.
+
+:information_source: A version for Visual Studio 2019 can be found [here](https://github.com/reduckted/ProjectFilter/releases/tag/1.1.1).
 
 ## How To Use
 

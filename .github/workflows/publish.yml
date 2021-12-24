@@ -6,7 +6,7 @@ on:
 
 jobs:
     publish:
-        runs-on: windows-latest
+        runs-on: windows-2022
 
         env:
             Configuration: Release
@@ -18,18 +18,6 @@ jobs:
 
             - name: Setup MSBuild
               uses: microsoft/setup-msbuild@v1.0.2
-              with:
-                  vs-version: "[16.9,16.10)"
-
-            - name: Build
-              run: msbuild /t:Rebuild /Restore /v:Minimal
-
-            - name: Test
-              run: msbuild tests/ProjectFilter.UnitTests /t:Test /v:Minimal
 
             - name: Publish
-              uses: cezarypiatek/VsixPublisherAction@0.2
-              with:
-                  extension-file: source\ProjectFilter\bin\Release\ProjectFilter.vsix
-                  publish-manifest-file: publish.json
-                  personal-access-code: ${{ secrets.PUBLISHER_TOKEN }}
+              run: msbuild source/ProjectFilter/ProjectFilter.csproj /t:PublishToMarketplace /Restore /v:Minimal /p:PersonalAccessToken=${{ secrets.PUBLISHER_TOKEN }}
