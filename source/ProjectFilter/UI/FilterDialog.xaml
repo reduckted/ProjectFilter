@@ -139,6 +139,8 @@
                 ItemsSource="{Binding Items}" 
                 Style="{StaticResource TreeViewStyle}"
                 BorderThickness="0,0,0,1"
+                VirtualizingStackPanel.IsVirtualizing="True"
+                VirtualizingStackPanel.VirtualizationMode="Recycling"
                 >
 
                 <TreeView.InputBindings>
