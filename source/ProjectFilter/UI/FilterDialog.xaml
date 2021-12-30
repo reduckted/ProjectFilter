@@ -45,6 +45,9 @@
         <KeyBinding Key="Z" Modifiers="Alt" Command="{Binding UncheckAllCommand}"/>
 
         <KeyBinding Key="E" Modifiers="Alt" Command="{Binding ToggleRegularExpressionModeCommand}"/>
+
+        <KeyBinding Key="F" Modifiers="Alt" Command="{Binding FocusSearchBoxCommand}"/>
+        <KeyBinding Key="F" Modifiers="Ctrl" Command="{Binding FocusSearchBoxCommand}"/>
     </platform:DialogWindow.InputBindings>
 
     <Grid>
@@ -141,11 +144,12 @@
                     x:Name="SearchBox"
                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                     Margin="0,0,0,2"
-                    properties:Watermark.Text="Filter projects..."
+                    properties:Watermark.Text="Filter projects... (Ctrl+F)"
                     properties:ClearOnEscape.Enabled="True"
                     properties:FocusWhenVisible.Enabled="True"
+                    properties:FocusWhenRequested.Source="{Binding FocusSearchBoxSource}"
                     >
-                    
+
                     <TextBox.Style>
                         <Style TargetType="TextBox" BasedOn="{StaticResource SearchTextBoxStyle}">
                             <Style.Triggers>

@@ -48,6 +48,8 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
         _loadingVisibility = Visibility.Visible;
         _loadedVisibility = Visibility.Collapsed;
 
+        FocusSearchBoxSource = new FocusSource();
+
         ToggleLoadProjectDependenciesCommand = new DelegateCommand(
             (_) => LoadProjectDependencies = !LoadProjectDependencies,
             CanAlwaysExecute,
@@ -80,6 +82,12 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
 
         ToggleRegularExpressionModeCommand = new DelegateCommand(
            (_) => UseRegularExpressions = !UseRegularExpressions,
+           CanAlwaysExecute,
+           joinableTaskFactory
+        );
+
+        FocusSearchBoxCommand = new DelegateCommand(
+           (_) => FocusSearchBoxSource.RequestFocus(),
            CanAlwaysExecute,
            joinableTaskFactory
         );
@@ -169,7 +177,13 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
     public DelegateCommand ToggleRegularExpressionModeCommand { get; }
 
 
+    public DelegateCommand FocusSearchBoxCommand { get; }
+
+
     public DelegateCommand AcceptCommand { get; }
+
+
+    public FocusSource FocusSearchBoxSource { get; }
 
 
     public FilterOptions? Result {
