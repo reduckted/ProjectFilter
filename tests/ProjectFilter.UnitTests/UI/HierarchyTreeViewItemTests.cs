@@ -1,8 +1,13 @@
 using Microsoft.VisualStudio.Imaging;
+using Microsoft.VisualStudio.Text;
 using Moq;
 using ProjectFilter.Helpers;
 using ProjectFilter.Services;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Xunit;
 
 
@@ -211,6 +216,46 @@ public static class HierarchyTreeViewItemTests {
     }
 
 
+    public class PathProperty {
+
+        [Fact]
+        public void ReturnsNameForItemWithoutParent() {
+            HierarchyTreeViewItem item;
+            Mock<IHierarchyNode> node;
+
+
+            node = new Mock<IHierarchyNode>();
+            node.SetupGet((x) => x.Name).Returns("Root");
+
+            item = new HierarchyTreeViewItem(node.Object, Enumerable.Empty<HierarchyTreeViewItem>());
+
+            Assert.Equal("Root", item.Path);
+        }
+
+
+        [Fact]
+        public void JoinsNameToParentPathForItemWithParent() {
+            HierarchyTreeViewItem parentItem;
+            HierarchyTreeViewItem childItem;
+            Mock<IHierarchyNode> parentNode;
+            Mock<IHierarchyNode> childNode;
+
+
+            childNode = new Mock<IHierarchyNode>();
+            childNode.SetupGet((x) => x.Name).Returns("Child");
+
+            parentNode = new Mock<IHierarchyNode>();
+            parentNode.SetupGet((x) => x.Name).Returns("Root");
+
+            childItem = new HierarchyTreeViewItem(childNode.Object, Enumerable.Empty<HierarchyTreeViewItem>());
+            parentItem = new HierarchyTreeViewItem(parentNode.Object, new[] { childItem });
+
+            Assert.Equal("Root/Child", childItem.Path);
+        }
+
+    }
+
+
     public class FilterMethod {
 
         [Fact]
@@ -220,7 +265,7 @@ public static class HierarchyTreeViewItemTests {
 
             item = Factory.CreateTreeViewItem(name: "Foo");
 
-            Assert.True(item.Filter(Factory.CreateSearchEvaluator("F")));
+            Assert.True(item.Filter(new RegexTextFilter("F")));
         }
 
 
@@ -231,7 +276,7 @@ public static class HierarchyTreeViewItemTests {
 
             item = Factory.CreateTreeViewItem(name: "Foo");
 
-            Assert.False(item.Filter(Factory.CreateSearchEvaluator("X")));
+            Assert.False(item.Filter(new RegexTextFilter("X")));
         }
 
 
@@ -246,43 +291,84 @@ public static class HierarchyTreeViewItemTests {
                     Factory.CreateTreeViewItem(name:"Meep")
                 });
 
-            Assert.True(item.Filter(Factory.CreateSearchEvaluator("B")));
+            Assert.True(item.Filter(new RegexTextFilter("B")));
         }
 
 
         [Fact]
-        public void SetsHighlightTextWhenThereIsOneSearchTerm() {
+        public void SetsHighlightSpansWhenTheFilterMatches() {
             HierarchyTreeViewItem item;
 
 
             item = Factory.CreateTreeViewItem(name: "Foo");
 
-            Assert.True(item.Filter(Factory.CreateSearchEvaluator("F")));
-            Assert.Equal("F", item.HighlightText);
+            Assert.True(item.Filter(new RegexTextFilter("F")));
+            Assert.Equal(new[] { Span.FromBounds(0, 1) }, item.HighlightSpans);
         }
 
 
         [Fact]
-        public void DoesNotSetHighlightTextWhenThereAreNoMatches() {
+        public void DoesNotSetHighlightSpansWhenThereAreNoMatches() {
             HierarchyTreeViewItem item;
 
 
             item = Factory.CreateTreeViewItem(name: "Foo");
 
-            Assert.False(item.Filter(Factory.CreateSearchEvaluator("X")));
-            Assert.Equal("", item.HighlightText);
+            Assert.False(item.Filter(new RegexTextFilter("X")));
+            Assert.Null(item.HighlightSpans);
         }
 
 
         [Fact]
-        public void DoesNotSetHighlightTextWhenThereAreMatchesButMultipleSearchTerms() {
+        public void SetsHighlightSpansWhenThereAreMatchesAndMultipleSearchTerms() {
             HierarchyTreeViewItem item;
 
 
             item = Factory.CreateTreeViewItem(name: "Foo Bar");
 
-            Assert.True(item.Filter(Factory.CreateSearchEvaluator("Foo Bar")));
-            Assert.Equal("", item.HighlightText);
+            Assert.True(
+                item.Filter(
+                    new PatternTextFilter(
+                        ".",
+                        Factory.CreatePatternMatcherFactory(new[] { Span.FromBounds(0, 1), Span.FromBounds(4, 5) })
+                    )
+                )
+            );
+
+            Assert.Equal(new[] { Span.FromBounds(0, 1), Span.FromBounds(4, 5) }, item.HighlightSpans);
+        }
+
+
+        [Theory]
+        [InlineData("[0,1]", "")]
+        [InlineData("[0,1] [3,4]", "")]
+        [InlineData("[0,1] [4,5]", "[0,1]")]
+        [InlineData("[4,5]", "[0,1]")]
+        [InlineData("[4,5] [6,7]", "[0,1] [2,3]")]
+        [InlineData("[4,7]", "[0,3]")]
+        [InlineData("[0,7]", "[0,3]")]
+        public void ConvertsMatchingSpansFromPathToName(string matchingSpans, string expectedSpans) {
+            HierarchyTreeViewItem parent;
+            HierarchyTreeViewItem child;
+
+
+            child = Factory.CreateTreeViewItem(name: "Bar");
+            parent = Factory.CreateTreeViewItem(name: "Foo", children: new[] { child });
+
+            child.Filter(new PatternTextFilter(".", Factory.CreatePatternMatcherFactory(ParseSpans(matchingSpans))));
+
+            Assert.Equal(ParseSpans(expectedSpans), child.HighlightSpans);
+
+            static IEnumerable<Span> ParseSpans(string spans) {
+                return spans
+                    .Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select((x) => Regex.Match(x, "\\[(?<start>\\d+),(?<end>\\d+)\\]").Groups)
+                    .Select((x) => Span.FromBounds(
+                        int.Parse(x["start"].Value, CultureInfo.InvariantCulture),
+                        int.Parse(x["end"].Value, CultureInfo.InvariantCulture)
+                    ))
+                    .ToList();
+            }
         }
 
     }
@@ -291,17 +377,17 @@ public static class HierarchyTreeViewItemTests {
     public class ClearFilterMethod {
 
         [Fact]
-        public void ClearsTheHighlightText() {
+        public void ClearsTheHighlightSpans() {
             HierarchyTreeViewItem item;
 
 
             item = Factory.CreateTreeViewItem(name: "Foo");
 
-            item.Filter(Factory.CreateSearchEvaluator("F"));
-            Assert.NotEqual("", item.HighlightText);
+            item.Filter(new RegexTextFilter("F"));
+            Assert.NotNull(item.HighlightSpans);
 
             item.ClearFilter();
-            Assert.Equal("", item.HighlightText);
+            Assert.Null(item.HighlightSpans);
         }
 
 
@@ -312,7 +398,7 @@ public static class HierarchyTreeViewItemTests {
 
             item = Factory.CreateTreeViewItem(name: "Foo", children: new[] { Factory.CreateTreeViewItem(name: "Bar") });
 
-            item.Filter(Factory.CreateSearchEvaluator("F"));
+            item.Filter(new RegexTextFilter("X"));
             Assert.Empty(item.Children);
 
             item.ClearFilter();

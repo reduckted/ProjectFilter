@@ -41,8 +41,10 @@
         <KeyBinding Key="Subtract" Modifiers="Alt" Command="{Binding CollapseAllCommand}"/>
 
         <KeyBinding Key="A" Modifiers="Alt" Command="{Binding CheckAllCommand}"/>
-        
+
         <KeyBinding Key="Z" Modifiers="Alt" Command="{Binding UncheckAllCommand}"/>
+
+        <KeyBinding Key="E" Modifiers="Alt" Command="{Binding ToggleRegularExpressionModeCommand}"/>
     </platform:DialogWindow.InputBindings>
 
     <Grid>
@@ -59,7 +61,6 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
@@ -121,17 +122,40 @@
                             imaging:CrispImage.Dpi="96"
                             />
                     </Button>
+
+                    <Separator/>
+
+                    <ToggleButton 
+                        ToolTip="Use Regular Expressions (Alt+E)"
+                        IsChecked="{Binding UseRegularExpressions}"
+                        >
+
+                        <imaging:CrispImage 
+                            Moniker="{x:Static catalog:KnownMonikers.RegularExpression}"
+                            imaging:CrispImage.Dpi="96"
+                            />
+                    </ToggleButton>
                 </ToolBar>
 
                 <TextBox
                     x:Name="SearchBox"
                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                     Margin="0,0,0,2"
-                    Style="{StaticResource SearchTextBoxStyle}"
                     properties:Watermark.Text="Filter projects..."
                     properties:ClearOnEscape.Enabled="True"
                     properties:FocusWhenVisible.Enabled="True"
-                    />
+                    >
+                    
+                    <TextBox.Style>
+                        <Style TargetType="TextBox" BasedOn="{StaticResource SearchTextBoxStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding InvalidFilter}" Value="True">
+                                    <Setter Property="BorderBrush" Value="{DynamicResource {x:Static ui:FilterDialog.ErrorBorderBrushKey}}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Style>
+                </TextBox>
             </StackPanel>
 
             <TreeView 
@@ -191,15 +215,14 @@
                             <internal:HighlightTextBlock
                                 Grid.Column="2"
                                 TextSource="{Binding Name}"
-                                internal:HighlightTextBlock.HighlightText="{Binding HighlightText}"
+                                internal:HighlightTextBlock.HighlightRuns="{Binding HighlightSpans}"
                                 HighlightBackground="{DynamicResource {x:Static platform:TreeViewColors.HighlightedSpanBrushKey}}"
                                 HighlightForeground="{DynamicResource {x:Static platform:TreeViewColors.HighlightedSpanTextBrushKey}}"
                                 HighlightFontWeight="Normal"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
                                 Padding="0,2"
-                                platform:TextToolTipService.AutoShowToolTipWhenObscured="True"
-                                platform:TextToolTipService.ToolTipText="{Binding Name}"
+                                ToolTip="{Binding Path}"
                                 />
                         </Grid>
                     </HierarchicalDataTemplate>
@@ -215,7 +238,7 @@
             </TreeView>
 
             <StackPanel 
-                Grid.Row="4"
+                Grid.Row="2"
                 Orientation="Horizontal"
                 Margin="12"
                 HorizontalAlignment="Right"

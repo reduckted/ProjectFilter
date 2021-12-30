@@ -9,6 +9,9 @@ public interface IExtensionSettings {
     bool LoadProjectDependencies { get; set; }
 
 
+    bool UseRegularExpressions { get; set; }
+
+
     Task LoadAsync();
 
 

@@ -1,9 +1,10 @@
-using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Imaging.Interop;
 using Microsoft.VisualStudio.PlatformUI;
+using Microsoft.VisualStudio.Text;
 using ProjectFilter.Services;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 
 
@@ -15,7 +16,8 @@ public class HierarchyTreeViewItem : ObservableObject {
     private readonly IHierarchyNode _node;
     private bool? _isChecked;
     private bool _isExpanded;
-    private string _highlightText;
+    private IReadOnlyCollection<Span>? _highlightSpans;
+    private string? _path;
 
 
     public HierarchyTreeViewItem(
@@ -27,7 +29,6 @@ public class HierarchyTreeViewItem : ObservableObject {
 
         _isChecked = false;
         _isExpanded = true;
-        _highlightText = "";
 
         // Connect the children to this parent item.
         foreach (var child in Children) {
@@ -86,36 +87,63 @@ public class HierarchyTreeViewItem : ObservableObject {
     }
 
 
-    public string HighlightText {
-        get { return _highlightText; }
-        set { SetProperty(ref _highlightText, value); }
+    public IReadOnlyCollection<Span>? HighlightSpans {
+        get { return _highlightSpans; }
+        set { SetProperty(ref _highlightSpans, value); }
     }
 
 
-    public bool Filter(HierarchySearchMatchEvaluator evaluator) {
-        bool isMatch;
+    public string Path => _path ??= Parent is not null ? $"{Parent.Path}/{Name}" : Name;
 
 
-        if (evaluator is null) {
-            throw new ArgumentNullException(nameof(evaluator));
+    public bool Filter(ITextFilter filter) {
+        ImmutableArray<Span> matches;
+
+
+        if (filter is null) {
+            throw new ArgumentNullException(nameof(filter));
         }
 
-        Children.Filter(evaluator);
-        isMatch = evaluator.IsSearchMatch(Name);
+        Children.Filter(filter);
+        matches = filter.TryMatch(Path);
 
-        if (isMatch && evaluator.SearchTerms.Count == 1) {
-            HighlightText = evaluator.SearchTerms[0];
+        // The matches specify the spans in the `Path` that match, but we highlight the matching
+        // spans in the `Name`. Translate the spans so that they apply to the `Name` property.
+        if (matches.Length > 0) {
+            HighlightSpans = TranslateSpansFromPathToName(matches);
         } else {
-            HighlightText = "";
+            HighlightSpans = null;
         }
 
-        return isMatch || Children.Count > 0;
+        return matches.Length > 0 || Children.Count > 0;
+    }
+
+
+    private IReadOnlyCollection<Span>? TranslateSpansFromPathToName(ImmutableArray<Span> matches) {
+        int nameStartOffset;
+
+
+        // The name is always at the end of the path, so we can determine where 
+        // it starts by subtracting its length from the length of the path.
+        nameStartOffset = Path.Length - Name.Length;
+
+        if (nameStartOffset == 0) {
+            return matches;
+        }
+
+        return matches
+            // Exclude any spans that end before the name starts.
+            .Where((x) => x.End > nameStartOffset)
+            // Create new spans starting from zero, and truncate any ranges start
+            // before the start of the name but end after the start of the name.
+            .Select((x) => Span.FromBounds(Math.Max(x.Start - nameStartOffset, 0), x.End - nameStartOffset))
+            .ToList();
     }
 
 
     public void ClearFilter() {
         Children.ClearFilter();
-        HighlightText = "";
+        HighlightSpans = null;
     }
 
 

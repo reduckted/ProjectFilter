@@ -1,4 +1,4 @@
-using Microsoft.Internal.VisualStudio.PlatformUI;
+using ProjectFilter.Services;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -67,14 +67,14 @@ public class HierarchyTreeViewItemCollection : IReadOnlyCollection<HierarchyTree
     }
 
 
-    public void Filter(HierarchySearchMatchEvaluator evaluator) {
+    public void Filter(ITextFilter filter) {
         // If there's no original items, then there's nothing 
         // to filter and the collection won't ever change.
         if (_originalItems.Count > 0) {
             // Replace the items with the 
             // original items that meet the filter.
             _items.Clear();
-            _items.AddRange(_originalItems.Where((x) => x.Filter(evaluator)));
+            _items.AddRange(_originalItems.Where((x) => x.Filter(filter)));
 
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }

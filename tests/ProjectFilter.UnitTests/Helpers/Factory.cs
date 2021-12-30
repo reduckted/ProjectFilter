@@ -1,12 +1,14 @@
-using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.PatternMatching;
 using Moq;
 using ProjectFilter.Services;
 using ProjectFilter.UI;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Xml.Linq;
 
@@ -16,49 +18,34 @@ namespace ProjectFilter.Helpers;
 
 internal static class Factory {
 
-    public static IVsSearchQuery CreateSearchQuery(string text) {
-        Mock<IVsSearchQuery> query;
-        IVsSearchToken[] tokens;
+    public static IPatternMatcherFactory CreatePatternMatcherFactory(IEnumerable<Span> matches) {
+        Mock<IPatternMatcherFactory> factory;
+        Mock<IPatternMatcher> matcher;
 
 
-        tokens = text.Split(' ').Select((segment) => {
-            Mock<IVsSearchToken> token;
+        matcher = new Mock<IPatternMatcher>();
+        matcher.Setup((x) => x.TryMatch(It.IsAny<string>())).Returns(
+            new PatternMatch(
+                PatternMatchKind.Exact,
+                false,
+                false,
+                ImmutableArray.CreateRange(matches)
+            )
+        );
 
+        factory = new Mock<IPatternMatcherFactory>();
+        factory
+            .Setup((x) => x.CreatePatternMatcher(It.IsAny<string>(), It.IsAny<PatternMatcherCreationOptions>()))
+            .Returns(matcher.Object);
 
-            token = new Mock<IVsSearchToken>();
-            token.SetupGet((x) => x.OriginalTokenText).Returns(segment);
-            token.SetupGet((x) => x.ParsedTokenText).Returns(segment);
-            token.SetupGet((x) => x.TokenStartPosition).Returns((uint)text.IndexOf(segment, StringComparison.Ordinal));
-
-            return token.Object;
-        }).ToArray();
-
-        query = new Mock<IVsSearchQuery>();
-        query.SetupGet((x) => x.SearchString).Returns(text);
-
-        query
-            .Setup((x) => x.GetTokens(It.IsAny<uint>(), It.IsAny<IVsSearchToken[]>()))
-            .Returns((uint max, IVsSearchToken[] output) => {
-                if (output is null) {
-                    return (uint)tokens.Length;
-
-                } else {
-                    uint num;
-
-
-                    num = Math.Min(max, (uint)tokens.Length);
-                    Array.Copy(tokens, output, (int)num);
-
-                    return num;
-                }
-            });
-
-        return query.Object;
+        return factory.Object;
     }
 
 
-    public static HierarchySearchMatchEvaluator CreateSearchEvaluator(string text) {
-        return new HierarchySearchMatchEvaluator(CreateSearchQuery(text));
+    public static ITextFilter CreateTextFilter(string pattern, bool _) {
+        // Ignore the type of pattern requested and always create the filter
+        // from a regular expression because that's the simplest thing to do.
+        return new RegexTextFilter(pattern);
     }
 
 

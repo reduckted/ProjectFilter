@@ -17,7 +17,6 @@ namespace ProjectFilter;
 [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExistsAndFullyLoaded_string, PackageAutoLoadFlags.BackgroundLoad)]
 [Guid(PackageGuids.ProjectFilterPackageString)]
 [ProvideService(typeof(IExtensionSettings), IsAsyncQueryable = true)]
-[ProvideService(typeof(IFilterOptionsProvider), IsAsyncQueryable = true)]
 [ProvideService(typeof(IFilterService), IsAsyncQueryable = true)]
 [ProvideService(typeof(IHierarchyProvider), IsAsyncQueryable = true)]
 [ProvideService(typeof(ILogger), IsAsyncQueryable = true)]
@@ -29,7 +28,6 @@ public sealed class ProjectFilterPackage : ToolkitPackage {
         await base.InitializeAsync(cancellationToken, progress);
 
         AddService(typeof(IExtensionSettings), async (container, cancellation, type) => await ExtensionSettings.CreateAsync(), true);
-        AddService<FilterOptionsProvider, IFilterOptionsProvider>(new FilterOptionsProvider(JoinableTaskFactory));
         AddService<FilterService, IFilterService>(new FilterService());
         AddService<HierarchyProvider, IHierarchyProvider>(new HierarchyProvider());
         AddService<Logger, ILogger>(new Logger());

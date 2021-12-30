@@ -1,6 +1,4 @@
-using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.PlatformUI;
-using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Threading;
 using ProjectFilter.Services;
 using ProjectFilter.UI.Utilities;
@@ -20,7 +18,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
 
 
     private readonly Func<Task<IEnumerable<IHierarchyNode>>> _hierarchyFactory;
-    private readonly SearchQueryFactory _searchQueryFactory;
+    private readonly TextFilterFactory _textFilterFactory;
     private readonly IDebouncer _debouncer;
     private HierarchyTreeViewItemCollection _items;
     private string _searchText;
@@ -28,12 +26,14 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
     private FilterOptions? _result;
     private Visibility _loadingVisibility;
     private Visibility _loadedVisibility;
+    private bool _useRegularExpressions;
+    private bool _invalidFilter;
 
 
     public FilterDialogViewModel(
         Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory,
         Func<TimeSpan, IDebouncer> debouncerFactory,
-        SearchQueryFactory searchQueryFactory,
+        TextFilterFactory textFilterFactory,
         JoinableTaskFactory joinableTaskFactory
     ) {
         if (debouncerFactory is null) {
@@ -41,7 +41,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
         }
 
         _hierarchyFactory = hierarchyFactory ?? throw new ArgumentNullException(nameof(hierarchyFactory));
-        _searchQueryFactory = searchQueryFactory ?? throw new ArgumentNullException(nameof(searchQueryFactory));
+        _textFilterFactory = textFilterFactory ?? throw new ArgumentNullException(nameof(textFilterFactory));
 
         _items = new HierarchyTreeViewItemCollection(Enumerable.Empty<HierarchyTreeViewItem>());
         _searchText = "";
@@ -76,6 +76,12 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
             (_) => SetAllChecked(false),
             CanAlwaysExecute,
             joinableTaskFactory
+        );
+
+        ToggleRegularExpressionModeCommand = new DelegateCommand(
+           (_) => UseRegularExpressions = !UseRegularExpressions,
+           CanAlwaysExecute,
+           joinableTaskFactory
         );
 
         AcceptCommand = new DelegateCommand(
@@ -160,6 +166,9 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
     public DelegateCommand UncheckAllCommand { get; }
 
 
+    public DelegateCommand ToggleRegularExpressionModeCommand { get; }
+
+
     public DelegateCommand AcceptCommand { get; }
 
 
@@ -190,6 +199,21 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
     public bool LoadProjectDependencies {
         get { return _loadProjectDependencies; }
         set { SetProperty(ref _loadProjectDependencies, value); }
+    }
+
+
+    public bool UseRegularExpressions {
+        get { return _useRegularExpressions; }
+        set {
+            SetProperty(ref _useRegularExpressions, value);
+            Search();
+        }
+    }
+
+
+    public bool InvalidFilter {
+        get { return _invalidFilter; }
+        private set { SetProperty(ref _invalidFilter, value); }
     }
 
 
@@ -266,22 +290,28 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
 
     private void Search() {
         string text;
-        IVsSearchQuery? query;
 
 
         text = _searchText.Trim();
 
         if (!string.IsNullOrEmpty(text)) {
-            query = _searchQueryFactory.Invoke(text);
-        } else {
-            query = null;
-        }
+            ITextFilter filter;
 
-        if (query is not null) {
-            Items.Filter(new HierarchySearchMatchEvaluator(query));
+
+            try {
+                filter = _textFilterFactory(text, UseRegularExpressions);
+            } catch (ArgumentException) {
+                InvalidFilter = true;
+                return;
+            }
+
+            Items.Filter(filter);
+
         } else {
             Items.ClearFilter();
         }
+
+        InvalidFilter = false;
     }
 
 

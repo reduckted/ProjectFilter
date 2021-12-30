@@ -245,3 +245,4 @@ dotnet_naming_style.begins_with__.capitalization = camel_case
 
 dotnet_diagnostic.CA1014.severity = none
 dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.IDE0070.severity = none
