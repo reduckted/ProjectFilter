@@ -48,6 +48,7 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
 
         using (var vm = new FilterDialogViewModel(hierarchyFactory, Debouncer.Create, textFilterFactory, Package.JoinableTaskFactory)) {
             FilterDialog dialog;
+            bool result;
 
 
             await settings.LoadAsync();
@@ -58,11 +59,13 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
                 DataContext = vm
             };
 
-            if (dialog.ShowModal().GetValueOrDefault() && (vm.Result is not null)) {
-                settings.LoadProjectDependencies = vm.Result.LoadProjectDependencies;
-                settings.UseRegularExpressions = vm.UseRegularExpressions;
-                await settings.SaveAsync();
+            result = dialog.ShowModal().GetValueOrDefault();
 
+            settings.LoadProjectDependencies = vm.LoadProjectDependencies;
+            settings.UseRegularExpressions = vm.UseRegularExpressions;
+            await settings.SaveAsync();
+
+            if (result) {
                 return vm.Result;
             }
         }
