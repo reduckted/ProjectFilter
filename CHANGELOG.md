@@ -1,3 +1,9 @@
+# 2.1.0 (2021-12-30)
+
+-   🚤 Improved performance when showing the projects in the solution.
+-   ✨ Improved text searching when filtering the projects.
+-   ✨ Added support for using a regular expression to filter the projects.
+
 # 2.0.0 (2021-12-24)
 
 -   ✨ Visual Studio 2022 support.
