@@ -24,9 +24,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gamma.Testing", "source\Gam
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Delta", "Delta", "{AF1AE3D3-561D-42EC-B153-CC770C227DBB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Delta.Abstractions", "source\Delta\Delta.Abstractions\Delta.Abstractions.csproj", "{9E212B77-D758-418F-AC46-A27BCB816862}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Delta.Abstractions", "source\Delta\Delta.Abstractions\Delta.Abstractions.csproj", "{9E212B77-D758-418F-AC46-A27BCB816862}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Delta", "source\Delta\Delta\Delta.csproj", "{57C99307-2260-418F-9B95-6555FD04E1AE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Delta", "source\Delta\Delta\Delta.csproj", "{57C99307-2260-418F-9B95-6555FD04E1AE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Alpha.UnitTests", "tests\Alpha.UnitTests\Alpha.UnitTests.csproj", "{4B6056E0-4839-42B0-89DF-2F5EA3950C1C}"
 EndProject
@@ -42,7 +42,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Delta", "Delta", "{C9AFADAC
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Delta.UnitTests", "tests\Delta\Delta.UnitTests\Delta.UnitTests.csproj", "{682C2102-4263-4457-9A9F-BB833B0EDD01}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Delta.EndToEndTests", "tests\Delta\Delta.EndToEndTests\Delta.EndToEndTests.csproj", "{18033C99-CD09-40F6-9C9C-2420C459FCDD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Delta.EndToEndTests", "tests\Delta\Delta.EndToEndTests\Delta.EndToEndTests.csproj", "{18033C99-CD09-40F6-9C9C-2420C459FCDD}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Shared", "source\Shared\Shared.shproj", "{17F93D78-0362-47DD-BC25-9D83636B10F5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -119,8 +121,13 @@ Global
 		{C9AFADAC-355A-4350-AED6-7C0EE1B28E29} = {DB79735E-A68C-44B2-8EC8-C5D0F4531CEF}
 		{682C2102-4263-4457-9A9F-BB833B0EDD01} = {C9AFADAC-355A-4350-AED6-7C0EE1B28E29}
 		{18033C99-CD09-40F6-9C9C-2420C459FCDD} = {C9AFADAC-355A-4350-AED6-7C0EE1B28E29}
+		{17F93D78-0362-47DD-BC25-9D83636B10F5} = {8BB688F8-2B48-4692-9DFC-A199435AB13D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6CBD6CD1-FF35-4928-A5CA-9BD45C3C8BA4}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		source\Shared\Shared.projitems*{0287a07b-d291-48ed-be6f-5e2a66b5e774}*SharedItemsImports = 5
+		source\Shared\Shared.projitems*{17f93d78-0362-47dd-bc25-9d83636b10f5}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal
