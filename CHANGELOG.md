@@ -1,6 +1,6 @@
-# Unreleased
+# 2.2.0 (2022-06-05)
 
-- 🐛 Ensured that shared project dependencies are loaded.
+- ✨ Ensured that shared project dependencies are loaded.
 
 # 2.1.0 (2021-12-30)
 
