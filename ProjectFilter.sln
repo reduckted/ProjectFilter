@@ -26,11 +26,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 		.github\workflows\publish.yml = .github\workflows\publish.yml
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{079B72C9-D06A-4C15-A8D0-3A4283902361}"
-	ProjectSection(SolutionItems) = preProject
-		build\PublishToMarketplace.targets = build\PublishToMarketplace.targets
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
