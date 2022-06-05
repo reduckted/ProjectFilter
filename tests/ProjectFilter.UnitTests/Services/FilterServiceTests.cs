@@ -267,6 +267,38 @@ public static class FilterServiceTests {
 
 
         [Fact]
+        public async Task LoadsSharedProjectsReferencedByProjectsThatAreLoadedWhenRequested() {
+            Setup(
+                $@"
+                    <solution name='root'>
+                        <unloaded name='alpha' guid='{ProjectAlpha}' dependsOn='beta' />
+                        <unloaded name='beta' guid='{ProjectBeta}' shared='true' />
+                        <unloaded name='gamma' guid='{ProjectGamma}'/>
+                    </solution>
+                    "
+            );
+
+            await ApplyAsync(
+                new FilterOptions(
+                    new Guid[] { ProjectAlpha },
+                    Enumerable.Empty<Guid>(),
+                    true
+                )
+            );
+
+            Verify(
+                $@"
+                    <solution name='root'>
+                        <project name='alpha'/>
+                        <project name='beta'/>
+                        <unloaded name='gamma'/>
+                    </solution>
+                    "
+            );
+        }
+
+
+        [Fact]
         public async Task ExpandsFolderOfProjectsThatWereLoaded() {
             Mock<ISolutionExplorer> solutionExplorer;
 
@@ -335,7 +367,7 @@ public static class FilterServiceTests {
             IVsSolutionBuildManager2 buildManager;
 
 
-            _root = Factory.ParseHierarchies<TestHierarchyItem>(data, CreateNode);
+            _root = Factory.ParseHierarchies(data, CreateNode);
             solution = Factory.CreateSolution(_root);
 
             buildManager = Factory.CreateBuildManager(_root, _dependencies, solution);
@@ -347,19 +379,8 @@ public static class FilterServiceTests {
         }
 
 
-        private TestHierarchyItem CreateNode(XElement element, TestHierarchyItem? parent) {
-            HierarchyData data;
-            string? dependencies;
-
-
-            data = Factory.CreateHierarchyData(element, parent?.Data);
-
-            dependencies = element.Attribute("dependsOn")?.Value;
-
-            if (dependencies is not null) {
-                _dependencies[data.Identifier] = dependencies.Split(',').ToList();
-            }
-
+        private TestHierarchyItem CreateNode(XElement _, HierarchyData data) {
+            _dependencies[data.Identifier] = data.DependencyNames.ToList();
             return new TestHierarchyItem(data);
         }
 

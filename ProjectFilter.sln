@@ -10,12 +10,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{D9DDC553
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectFilter.UnitTests", "tests\ProjectFilter.UnitTests\ProjectFilter.UnitTests.csproj", "{721A6D73-B256-4495-A5DF-428943B63940}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "misc", "misc", "{10892EE3-E000-490A-ADCE-63ED679EB7FF}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".solution", ".solution", "{10892EE3-E000-490A-ADCE-63ED679EB7FF}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		CHANGELOG.md = CHANGELOG.md
 		nuget.config = nuget.config
-		build\PublishToMarketplace.targets = build\PublishToMarketplace.targets
 		README.md = README.md
 	EndProjectSection
 EndProject
@@ -53,9 +52,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{38D81205-16DE-4064-8997-2F1484A7309C} = {EF75E5C6-8BFF-4F7A-95FA-62185AFD4F8F}
 		{721A6D73-B256-4495-A5DF-428943B63940} = {D9DDC553-BAF0-4629-990D-01A7E6484F12}
-		{8C622692-8DB9-4633-B05C-D51B146E3C0E} = {10892EE3-E000-490A-ADCE-63ED679EB7FF}
 		{F5194B30-0E46-4787-B097-91D30733FF57} = {8C622692-8DB9-4633-B05C-D51B146E3C0E}
-		{079B72C9-D06A-4C15-A8D0-3A4283902361} = {10892EE3-E000-490A-ADCE-63ED679EB7FF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CBDB8F23-C340-4B01-8476-7E2A0DAABDBC}

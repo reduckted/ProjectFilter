@@ -9,6 +9,7 @@ using ProjectFilter.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 
@@ -17,6 +18,9 @@ namespace ProjectFilter.Helpers;
 
 
 internal static class Factory {
+
+    private const string SolutionRoot = "C:\\Solution";
+
 
     public static IPatternMatcherFactory CreatePatternMatcherFactory(IEnumerable<Span> matches) {
         Mock<IPatternMatcherFactory> factory;
@@ -67,15 +71,22 @@ internal static class Factory {
 
 
     public static T ParseHierarchies<T>(string data, TreeItemFactory<T> factory) where T : TreeItem {
-        return ParseHierarchyElement(XDocument.Parse(data).Root, factory, null);
+        return ParseHierarchyElement(XDocument.Parse(data).Root, factory, new Dictionary<string, HierarchyData>(), null);
     }
 
 
-    private static T ParseHierarchyElement<T>(XElement element, TreeItemFactory<T> factory, T? parent) where T : TreeItem {
+    private static T ParseHierarchyElement<T>(
+        XElement element,
+        TreeItemFactory<T> factory,
+        Dictionary<string, HierarchyData> lookup,
+        T? parent
+    ) where T : TreeItem {
         T item;
+        HierarchyData data;
 
 
-        item = factory(element, parent);
+        data = CreateHierarchyData(element, lookup, parent?.Data);
+        item = factory(element, data);
 
         if (parent is not null) {
             parent.Children.Add(item);
@@ -83,16 +94,23 @@ internal static class Factory {
         }
 
         foreach (var child in element.Elements()) {
-            ParseHierarchyElement(child, factory, item);
+            ParseHierarchyElement(child, factory, lookup, item);
         }
+
+        lookup[data.Name] = data;
 
         return item;
     }
 
 
-    public static HierarchyData CreateHierarchyData(XElement element, HierarchyData? parent = null) {
+    private static HierarchyData CreateHierarchyData(
+        XElement element,
+        Dictionary<string, HierarchyData> lookup,
+        HierarchyData? parent = null
+    ) {
         HierarchyData data;
         HierarchyType type;
+        string? dependencies;
 
 
         type = ElementNameToType(element.Name.LocalName);
@@ -100,8 +118,15 @@ internal static class Factory {
         data = new HierarchyData(
             GetIdentifier(element),
             element.Attribute("name")?.Value ?? "?",
-            parent?.Identifier
+            parent?.Identifier,
+            element.Attribute("shared")?.Value == "true"
         );
+
+        dependencies = element.Attribute("dependsOn")?.Value;
+
+        if (dependencies is not null) {
+            data.SetDependencies(dependencies.Split(','), lookup);
+        }
 
         SetType(data, type);
 
@@ -178,6 +203,7 @@ internal static class Factory {
     private static IVsHierarchy CreateHierarchy(HierarchyData data, IVsSolution solution) {
         Mock<IVsHierarchy> hierarchy;
         object nameAsObject;
+        string canonicalName;
 
 
         hierarchy = new Mock<IVsHierarchy>();
@@ -185,6 +211,25 @@ internal static class Factory {
         SetClassID(hierarchy, data.CLSID);
 
         nameAsObject = data.Name;
+
+        switch (data.Type) {
+            case HierarchyType.Solution:
+                canonicalName = Path.Combine(SolutionRoot, data.Name + ".sln");
+                break;
+
+            case HierarchyType.Project:
+            case HierarchyType.UnloadedProject:
+                canonicalName = Path.Combine(SolutionRoot, data.Name, data.Name + (data.IsShared ? ".shproj" : ".csproj"));
+                break;
+
+            default:
+                canonicalName = data.Identifier.ToString();
+                break;
+        }
+
+        hierarchy
+            .Setup((x) => x.GetCanonicalName((uint)VSConstants.VSITEMID.Root, out canonicalName))
+            .Returns(VSConstants.S_OK);
 
         hierarchy
             .Setup((x) => x.GetProperty((uint)VSConstants.VSITEMID.Root, (int)__VSHPROPID.VSHPROPID_Name, out nameAsObject))
@@ -211,6 +256,27 @@ internal static class Factory {
                 value = null;
                 return VSConstants.E_FAIL;
             }));
+
+        hierarchy
+            .Setup((x) => x.GetProperty((uint)VSConstants.VSITEMID.Root, (int)__VSHPROPID7.VSHPROPID_SharedItemsImportFullPaths, out It.Ref<object>.IsAny))
+            .Returns(new GetPropertyCallback((uint itemID, int property, out object? value) => {
+                List<HierarchyData> dependencies;
+
+
+                dependencies = data.GetDependencyData().Where((x) => x.IsShared).ToList();
+
+                if (dependencies.Count > 0) {
+                    value = string.Join(
+                        "|",
+                        dependencies.Select((x) => Path.Combine(SolutionRoot, x.Name, x.Name + ".projitems"))
+                    );
+                    return VSConstants.S_OK;
+                }
+
+                value = null;
+                return VSConstants.E_FAIL;
+            }));
+
 
         if (data.IsProject) {
             hierarchy.As<IVsProject>();
@@ -242,7 +308,11 @@ internal static class Factory {
             case HierarchyType.Project:
                 data.SetType(
                     type,
-                    new Guid("{9a19103f-16f7-4668-be54-9a1e7a4f7556}"),   // C# project.
+                    new Guid(
+                        data.IsShared ?
+                        "{9a19103f-16f7-4668-be54-9a1e7a4f7556}" :  // C# project.
+                        "{d954291e-2a0b-460d-934e-dc6b0785db48}"    // C# shared project.
+                    ),
                     true
                 );
                 break;
@@ -383,9 +453,9 @@ internal static class Factory {
             .Setup((x) => x.GetProjectDependencies(It.IsAny<IVsHierarchy>(), It.IsAny<uint>(), It.IsAny<IVsHierarchy[]>(), It.IsAny<uint[]>()))
             .Returns(new GetProjectDependenciesCallback((hierarchy, count, output, size) => {
                 if (count == 0) {
-                    size[0] = (uint)FindDependencies(root, dependencies, hierarchy, solution).Count;
+                    size[0] = (uint)GetProjectDependencies(root, dependencies, hierarchy, solution).Count;
                 } else {
-                    FindDependencies(root, dependencies, hierarchy, solution).CopyTo(0, output, 0, (int)count);
+                    GetProjectDependencies(root, dependencies, hierarchy, solution).CopyTo(0, output, 0, (int)count);
                 }
 
                 return VSConstants.S_OK;
@@ -395,7 +465,7 @@ internal static class Factory {
     }
 
 
-    private static List<IVsHierarchy> FindDependencies(
+    private static List<IVsHierarchy> GetProjectDependencies(
         TreeItem root,
         IReadOnlyDictionary<Guid, List<string>> dependencies,
         IVsHierarchy source,
@@ -406,6 +476,7 @@ internal static class Factory {
                 return root
                     .Descendants()
                     .Where((x) => names.Contains(x.Data.Name))
+                    .Where((x) => !x.Data.IsShared)
                     .Select((x) => EnsureHierarchyExists(x, solution))
                     .ToList();
             }
@@ -450,7 +521,10 @@ internal static class Factory {
 
     private delegate int GetPropertyCallback(uint itemid, int propid, out object? pvar);
 
+
+    private delegate int GetCanonicalNameCallback(uint itemid, out string pbstrName);
+
 }
 
 
-internal delegate T TreeItemFactory<T>(XElement element, T? parent) where T : TreeItem;
+internal delegate T TreeItemFactory<T>(XElement element, HierarchyData data) where T : TreeItem;

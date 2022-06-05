@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using ProjectFilter.Extensions;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -266,9 +267,45 @@ public partial class FilterService : IFilterService {
             } else {
                 await LogFailureAsync($"Failed to get project dependencies for '{state.Solution.GetName(identifier)}'.", result);
             }
+
+            // Shared projects are not considered project dependencies,
+            // but we still want to load them as though they are dependencies.
+            output.AddRange(GetSharedProjectDependencies(hierarchy, state));
         }
 
         return output;
+    }
+
+
+    private static IEnumerable<Guid> GetSharedProjectDependencies(IVsHierarchy hierarchy, State state) {
+        string[] projitemsPaths;
+
+
+        ThreadHelper.ThrowIfNotOnUIThread();
+
+        projitemsPaths = SharedProjectUtilities.GetSharedItemsImportFullPaths(hierarchy);
+
+        if ((projitemsPaths is not null) && (projitemsPaths.Length > 0)) {
+            HashSet<string> shprojPaths;
+
+
+            // The hierarchy of the shared project is available as a property against the `IVsHierarchy` of
+            // the item that represents the `.projitems` file. However, that property is only populated if the 
+            // shared project is already loaded. We need to find shared projects that are both loaded and unloaded,
+            // so we can't use that property. Instead, we'll look through all of the projects in the solution and
+            // check if the file name is the `.shproj` file that's next to the corresponding `.projitems` file.
+            shprojPaths = projitemsPaths.Select((x) => Path.ChangeExtension(x, ".shproj")).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var item in ((IVsSolution)state.Solution).GetAllProjectHierarchies(ProjectStateFilter.All)) {
+                if (ErrorHandler.Succeeded(item.GetCanonicalName(VSConstants.VSITEMID_ROOT, out string fileName))) {
+                    if (shprojPaths.Contains(fileName)) {
+                        if (state.Solution.TryGetIdentifier(item, out Guid identifier)) {
+                            yield return identifier;
+                        }
+                    }
+                }
+            }
+        }
     }
 
 

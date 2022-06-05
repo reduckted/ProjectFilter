@@ -1,3 +1,7 @@
+# Unreleased
+
+- 🐛 Ensured that shared project dependencies are loaded.
+
 # 2.1.0 (2021-12-30)
 
 -   🚤 Improved performance when showing the projects in the solution.

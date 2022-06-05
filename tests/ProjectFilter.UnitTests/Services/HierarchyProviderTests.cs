@@ -180,16 +180,16 @@ public static class HierarchyProviderTests {
         }
 
 
-        private HierarchyItem CreateNode(XElement element, HierarchyItem? parent) {
-            HierarchyItem data;
+        private HierarchyItem CreateNode(XElement element, HierarchyData data) {
+            HierarchyItem item;
 
 
-            data = new HierarchyItem(Factory.CreateHierarchyData(element, parent?.Data));
+            item = new HierarchyItem(data);
 
-            data.Icons[(VSConstants.VSITEMID.Root, __VSHIERARCHYIMAGEASPECT.HIA_OpenFolderIcon)] = GetImageMoniker(element, "expanded");
-            data.Icons[(VSConstants.VSITEMID.Root, __VSHIERARCHYIMAGEASPECT.HIA_Icon)] = GetImageMoniker(element, "collapsed");
+            item.Icons[(VSConstants.VSITEMID.Root, __VSHIERARCHYIMAGEASPECT.HIA_OpenFolderIcon)] = GetImageMoniker(element, "expanded");
+            item.Icons[(VSConstants.VSITEMID.Root, __VSHIERARCHYIMAGEASPECT.HIA_Icon)] = GetImageMoniker(element, "collapsed");
 
-            return data;
+            return item;
         }
 
 
