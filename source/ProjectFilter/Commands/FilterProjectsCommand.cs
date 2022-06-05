@@ -13,7 +13,7 @@ using Task = System.Threading.Tasks.Task;
 namespace ProjectFilter.Commands;
 
 
-[Command(PackageIds.FilterProjectsCommand)]
+[Command(VSCommandTable.ProjectFilterPackage.FilterProjectsCommand)]
 public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
 
     protected async override Task ExecuteAsync(OleMenuCmdEventArgs e) {

@@ -15,7 +15,7 @@ namespace ProjectFilter;
 [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
 [ProvideMenuResource("Menus.ctmenu", 1)]
 [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExistsAndFullyLoaded_string, PackageAutoLoadFlags.BackgroundLoad)]
-[Guid(PackageGuids.ProjectFilterPackageString)]
+[Guid(VSCommandTable.ProjectFilterPackage.GuidString)]
 [ProvideService(typeof(IExtensionSettings), IsAsyncQueryable = true)]
 [ProvideService(typeof(IFilterService), IsAsyncQueryable = true)]
 [ProvideService(typeof(IHierarchyProvider), IsAsyncQueryable = true)]

@@ -63,18 +63,6 @@
             <MergeWithCTO>true</MergeWithCTO>
         </EmbeddedResource>
 
-        <Compile Update="VSCommandTable.cs">
-            <DesignTime>True</DesignTime>
-            <AutoGen>True</AutoGen>
-            <DependentUpon>VSCommandTable.vsct</DependentUpon>
-        </Compile>
-
-        <Compile Update="source.extension.cs">
-            <DesignTime>True</DesignTime>
-            <AutoGen>True</AutoGen>
-            <DependentUpon>source.extension.vsixmanifest</DependentUpon>
-        </Compile>
-
         <VSCTCompile Include="VSCommandTable.vsct">
             <ResourceName>Menus.ctmenu</ResourceName>
             <SubType>Designer</SubType>
@@ -86,16 +74,18 @@
     <ItemGroup>
         <None Update="source.extension.vsixmanifest">
             <SubType>Designer</SubType>
-            <Generator>VsixManifestGenerator</Generator>
-            <LastGenOutput>source.extension.cs</LastGenOutput>
+            <Generator></Generator>
         </None>
         <None Update="VSCommandTable.vsct">
-            <Generator>VsctGenerator</Generator>
-            <LastGenOutput>VSCommandTable.cs</LastGenOutput>
+            <Generator></Generator>
         </None>
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="Community.VisualStudio.SourceGenerators" Version="1.0.3">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="Community.VisualStudio.Toolkit.17" Version="17.0.355" />
         <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="6.0.0">
             <PrivateAssets>all</PrivateAssets>
