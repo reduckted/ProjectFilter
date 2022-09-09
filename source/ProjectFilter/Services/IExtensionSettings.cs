@@ -12,6 +12,9 @@ public interface IExtensionSettings {
     bool UseRegularExpressions { get; set; }
 
 
+    bool ExpandLoadedProjects { get; set; }
+
+
     Task LoadAsync();
 
 

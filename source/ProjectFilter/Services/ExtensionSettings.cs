@@ -12,6 +12,7 @@ public class ExtensionSettings : BaseOptionModel<ExtensionSettings>, IExtensionS
     public ExtensionSettings() {
         LoadProjectDependencies = true;
         UseRegularExpressions = false;
+        ExpandLoadedProjects = true;
     }
 
 
@@ -19,5 +20,8 @@ public class ExtensionSettings : BaseOptionModel<ExtensionSettings>, IExtensionS
 
 
     public bool UseRegularExpressions { get; set; }
+
+
+    public bool ExpandLoadedProjects { get; set; }
 
 }

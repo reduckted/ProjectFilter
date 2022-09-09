@@ -103,9 +103,9 @@ public partial class FilterService : IFilterService {
             solutionExplorer = await VS.GetRequiredServiceAsync<ISolutionExplorer, ISolutionExplorer>();
             await solutionExplorer.HideUnloadedProjectsAsync();
 
-            // If a project has been loaded, then the user probably
-            // wants to see it, so expand any parent folders.
-            await solutionExplorer.ExpandAsync(state.GetLoadedProjects());
+            if (options.ExpandLoadedProjects) {
+                await solutionExplorer.ExpandAsync(state.GetLoadedProjects());
+            }
         }
     }
 

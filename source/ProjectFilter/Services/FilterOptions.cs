@@ -11,11 +11,13 @@ public class FilterOptions {
     public FilterOptions(
         IEnumerable<Guid> projectsToLoad,
         IEnumerable<Guid> projectsToUnload,
-        bool loadProjectDependencies
+        bool loadProjectDependencies,
+        bool expandLoadedProjects
     ) {
         ProjectsToLoad = projectsToLoad.ToList();
         ProjectsToUnload = projectsToUnload.ToList();
         LoadProjectDependencies = loadProjectDependencies;
+        ExpandLoadedProjects = expandLoadedProjects;
     }
 
 
@@ -26,5 +28,8 @@ public class FilterOptions {
 
 
     public bool LoadProjectDependencies { get; }
+
+
+    public bool ExpandLoadedProjects{ get; }
 
 }

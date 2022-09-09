@@ -27,6 +27,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
     private Visibility _loadingVisibility;
     private Visibility _loadedVisibility;
     private bool _useRegularExpressions;
+    private bool _expandLoadedProjects;
     private bool _invalidFilter;
 
 
@@ -84,6 +85,12 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
            (_) => UseRegularExpressions = !UseRegularExpressions,
            CanAlwaysExecute,
            joinableTaskFactory
+        );
+
+        ToggleExpandLoadedProjectsCommand = new DelegateCommand(
+            (_) => ExpandLoadedProjects = !ExpandLoadedProjects,
+            CanAlwaysExecute,
+            joinableTaskFactory
         );
 
         FocusSearchBoxCommand = new DelegateCommand(
@@ -177,6 +184,9 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
     public DelegateCommand ToggleRegularExpressionModeCommand { get; }
 
 
+    public DelegateCommand ToggleExpandLoadedProjectsCommand { get; }
+
+
     public DelegateCommand FocusSearchBoxCommand { get; }
 
 
@@ -222,6 +232,12 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
             SetProperty(ref _useRegularExpressions, value);
             Search();
         }
+    }
+
+
+    public bool ExpandLoadedProjects {
+        get { return _expandLoadedProjects; }
+        set { SetProperty(ref _expandLoadedProjects, value); }
     }
 
 
@@ -292,7 +308,8 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
         Result = new FilterOptions(
             projects[true],
             projects[false],
-            LoadProjectDependencies
+            LoadProjectDependencies,
+            ExpandLoadedProjects
         );
     }
 

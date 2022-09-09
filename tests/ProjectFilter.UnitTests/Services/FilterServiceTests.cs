@@ -49,6 +49,7 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     new Guid[] { ProjectAlpha, ProjectBeta },
                     Enumerable.Empty<Guid>(),
+                    false,
                     false
                 )
             );
@@ -83,6 +84,7 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     Enumerable.Empty<Guid>(),
                     new Guid[] { ProjectAlpha, ProjectBeta },
+                    false,
                     false
                 )
             );
@@ -117,6 +119,7 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     new Guid[] { ProjectBeta },
                     new Guid[] { ProjectAlpha },
+                    false,
                     false
                 )
             );
@@ -151,7 +154,8 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     new Guid[] { ProjectAlpha },
                     Enumerable.Empty<Guid>(),
-                    true
+                    true,
+                    false
                 )
             );
 
@@ -185,6 +189,7 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     new Guid[] { ProjectAlpha },
                     Enumerable.Empty<Guid>(),
+                    false,
                     false
                 )
             );
@@ -217,7 +222,8 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     new Guid[] { ProjectAlpha },
                     new Guid[] { ProjectBeta },
-                    true
+                    true,
+                    false
                 )
             );
 
@@ -249,7 +255,8 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     new Guid[] { ProjectAlpha },
                     Enumerable.Empty<Guid>(),
-                    true
+                    true,
+                    false
                 )
             );
 
@@ -282,7 +289,8 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     new Guid[] { ProjectAlpha },
                     Enumerable.Empty<Guid>(),
-                    true
+                    true,
+                    false
                 )
             );
 
@@ -299,7 +307,7 @@ public static class FilterServiceTests {
 
 
         [Fact]
-        public async Task ExpandsFolderOfProjectsThatWereLoaded() {
+        public async Task ExpandsFolderOfProjectsThatWereLoadedWhenOptionIsEnabled() {
             Mock<ISolutionExplorer> solutionExplorer;
 
 
@@ -323,11 +331,46 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     new Guid[] { ProjectAlpha },
                     Enumerable.Empty<Guid>(),
-                    false
+                    false,
+                    true
                 )
             );
 
             solutionExplorer.Verify((x) => x.ExpandAsync(new[] { ProjectAlpha }), Times.Once);
+        }
+
+
+        [Fact]
+        public async Task DoesNotExpandFoldersOfProjectsThatWereLoadedWhenOptionIsDisabled() {
+            Mock<ISolutionExplorer> solutionExplorer;
+
+
+            solutionExplorer = new Mock<ISolutionExplorer>();
+
+            Setup(
+                $@"
+                    <solution name='root'>
+                        <folder name='core'>
+                            <folder name='test'>
+                                <unloaded name='alpha' guid='{ProjectAlpha}'/>
+                                <project name='beta' guid='{ProjectBeta}'/>
+                            </folder>
+                        </folder>
+                    </solution>
+                    ",
+                solutionExplorer: solutionExplorer.Object
+            );
+
+            await ApplyAsync(
+                new FilterOptions(
+                    new Guid[] { ProjectAlpha },
+                    Enumerable.Empty<Guid>(),
+                    false,
+                    false
+                )
+            );
+
+            solutionExplorer.Verify((x) => x.ExpandAsync(new[] { ProjectAlpha }), Times.Never);
         }
 
 
@@ -353,7 +396,8 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     Enumerable.Empty<Guid>(),
                     new Guid[] { ProjectAlpha },
-                    false
+                    false,
+                    true
                 )
             );
 

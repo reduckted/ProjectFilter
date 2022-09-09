@@ -26,7 +26,7 @@ public class FilterOptionsTests {
         loaded = new List<Guid>() { ProjectA, ProjectB };
         unloaded = new List<Guid>() { Project1, Project2 };
 
-        options = new FilterOptions(loaded, unloaded, true);
+        options = new FilterOptions(loaded, unloaded, true, false);
 
         loaded.Add(ProjectC);
         unloaded.Add(Project3);
@@ -35,10 +35,12 @@ public class FilterOptionsTests {
         Assert.Equal(new[] { Project1, Project2 }, options.ProjectsToUnload);
 
         Assert.True(options.LoadProjectDependencies);
+        Assert.False(options.ExpandLoadedProjects);
 
         // Flip the booleans to ensure they are stored correctly.
-        options = new FilterOptions(loaded, unloaded, false);
+        options = new FilterOptions(loaded, unloaded, false, true);
         Assert.False(options.LoadProjectDependencies);
+        Assert.True(options.ExpandLoadedProjects);
     }
 
 }

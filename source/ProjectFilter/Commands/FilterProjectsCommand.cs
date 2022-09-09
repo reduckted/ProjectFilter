@@ -54,6 +54,7 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
             await settings.LoadAsync();
             vm.LoadProjectDependencies = settings.LoadProjectDependencies;
             vm.UseRegularExpressions = settings.UseRegularExpressions;
+            vm.ExpandLoadedProjects = settings.ExpandLoadedProjects;
 
             dialog = new FilterDialog {
                 DataContext = vm
@@ -63,6 +64,7 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
 
             settings.LoadProjectDependencies = vm.LoadProjectDependencies;
             settings.UseRegularExpressions = vm.UseRegularExpressions;
+            settings.ExpandLoadedProjects = vm.ExpandLoadedProjects;
             await settings.SaveAsync();
 
             if (result) {

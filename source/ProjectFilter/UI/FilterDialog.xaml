@@ -46,6 +46,8 @@
 
         <KeyBinding Key="E" Modifiers="Alt" Command="{Binding ToggleRegularExpressionModeCommand}"/>
 
+        <KeyBinding Key="X" Modifiers="Alt" Command="{Binding ToggleExpandLoadedProjectsCommand}"/>
+
         <KeyBinding Key="F" Modifiers="Alt" Command="{Binding FocusSearchBoxCommand}"/>
         <KeyBinding Key="F" Modifiers="Ctrl" Command="{Binding FocusSearchBoxCommand}"/>
     </platform:DialogWindow.InputBindings>
@@ -85,6 +87,17 @@
                         >
 
                         <imaging:CrispImage Moniker="{x:Static catalog:KnownMonikers.DependancyGraph}"/>
+                    </ToggleButton>
+
+                    <ToggleButton 
+                        ToolTip="Expand projects after loading (Alt+X)"
+                        IsChecked="{Binding ExpandLoadedProjects}"
+                        >
+
+                        <imaging:CrispImage
+                            Moniker="{x:Static catalog:KnownMonikers.TreeView}"
+                            imaging:CrispImage.Dpi="96"
+                            />
                     </ToggleButton>
 
                     <Separator/>
