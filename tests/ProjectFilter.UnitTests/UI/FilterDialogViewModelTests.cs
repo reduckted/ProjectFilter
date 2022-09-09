@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
 using Moq;
 using ProjectFilter.Helpers;
@@ -5,6 +6,7 @@ using ProjectFilter.Services;
 using ProjectFilter.UI.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -773,6 +775,7 @@ public static class FilterDialogViewModelTests {
         private readonly JoinableTaskFactory _joinableTaskFactory;
 
 
+        [SuppressMessage("Reliability", "VSSDK005:Avoid instantiating JoinableTaskContext", Justification = "Unit tests.")]
         protected TestBase() {
             _joinableTaskContext = new JoinableTaskContext();
             _joinableTaskFactory = new JoinableTaskFactory(_joinableTaskContext);
@@ -785,10 +788,7 @@ public static class FilterDialogViewModelTests {
 
 
         protected FilterDialogViewModel CreateViewModel(Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory, IDebouncer? debouncer = null, TextFilterFactory? textFilterFactory = null) {
-            if (debouncer is null) {
-                debouncer = Mock.Of<IDebouncer>();
-            }
-
+            debouncer ??= Mock.Of<IDebouncer>();
 
             return new FilterDialogViewModel(
                 hierarchyFactory,
@@ -816,9 +816,7 @@ public static class FilterDialogViewModelTests {
         Mock<IHierarchyNode> node;
 
 
-        if (children is null) {
-            children = Enumerable.Empty<IHierarchyNode>();
-        }
+        children ??= Enumerable.Empty<IHierarchyNode>();
 
         node = new Mock<IHierarchyNode>();
         node.SetupGet((x) => x.Name).Returns(name);

@@ -357,6 +357,7 @@ public static class HierarchyTreeViewItemTests {
 
             child.Filter(new PatternTextFilter(".", Factory.CreatePatternMatcherFactory(ParseSpans(matchingSpans))));
 
+            Assert.NotNull(child.HighlightSpans);
             Assert.Equal(ParseSpans(expectedSpans), child.HighlightSpans);
 
             static IEnumerable<Span> ParseSpans(string spans) {
