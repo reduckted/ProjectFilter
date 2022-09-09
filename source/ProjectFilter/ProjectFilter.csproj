@@ -135,6 +135,15 @@
         <Move SourceFiles="$(VsixManifestBackup)" DestinationFiles="$(VsixManifestOriginal)" />
     </Target>
 
+    <!-- Workaround for https://github.com/dotnet/wpf/issues/6792 -->
+    <Target Name="RemoveDuplicateAnalyzers" BeforeTargets="CoreCompile">
+        <ItemGroup>
+            <FilteredAnalyzer Include="@(Analyzer-&gt;Distinct())" />
+            <Analyzer Remove="@(Analyzer)" />
+            <Analyzer Include="@(FilteredAnalyzer)" />
+        </ItemGroup>
+    </Target>
+
     <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
     <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="Exists('$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets')" />
 
