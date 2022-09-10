@@ -1,3 +1,7 @@
+# 2.3.0 (2022-09-10)
+
+- ✨ Added an option to prevent projects being expanded after they are loaded.
+
 # 2.2.0 (2022-06-05)
 
 - ✨ Ensured that shared project dependencies are loaded.
