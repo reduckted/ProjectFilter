@@ -1,3 +1,7 @@
+# 2.4.0 (2022-10-22)
+
+- ✨ When the option to expand loaded projects is turned off, the projects and any folders they were in will be collapsed instead.
+
 # 2.3.0 (2022-09-10)
 
 - ✨ Added an option to prevent projects being expanded after they are loaded.
