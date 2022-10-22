@@ -41,6 +41,7 @@ public partial class FilterService : IFilterService {
             IEnumerable<Guid> projectsToLoad;
             State state;
             ISolutionExplorer solutionExplorer;
+            IEnumerable<Guid> expandedFolders;
 
 
             state = new State(
@@ -48,6 +49,18 @@ public partial class FilterService : IFilterService {
                 progress,
                 (IVsSolution4)await VS.Services.GetSolutionAsync()
             );
+
+            solutionExplorer = await VS.GetRequiredServiceAsync<ISolutionExplorer, ISolutionExplorer>();
+
+            // If we are not going to expand the loaded projects, then we will need to collapse
+            // them instead, because Visual Studio seems to automatically expand them and
+            // the folders they are in. To work out what should be collapsed after the
+            // projects are loaded, we first need to know what was originally expanded.
+            if (!options.ExpandLoadedProjects) {
+                expandedFolders = await solutionExplorer.GetExpandedFoldersAsync();
+            } else {
+                expandedFolders = new HashSet<Guid>();
+            }
 
             projectsToUnload = options.ProjectsToUnload.ToList();
             projectsToLoad = options.ProjectsToLoad.ToList();
@@ -100,11 +113,14 @@ public partial class FilterService : IFilterService {
             // projects and show the loaded projects. This prevents us from
             // getting into a state where we've loaded some projects but they
             // remain hidden because the user cancelled half way through.
-            solutionExplorer = await VS.GetRequiredServiceAsync<ISolutionExplorer, ISolutionExplorer>();
             await solutionExplorer.HideUnloadedProjectsAsync();
 
+            // Expand the projects if we are supposed to. For some reason, Visual Studio seems to expand
+            // the projects anyway, so if we are not supposed to expand them, then we will collapse them.
             if (options.ExpandLoadedProjects) {
                 await solutionExplorer.ExpandAsync(state.GetLoadedProjects());
+            } else {
+                await solutionExplorer.CollapseAsync(await GetProjectsToCollapseAsync(solutionExplorer, expandedFolders, state));
             }
         }
     }
@@ -317,6 +333,21 @@ public partial class FilterService : IFilterService {
         } else {
             return false;
         }
+    }
+
+
+    private static async Task<IEnumerable<Guid>> GetProjectsToCollapseAsync(ISolutionExplorer solutionExplorer, IEnumerable<Guid> originalExpandedFolders, State state) {
+        HashSet<Guid> projects;
+
+
+        // All of the projects that were loaded should be collapsed.
+        projects = state.GetLoadedProjects().ToHashSet();
+
+        // Any solution folders that are now expanded
+        // and were not originally expanded should also be collapsed.
+        projects.UnionWith((await solutionExplorer.GetExpandedFoldersAsync()).Except(originalExpandedFolders));
+
+        return projects;
     }
 
 

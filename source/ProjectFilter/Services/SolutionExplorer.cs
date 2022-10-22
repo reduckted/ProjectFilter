@@ -8,10 +8,7 @@ using ProjectFilter.Extensions;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
-using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 using Task = System.Threading.Tasks.Task;
 
@@ -135,7 +132,17 @@ public class SolutionExplorer : ISolutionExplorer {
     }
 
 
-    public async Task ExpandAsync(IEnumerable<Guid> projects) {
+    public Task ExpandAsync(IEnumerable<Guid> projects) {
+        return ExpandOrCollapseAsync(projects, (window, items) => window.Expand(items));
+    }
+
+
+    public Task CollapseAsync(IEnumerable<Guid> projects) {
+        return ExpandOrCollapseAsync(projects, (window, items) => window.Collapse(items));
+    }
+
+
+    private static async Task ExpandOrCollapseAsync(IEnumerable<Guid> projects, Action<SolutionExplorerWindow, IEnumerable<SolutionItem>> action) {
         if (projects is null) {
             throw new ArgumentNullException(nameof(projects));
         }
@@ -150,6 +157,7 @@ public class SolutionExplorer : ISolutionExplorer {
         if (solutionExplorer is not null) {
             IVsSolution4 solution;
             List<SolutionItem> items;
+
 
             solution = (IVsSolution4)await VS.Services.GetSolutionAsync();
             items = new List<SolutionItem>();
@@ -167,8 +175,67 @@ public class SolutionExplorer : ISolutionExplorer {
                 }
             }
 
-            solutionExplorer.Expand(items, SolutionItemExpansionMode.Ancestors | SolutionItemExpansionMode.Single);
+            if (items.Count > 0) {
+                action(solutionExplorer, items);
+            }
         }
+    }
+
+
+    public async Task<IEnumerable<Guid>> GetExpandedFoldersAsync() {
+        HashSet<Guid> expanded;
+        SolutionExplorerWindow? solutionExplorer;
+        IVsSolution4? solution;
+
+
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+        expanded = new HashSet<Guid>();
+
+        solutionExplorer = await VS.Windows.GetSolutionExplorerWindowAsync();
+        solution = await VS.Services.GetSolutionAsync() as IVsSolution4;
+
+        if ((solutionExplorer is not null) && (solution is not null)) {
+            foreach (IVsHierarchy hierarchy in await VS.Solutions.GetAllProjectHierarchiesAsync()) {
+                if (await IsExpandedSolutionFolderAsync(solutionExplorer.UIHierarchyWindow, hierarchy)) {
+                    if (solution.TryGetIdentifier(hierarchy, out var identifier)) {
+                        expanded.Add(identifier);
+                    }
+                }
+            }
+        }
+
+        return expanded;
+    }
+
+
+    private static async Task<bool> IsExpandedSolutionFolderAsync(IVsUIHierarchyWindow window, IVsHierarchy hierarchy) {
+        SolutionItem? item;
+
+
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+        item = await SolutionItem.FromHierarchyAsync(hierarchy, VSConstants.VSITEMID_ROOT);
+
+        if ((item is not null) && (item.Type == SolutionItemType.SolutionFolder)) {
+            if (hierarchy is IVsUIHierarchy uiHierarchy) {
+                int result;
+
+
+                result = window.GetItemState(
+                    uiHierarchy,
+                    VSConstants.VSITEMID_ROOT,
+                    (uint)__VSHIERARCHYITEMSTATE.HIS_Expanded,
+                    out uint state
+                );
+
+                if (ErrorHandler.Succeeded(result)) {
+                    return state == (uint)__VSHIERARCHYITEMSTATE.HIS_Expanded;
+                }
+            }
+        }
+
+        return false;
     }
 
 }

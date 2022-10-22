@@ -341,11 +341,21 @@ public static class FilterServiceTests {
 
 
         [Fact]
-        public async Task DoesNotExpandFoldersOfProjectsThatWereLoadedWhenOptionIsDisabled() {
+        public async Task CollapsesProjectsThatWereLoadedWhenOptionIsDisabled() {
             Mock<ISolutionExplorer> solutionExplorer;
+            Guid testFolder;
+            Guid otherFolder;
 
+
+            testFolder = new Guid("{1413358E-AD48-4DB9-92E3-238CFF65743D}");
+            otherFolder = new Guid("{11C39F56-668C-48B4-B3E4-91F9BA7DB09F}");
 
             solutionExplorer = new Mock<ISolutionExplorer>();
+
+            solutionExplorer
+                .SetupSequence((x) => x.GetExpandedFoldersAsync())
+                .ReturnsAsync(new[] { testFolder })
+                .ReturnsAsync(new[] { testFolder, otherFolder });
 
             Setup(
                 $@"
@@ -356,6 +366,9 @@ public static class FilterServiceTests {
                                 <project name='beta' guid='{ProjectBeta}'/>
                             </folder>
                         </folder>
+                        <folder name='other'>
+                            <unloaded name='alpha' guid='{ProjectGamma}'/>
+                        </folder>
                     </solution>
                     ",
                 solutionExplorer: solutionExplorer.Object
@@ -363,14 +376,14 @@ public static class FilterServiceTests {
 
             await ApplyAsync(
                 new FilterOptions(
-                    new Guid[] { ProjectAlpha },
+                    new Guid[] { ProjectAlpha, ProjectGamma },
                     Enumerable.Empty<Guid>(),
                     false,
                     false
                 )
             );
 
-            solutionExplorer.Verify((x) => x.ExpandAsync(new[] { ProjectAlpha }), Times.Never);
+            solutionExplorer.Verify((x) => x.CollapseAsync(new[] { ProjectAlpha, ProjectGamma, otherFolder }), Times.Once);
         }
 
 

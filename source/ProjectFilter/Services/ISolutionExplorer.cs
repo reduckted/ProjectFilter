@@ -16,4 +16,10 @@ public interface ISolutionExplorer {
 
     Task ExpandAsync(IEnumerable<Guid> projects);
 
+
+    Task CollapseAsync(IEnumerable<Guid> projects);
+
+
+    Task<IEnumerable<Guid>> GetExpandedFoldersAsync();
+
 }
