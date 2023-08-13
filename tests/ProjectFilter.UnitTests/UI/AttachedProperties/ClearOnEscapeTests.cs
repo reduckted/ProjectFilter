@@ -1,4 +1,4 @@
-using Moq;
+using NSubstitute;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -82,7 +82,7 @@ public class ClearOnEscapeTests {
         KeyEventArgs args;
 
 
-        args = new KeyEventArgs(Keyboard.PrimaryDevice, Mock.Of<PresentationSource>(), 0, key) {
+        args = new KeyEventArgs(Keyboard.PrimaryDevice, Substitute.For<PresentationSource>(), 0, key) {
             RoutedEvent = UIElement.KeyDownEvent
         };
 

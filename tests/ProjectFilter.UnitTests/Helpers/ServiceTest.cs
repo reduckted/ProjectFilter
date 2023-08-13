@@ -1,6 +1,6 @@
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Sdk.TestFramework;
-using Moq;
+using NSubstitute;
 using ProjectFilter.Services;
 using System;
 using Xunit;
@@ -20,7 +20,7 @@ public class ServiceTest<T> where T : class, new() {
         _serviceProvider = serviceProvider;
         _serviceProvider.Reset();
 
-        AddService<ILogger>(Mock.Of<ILogger>());
+        AddService<ILogger>(Substitute.For<ILogger>());
     }
 
 

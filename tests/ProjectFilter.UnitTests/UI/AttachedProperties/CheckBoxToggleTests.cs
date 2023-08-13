@@ -1,5 +1,5 @@
 using Microsoft.VisualStudio.PlatformUI;
-using Moq;
+using NSubstitute;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -191,7 +191,7 @@ public class CheckBoxToggleTests {
         KeyEventArgs args;
 
 
-        args = new KeyEventArgs(new TestKeyboard(modifiers), Mock.Of<PresentationSource>(), 0, key) {
+        args = new KeyEventArgs(new TestKeyboard(modifiers), Substitute.For<PresentationSource>(), 0, key) {
             RoutedEvent = keyEvent
         };
 

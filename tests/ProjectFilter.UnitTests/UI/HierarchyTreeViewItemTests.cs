@@ -1,6 +1,6 @@
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Text;
-using Moq;
+using NSubstitute;
 using ProjectFilter.Helpers;
 using ProjectFilter.Services;
 using System;
@@ -161,7 +161,7 @@ public static class HierarchyTreeViewItemTests {
 
         [Fact]
         public void IsInitiallyTrue() {
-            Assert.True(new HierarchyTreeViewItem(Mock.Of<IHierarchyNode>(), Enumerable.Empty<HierarchyTreeViewItem>()).IsExpanded);
+            Assert.True(new HierarchyTreeViewItem(Substitute.For<IHierarchyNode>(), Enumerable.Empty<HierarchyTreeViewItem>()).IsExpanded);
         }
 
 
@@ -171,7 +171,7 @@ public static class HierarchyTreeViewItemTests {
 
 
             item = new HierarchyTreeViewItem(
-                Mock.Of<IHierarchyNode>(),
+                Substitute.For<IHierarchyNode>(),
                 Enumerable.Empty<HierarchyTreeViewItem>()
             );
 
@@ -196,14 +196,14 @@ public static class HierarchyTreeViewItemTests {
         [Fact]
         public void ReturnsIconBasedOnExpandedState() {
             HierarchyTreeViewItem item;
-            Mock<IHierarchyNode> node;
+            IHierarchyNode node;
 
 
-            node = new Mock<IHierarchyNode>();
-            node.SetupGet((x) => x.CollapsedIcon).Returns(KnownMonikers.FolderClosed);
-            node.SetupGet((x) => x.ExpandedIcon).Returns(KnownMonikers.FolderOpened);
+            node = Substitute.For<IHierarchyNode>();
+            node.CollapsedIcon.Returns(KnownMonikers.FolderClosed);
+            node.ExpandedIcon.Returns(KnownMonikers.FolderOpened);
 
-            item = new HierarchyTreeViewItem(node.Object, Enumerable.Empty<HierarchyTreeViewItem>()) {
+            item = new HierarchyTreeViewItem(node, Enumerable.Empty<HierarchyTreeViewItem>()) {
                 IsExpanded = true
             };
 
@@ -221,13 +221,13 @@ public static class HierarchyTreeViewItemTests {
         [Fact]
         public void ReturnsNameForItemWithoutParent() {
             HierarchyTreeViewItem item;
-            Mock<IHierarchyNode> node;
+            IHierarchyNode node;
 
 
-            node = new Mock<IHierarchyNode>();
-            node.SetupGet((x) => x.Name).Returns("Root");
+            node = Substitute.For<IHierarchyNode>();
+            node.Name.Returns("Root");
 
-            item = new HierarchyTreeViewItem(node.Object, Enumerable.Empty<HierarchyTreeViewItem>());
+            item = new HierarchyTreeViewItem(node, Enumerable.Empty<HierarchyTreeViewItem>());
 
             Assert.Equal("Root", item.Path);
         }
@@ -235,20 +235,19 @@ public static class HierarchyTreeViewItemTests {
 
         [Fact]
         public void JoinsNameToParentPathForItemWithParent() {
-            HierarchyTreeViewItem parentItem;
             HierarchyTreeViewItem childItem;
-            Mock<IHierarchyNode> parentNode;
-            Mock<IHierarchyNode> childNode;
+            IHierarchyNode parentNode;
+            IHierarchyNode childNode;
 
 
-            childNode = new Mock<IHierarchyNode>();
-            childNode.SetupGet((x) => x.Name).Returns("Child");
+            childNode = Substitute.For<IHierarchyNode>();
+            childNode.Name.Returns("Child");
 
-            parentNode = new Mock<IHierarchyNode>();
-            parentNode.SetupGet((x) => x.Name).Returns("Root");
+            parentNode = Substitute.For<IHierarchyNode>();
+            parentNode.Name.Returns("Root");
 
-            childItem = new HierarchyTreeViewItem(childNode.Object, Enumerable.Empty<HierarchyTreeViewItem>());
-            parentItem = new HierarchyTreeViewItem(parentNode.Object, new[] { childItem });
+            childItem = new HierarchyTreeViewItem(childNode, Enumerable.Empty<HierarchyTreeViewItem>());
+            _ = new HierarchyTreeViewItem(parentNode, new[] { childItem });
 
             Assert.Equal("Root/Child", childItem.Path);
         }

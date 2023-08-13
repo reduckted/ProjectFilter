@@ -1,6 +1,5 @@
-using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
-using Moq;
+using NSubstitute;
 using ProjectFilter.Helpers;
 using ProjectFilter.Services;
 using ProjectFilter.UI.Utilities;
@@ -498,9 +497,9 @@ public static class FilterDialogViewModelTests {
 
 
         [Fact]
-        public async Task InculdesProjectsThatHaveBeenFilteredOut() {
+        public async Task IncludesProjectsThatHaveBeenFilteredOut() {
             IEnumerable<IHierarchyNode> hierarchy;
-            Mock<IDebouncer> debouncer;
+            IDebouncer debouncer;
 
 
             hierarchy = new[] {
@@ -518,9 +517,9 @@ public static class FilterDialogViewModelTests {
                     })
                 };
 
-            debouncer = new Mock<IDebouncer>();
+            debouncer = Substitute.For<IDebouncer>();
 
-            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer.Object)) {
+            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer)) {
                 await vm.OnLoadedAsync();
 
                 GetItem(vm, "b").IsChecked = false;
@@ -529,7 +528,7 @@ public static class FilterDialogViewModelTests {
                 GetItem(vm, "h").IsChecked = false;
 
                 vm.SearchText = "d";
-                debouncer.Raise((x) => x.Stable += null, EventArgs.Empty);
+                debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
 
                 // Verify that our test is setup by confirming that filtering has occurred.
                 Assert.Equal(new[] { "a" }, vm.Items.Select((x) => x.Name));
@@ -558,7 +557,7 @@ public static class FilterDialogViewModelTests {
         [Fact]
         public async Task WaitsBeforeFilteringWhenTextIsNotEmpty() {
             IEnumerable<IHierarchyNode> hierarchy;
-            Mock<IDebouncer> debouncer;
+            IDebouncer debouncer;
 
 
             hierarchy = new[] {
@@ -572,24 +571,24 @@ public static class FilterDialogViewModelTests {
                     })
                 };
 
-            debouncer = new Mock<IDebouncer>();
+            debouncer = Substitute.For<IDebouncer>();
 
-            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer.Object)) {
+            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer)) {
                 await vm.OnLoadedAsync();
 
-                debouncer.Verify((x) => x.Start(), Times.Never);
+                debouncer.DidNotReceive().Start();
 
                 vm.SearchText = "d";
-                debouncer.Verify((x) => x.Start(), Times.Once);
+                debouncer.Received(1).Start();
 
                 Assert.Equal(new[] { "a", "d" }, vm.Items.Select((x) => x.Name));
 
                 vm.SearchText = "a";
-                debouncer.Verify((x) => x.Start(), Times.Exactly(2));
+                debouncer.Received(2).Start();
 
                 Assert.Equal(new[] { "a", "d" }, vm.Items.Select((x) => x.Name));
 
-                debouncer.Raise((x) => x.Stable += null, EventArgs.Empty);
+                debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
 
                 Assert.Equal(new[] { "a" }, vm.Items.Select((x) => x.Name));
             }
@@ -599,7 +598,7 @@ public static class FilterDialogViewModelTests {
         [Fact]
         public async Task CancelsDebouncerWhenTextIsEmpty() {
             IEnumerable<IHierarchyNode> hierarchy;
-            Mock<IDebouncer> debouncer;
+            IDebouncer debouncer;
 
 
             hierarchy = new[] {
@@ -613,20 +612,20 @@ public static class FilterDialogViewModelTests {
                     })
                 };
 
-            debouncer = new Mock<IDebouncer>();
+            debouncer = Substitute.For<IDebouncer>();
 
-            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer.Object)) {
+            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer)) {
                 await vm.OnLoadedAsync();
 
-                debouncer.Verify((x) => x.Start(), Times.Never);
+                debouncer.DidNotReceive().Start();
 
                 vm.SearchText = "d";
-                debouncer.Verify((x) => x.Cancel(), Times.Once);
-                debouncer.Verify((x) => x.Start(), Times.Once);
+                debouncer.Received(1).Cancel();
+                debouncer.Received(1).Start();
 
                 vm.SearchText = "";
-                debouncer.Verify((x) => x.Cancel(), Times.Exactly(2));
-                debouncer.Verify((x) => x.Start(), Times.Once);
+                debouncer.Received(2).Cancel();
+                debouncer.Received(1).Start();
             }
         }
 
@@ -634,7 +633,7 @@ public static class FilterDialogViewModelTests {
         [Fact]
         public async Task ClearsFilterImmediatelyWhenTextIsEmpty() {
             IEnumerable<IHierarchyNode> hierarchy;
-            Mock<IDebouncer> debouncer;
+            IDebouncer debouncer;
 
 
             hierarchy = new[] {
@@ -648,13 +647,13 @@ public static class FilterDialogViewModelTests {
                     })
                 };
 
-            debouncer = new Mock<IDebouncer>();
+            debouncer = Substitute.For<IDebouncer>();
 
-            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer.Object)) {
+            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer)) {
                 await vm.OnLoadedAsync();
 
                 vm.SearchText = "d";
-                debouncer.Raise((x) => x.Stable += null, EventArgs.Empty);
+                debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
 
                 Assert.Equal(new[] { "d" }, vm.Items.Select((x) => x.Name));
 
@@ -671,7 +670,7 @@ public static class FilterDialogViewModelTests {
         [Fact]
         public async Task IsTrueWhenExceptionIsThrownByFilterFactory() {
             IEnumerable<IHierarchyNode> hierarchy;
-            Mock<IDebouncer> debouncer;
+            IDebouncer debouncer;
             TextFilterFactory factory;
 
 
@@ -682,15 +681,15 @@ public static class FilterDialogViewModelTests {
                 })
             };
 
-            debouncer = new Mock<IDebouncer>();
+            debouncer = Substitute.For<IDebouncer>();
 
             factory = (_, _) => throw new ArgumentException("Boom");
 
-            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer.Object, textFilterFactory: factory)) {
+            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer, textFilterFactory: factory)) {
                 await vm.OnLoadedAsync();
 
                 vm.SearchText = "a";
-                debouncer.Raise((x) => x.Stable += null, EventArgs.Empty);
+                debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
                 Assert.True(vm.InvalidFilter);
             }
         }
@@ -699,7 +698,7 @@ public static class FilterDialogViewModelTests {
         [Fact]
         public async Task IsFalseWhenExceptionIsNotThrownFromFilterFactory() {
             IEnumerable<IHierarchyNode> hierarchy;
-            Mock<IDebouncer> debouncer;
+            IDebouncer debouncer;
             TextFilterFactory factory;
             bool throwError;
 
@@ -711,24 +710,24 @@ public static class FilterDialogViewModelTests {
                 })
             };
 
-            debouncer = new Mock<IDebouncer>();
+            debouncer = Substitute.For<IDebouncer>();
 
             throwError = false;
             factory = (_, _) => throwError ? throw new ArgumentException("Boom") : Factory.CreateTextFilter("", true);
 
-            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer.Object, textFilterFactory: factory)) {
+            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer, textFilterFactory: factory)) {
                 await vm.OnLoadedAsync();
 
                 // Cause the property to be set to true so that
                 // we can verify that it is set back to false.
                 throwError = true;
                 vm.SearchText = "a";
-                debouncer.Raise((x) => x.Stable += null, EventArgs.Empty);
+                debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
                 Assert.True(vm.InvalidFilter);
 
                 throwError = false;
                 vm.SearchText = "b";
-                debouncer.Raise((x) => x.Stable += null, EventArgs.Empty);
+                debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
                 Assert.False(vm.InvalidFilter);
             }
         }
@@ -737,7 +736,7 @@ public static class FilterDialogViewModelTests {
         [Fact]
         public async Task IsFalseWhenFilterTextIsCleared() {
             IEnumerable<IHierarchyNode> hierarchy;
-            Mock<IDebouncer> debouncer;
+            IDebouncer debouncer;
             TextFilterFactory factory;
 
 
@@ -748,17 +747,17 @@ public static class FilterDialogViewModelTests {
                 })
             };
 
-            debouncer = new Mock<IDebouncer>();
+            debouncer = Substitute.For<IDebouncer>();
 
             factory = (_, _) => throw new ArgumentException("Boom");
 
-            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer.Object, textFilterFactory: factory)) {
+            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer, textFilterFactory: factory)) {
                 await vm.OnLoadedAsync();
 
                 // Cause the property to be set to true so that
                 // we can verify that it is set back to false.
                 vm.SearchText = "d";
-                debouncer.Raise((x) => x.Stable += null, EventArgs.Empty);
+                debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
                 Assert.True(vm.InvalidFilter);
 
                 vm.SearchText = "";
@@ -788,7 +787,7 @@ public static class FilterDialogViewModelTests {
 
 
         protected FilterDialogViewModel CreateViewModel(Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory, IDebouncer? debouncer = null, TextFilterFactory? textFilterFactory = null) {
-            debouncer ??= Mock.Of<IDebouncer>();
+            debouncer ??= Substitute.For<IDebouncer>();
 
             return new FilterDialogViewModel(
                 hierarchyFactory,
@@ -813,19 +812,19 @@ public static class FilterDialogViewModelTests {
 
 
     private static IHierarchyNode CreateNode(string name, bool isLoaded = true, IEnumerable<IHierarchyNode>? children = null) {
-        Mock<IHierarchyNode> node;
+        IHierarchyNode node;
 
 
         children ??= Enumerable.Empty<IHierarchyNode>();
 
-        node = new Mock<IHierarchyNode>();
-        node.SetupGet((x) => x.Name).Returns(name);
-        node.SetupGet((x) => x.Identifier).Returns(Guid.NewGuid());
-        node.SetupGet((x) => x.IsLoaded).Returns(isLoaded);
-        node.SetupGet((x) => x.Children).Returns(children.ToList());
-        node.SetupGet((x) => x.IsFolder).Returns(children.Any());
+        node = Substitute.For<IHierarchyNode>();
+        node.Name.Returns(name);
+        node.Identifier.Returns(Guid.NewGuid());
+        node.IsLoaded.Returns(isLoaded);
+        node.Children.Returns(children.ToList());
+        node.IsFolder.Returns(children.Any());
 
-        return node.Object;
+        return node;
     }
 
 

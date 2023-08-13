@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Imaging.Interop;
 using Microsoft.VisualStudio.Sdk.TestFramework;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using Moq;
+using NSubstitute;
 using ProjectFilter.Helpers;
 using System;
 using System.Collections.Generic;
@@ -211,20 +211,21 @@ public static class HierarchyProviderTests {
 
 
         private static IVsImageService2 CreateImageService(HierarchyItem root) {
-            Mock<IVsImageService2> service;
+            IVsImageService2 service;
 
 
-            service = new Mock<IVsImageService2>();
+            service = Substitute.For<IVsImageService2>();
 
-            service
-                .Setup((x) => x.GetImageMonikerForHierarchyItem(
-                    It.IsAny<IVsHierarchy>(),
-                    It.IsAny<uint>(),
-                    It.IsAny<int>()
-                ))
-                .Returns((IVsHierarchy hierarchy, uint itemID, int aspect) => {
+            service.GetImageMonikerForHierarchyItem(default, default, default).ReturnsForAnyArgs(
+                (args) => {
                     HierarchyItem? data;
+                    IVsHierarchy hierarchy;
+                    uint itemID;
+                    int aspect;
 
+                    hierarchy = args.ArgAt<IVsHierarchy>(0);
+                    itemID = args.ArgAt<uint>(1);
+                    aspect = args.ArgAt<int>(2);
 
                     data = root
                         .DescendantsAndSelf()
@@ -240,45 +241,48 @@ public static class HierarchyProviderTests {
                     return default;
                 });
 
-            return service.Object;
+            return service;
         }
 
 
         private static IVsHierarchyItemManager CreateHierarchyItemManager(HierarchyItem root) {
-            Mock<IVsHierarchyItemManager> manager;
+            IVsHierarchyItemManager manager;
 
-            manager = new Mock<IVsHierarchyItemManager>();
+            manager = Substitute.For<IVsHierarchyItemManager>();
 
-            manager
-                .Setup((x) => x.GetHierarchyItem(It.IsAny<IVsHierarchy>(), It.IsAny<uint>()))
-                .Returns((IVsHierarchy hierarchy, uint itemID) => {
-                    HierarchyItem? data;
+            manager.GetHierarchyItem(default, default).ReturnsForAnyArgs((args) => {
+                HierarchyItem? data;
+                IVsHierarchy hierarchy;
+                uint itemID;
 
 
-                    data = root
+                hierarchy = args.ArgAt<IVsHierarchy>(0);
+                itemID = args.ArgAt<uint>(1);
+
+                data = root
                         .DescendantsAndSelf()
                         .Where((x) => x.Hierarchy == hierarchy)
                         .FirstOrDefault();
 
-                    if (data is not null) {
-                        Mock<IVsHierarchyItem> item;
-                        Mock<IVsHierarchyItemIdentity> identity;
+                if (data is not null) {
+                    IVsHierarchyItem item;
+                    IVsHierarchyItemIdentity identity;
 
 
-                        identity = new Mock<IVsHierarchyItemIdentity>();
-                        identity.SetupGet((x) => x.NestedHierarchy).Returns(hierarchy);
-                        identity.SetupGet((x) => x.NestedItemID).Returns(itemID);
+                    identity = Substitute.For<IVsHierarchyItemIdentity>();
+                    identity.NestedHierarchy.Returns(hierarchy);
+                    identity.NestedItemID.Returns(itemID);
 
-                        item = new Mock<IVsHierarchyItem>();
-                        item.SetupGet((x) => x.HierarchyIdentity).Returns(identity.Object);
+                    item = Substitute.For<IVsHierarchyItem>();
+                    item.HierarchyIdentity.Returns(identity);
 
-                        return item.Object;
-                    }
+                    return item;
+                }
 
-                    return null!;
-                });
+                return null!;
+            });
 
-            return manager.Object;
+            return manager;
         }
 
 

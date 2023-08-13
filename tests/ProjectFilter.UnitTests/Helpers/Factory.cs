@@ -3,7 +3,7 @@ using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.PatternMatching;
-using Moq;
+using NSubstitute;
 using ProjectFilter.Services;
 using ProjectFilter.UI;
 using System;
@@ -23,12 +23,12 @@ internal static class Factory {
 
 
     public static IPatternMatcherFactory CreatePatternMatcherFactory(IEnumerable<Span> matches) {
-        Mock<IPatternMatcherFactory> factory;
-        Mock<IPatternMatcher> matcher;
+        IPatternMatcherFactory factory;
+        IPatternMatcher matcher;
 
 
-        matcher = new Mock<IPatternMatcher>();
-        matcher.Setup((x) => x.TryMatch(It.IsAny<string>())).Returns(
+        matcher = Substitute.For<IPatternMatcher>();
+        matcher.TryMatch(default).ReturnsForAnyArgs(
             new PatternMatch(
                 PatternMatchKind.Exact,
                 false,
@@ -37,12 +37,10 @@ internal static class Factory {
             )
         );
 
-        factory = new Mock<IPatternMatcherFactory>();
-        factory
-            .Setup((x) => x.CreatePatternMatcher(It.IsAny<string>(), It.IsAny<PatternMatcherCreationOptions>()))
-            .Returns(matcher.Object);
+        factory = Substitute.For<IPatternMatcherFactory>();
+        factory.CreatePatternMatcher(default, default).ReturnsForAnyArgs(matcher);
 
-        return factory.Object;
+        return factory;
     }
 
 
@@ -54,17 +52,13 @@ internal static class Factory {
 
 
     public static HierarchyTreeViewItem CreateTreeViewItem(string name = "", IEnumerable<HierarchyTreeViewItem>? children = null, bool? isChecked = false) {
-        Mock<IHierarchyNode> node;
+        IHierarchyNode node;
 
 
-        if (children is null) {
-            children = Enumerable.Empty<HierarchyTreeViewItem>();
-        }
+        node = Substitute.For<IHierarchyNode>();
+        node.Name.Returns(name);
 
-        node = new Mock<IHierarchyNode>();
-        node.SetupGet((x) => x.Name).Returns(name);
-
-        return new HierarchyTreeViewItem(node.Object, children) {
+        return new HierarchyTreeViewItem(node, children ?? Enumerable.Empty<HierarchyTreeViewItem>()) {
             IsChecked = isChecked
         };
     }
@@ -201,16 +195,17 @@ internal static class Factory {
 
 
     private static IVsHierarchy CreateHierarchy(HierarchyData data, IVsSolution solution) {
-        Mock<IVsHierarchy> hierarchy;
-        object nameAsObject;
+        IVsHierarchy hierarchy;
         string canonicalName;
 
 
-        hierarchy = new Mock<IVsHierarchy>();
+        if (data.IsProject) {
+            hierarchy = Substitute.For<IVsHierarchy, IPersist, IVsProject>();
+        } else {
+            hierarchy = Substitute.For<IVsHierarchy, IPersist>();
+        }
 
-        SetClassID(hierarchy, data.CLSID);
-
-        nameAsObject = data.Name;
+        SetClassID((IPersist)hierarchy, data.CLSID);
 
         switch (data.Type) {
             case HierarchyType.Solution:
@@ -228,61 +223,62 @@ internal static class Factory {
         }
 
         hierarchy
-            .Setup((x) => x.GetCanonicalName((uint)VSConstants.VSITEMID.Root, out canonicalName))
-            .Returns(VSConstants.S_OK);
+            .GetCanonicalName((uint)VSConstants.VSITEMID.Root, out Arg.Any<string>())
+            .Returns((args) => {
+                args[1] = canonicalName;
+                return VSConstants.S_OK;
+            });
 
         hierarchy
-            .Setup((x) => x.GetProperty((uint)VSConstants.VSITEMID.Root, (int)__VSHPROPID.VSHPROPID_Name, out nameAsObject))
-            .Returns(VSConstants.S_OK);
+            .GetProperty((uint)VSConstants.VSITEMID.Root, (int)__VSHPROPID.VSHPROPID_Name, out Arg.Any<object>())
+            .Returns((args) => {
+                args[2] = data.Name;
+                return VSConstants.S_OK;
+            });
 
         hierarchy
-            .Setup((x) => x.GetProperty((uint)VSConstants.VSITEMID.Root, (int)__VSHPROPID.VSHPROPID_ParentHierarchy, out It.Ref<object>.IsAny))
-            .Returns(new GetPropertyCallback((uint itemID, int property, out object? value) => {
+            .GetProperty((uint)VSConstants.VSITEMID.Root, (int)__VSHPROPID.VSHPROPID_ParentHierarchy, out Arg.Any<object>())
+            .Returns((args) => {
                 Guid parentIdentifier;
 
 
                 if (data.Parent is null) {
-                    value = null;
+                    args[2] = null;
                     return VSConstants.S_OK;
                 }
 
                 parentIdentifier = data.Parent.Value;
 
                 if (ErrorHandler.Succeeded(solution.GetProjectOfGuid(ref parentIdentifier, out IVsHierarchy parent))) {
-                    value = parent;
+                    args[2] = parent;
                     return VSConstants.S_OK;
                 }
 
-                value = null;
+                args[2] = null;
                 return VSConstants.E_FAIL;
-            }));
+            });
 
         hierarchy
-            .Setup((x) => x.GetProperty((uint)VSConstants.VSITEMID.Root, (int)__VSHPROPID7.VSHPROPID_SharedItemsImportFullPaths, out It.Ref<object>.IsAny))
-            .Returns(new GetPropertyCallback((uint itemID, int property, out object? value) => {
+            .GetProperty((uint)VSConstants.VSITEMID.Root, (int)__VSHPROPID7.VSHPROPID_SharedItemsImportFullPaths, out Arg.Any<object>())
+            .Returns((args) => {
                 List<HierarchyData> dependencies;
 
 
                 dependencies = data.GetDependencyData().Where((x) => x.IsShared).ToList();
 
                 if (dependencies.Count > 0) {
-                    value = string.Join(
+                    args[2] = string.Join(
                         "|",
                         dependencies.Select((x) => Path.Combine(SolutionRoot, x.Name, x.Name + ".projitems"))
                     );
                     return VSConstants.S_OK;
                 }
 
-                value = null;
+                args[2] = null;
                 return VSConstants.E_FAIL;
-            }));
+            });
 
-
-        if (data.IsProject) {
-            hierarchy.As<IVsProject>();
-        }
-
-        return hierarchy.Object;
+        return hierarchy;
     }
 
 
@@ -333,51 +329,64 @@ internal static class Factory {
 
 
     public static IVsSolution CreateSolution(TreeItem root) {
-        Mock<IVsSolution> solution;
-        IEnumHierarchies enumerator;
+        IVsSolution solution;
 
 
-        solution = new Mock<IVsSolution>();
+        solution = Substitute.For<IVsSolution, IVsSolution4, IVsHierarchy>();
 
         solution
-            .Setup((x) => x.GetGuidOfProject(It.IsAny<IVsHierarchy>(), out It.Ref<Guid>.IsAny))
-            .Returns(new GetGuidOfProject((IVsHierarchy hierarchy, out Guid guid) => {
+            .GetGuidOfProject(Arg.Any<IVsHierarchy>(), out Arg.Any<Guid>())
+            .Returns((args) => {
+                IVsHierarchy hierarchy;
+
+
+                hierarchy = args.ArgAt<IVsHierarchy>(0);
+
                 foreach (var node in root.DescendantsAndSelf()) {
                     if (node.Hierarchy == hierarchy) {
-                        guid = node.Data.Identifier;
+                        args[1] = node.Data.Identifier;
                         return VSConstants.S_OK;
                     }
                 }
 
-                guid = default;
+                args[1] = default;
                 return VSConstants.E_FAIL;
-            }));
+            });
 
         solution
-            .Setup((x) => x.GetProjectOfGuid(ref It.Ref<Guid>.IsAny, out It.Ref<IVsHierarchy?>.IsAny))
-            .Returns(new GetProjectOfGuid((ref Guid guid, out IVsHierarchy? hierarchy) => {
+            .GetProjectOfGuid(ref Arg.Any<Guid>(), out Arg.Any<IVsHierarchy?>())
+            .Returns((args) => {
+                Guid guid;
+
+
+                guid = args.ArgAt<Guid>(0);
+
                 foreach (var node in root.DescendantsAndSelf()) {
                     if (node.Data.Identifier == guid) {
-                        hierarchy = EnsureHierarchyExists(node, solution.Object);
+                        args[1] = EnsureHierarchyExists(node, solution);
                         return VSConstants.S_OK;
                     }
                 }
 
-                hierarchy = null;
+                args[1] = null;
                 return VSConstants.E_FAIL;
-            }));
+            });
 
         solution
-            .Setup((x) => x.GetProjectEnum((uint)__VSENUMPROJFLAGS.EPF_ALLINSOLUTION, ref It.Ref<Guid>.IsAny, out enumerator))
-            .Returns(new GetProjectEnum((uint flags, ref Guid type, out IEnumHierarchies enumerator) => {
-                enumerator = CreateHierarchyEnumerator(root, solution.Object);
+            .GetProjectEnum((uint)__VSENUMPROJFLAGS.EPF_ALLINSOLUTION, ref Arg.Any<Guid>(), out Arg.Any<IEnumHierarchies>())
+            .Returns((args) => {
+                args[2] = CreateHierarchyEnumerator(root, solution);
                 return VSConstants.S_OK;
-            }));
+            });
 
-        solution
-            .As<IVsSolution4>()
-            .Setup((x) => x.ReloadProject(ref It.Ref<Guid>.IsAny))
-            .Returns(new ReloadProjectCallback((ref Guid identifier) => {
+        ((IVsSolution4)solution)
+            .ReloadProject(ref Arg.Any<Guid>())
+            .Returns((args) => {
+                Guid identifier;
+
+
+                identifier = args.ArgAt<Guid>(0);
+
                 foreach (var item in root.Descendants()) {
                     if (item.Data.Identifier == identifier) {
                         SetType(item, HierarchyType.Project);
@@ -385,12 +394,16 @@ internal static class Factory {
                     }
                 }
                 return VSConstants.E_FAIL;
-            }));
+            });
 
-        solution
-            .As<IVsSolution4>()
-            .Setup((x) => x.UnloadProject(ref It.Ref<Guid>.IsAny, (uint)_VSProjectUnloadStatus.UNLOADSTATUS_UnloadedByUser))
-            .Returns(new UnloadProjectCallback((ref Guid identifier, uint status) => {
+        ((IVsSolution4)solution)
+            .UnloadProject(ref Arg.Any<Guid>(), (uint)_VSProjectUnloadStatus.UNLOADSTATUS_UnloadedByUser)
+            .Returns((args) => {
+                Guid identifier;
+
+
+                identifier = args.ArgAt<Guid>(0);
+
                 foreach (var item in root.Descendants()) {
                     if (item.Data.Identifier == identifier) {
                         SetType(item, HierarchyType.UnloadedProject);
@@ -398,44 +411,42 @@ internal static class Factory {
                     }
                 }
                 return VSConstants.E_FAIL;
-            }));
+            });
 
-        solution.As<IVsHierarchy>();
-
-        return solution.Object;
+        return solution;
     }
 
 
     private static IEnumHierarchies CreateHierarchyEnumerator(TreeItem root, IVsSolution solution) {
-        Mock<IEnumHierarchies> enumerator;
+        IEnumHierarchies enumerator;
         Queue<TreeItem> hierarchies;
 
 
         hierarchies = new Queue<TreeItem>(root.Descendants());
-        enumerator = new Mock<IEnumHierarchies>();
+        enumerator = Substitute.For<IEnumHierarchies>();
 
         enumerator
-            .Setup((x) => x.Next(1, It.IsAny<IVsHierarchy[]>(), out It.Ref<uint>.IsAny))
-            .Callback(new EnumHierarchiesNextCallback((uint length, IVsHierarchy[] output, out uint count) => {
+            .Next(1, Arg.Any<IVsHierarchy[]>(), out Arg.Any<uint>())
+            .Returns((args) => {
                 if (hierarchies.Count > 0) {
-                    output[0] = EnsureHierarchyExists(hierarchies.Dequeue(), solution);
-                    count = 1;
+                    args.ArgAt<IVsHierarchy[]>(1)[0] = EnsureHierarchyExists(hierarchies.Dequeue(), solution);
+                    args[2] = 1u;
                 } else {
-                    count = 0;
+                    args[2] = 0u;
                 }
-            }))
-            .Returns(VSConstants.S_OK);
 
-        return enumerator.Object;
+                return VSConstants.S_OK;
+            });
+
+        return enumerator;
     }
 
 
-    private static void SetClassID(Mock<IVsHierarchy> hierarchy, Guid classID) {
-        hierarchy
-            .As<IPersist>()
-            .Setup((x) => x.GetClassID(out It.Ref<Guid>.IsAny))
-            .Callback(new GetClassIDCallback((out Guid pClassID) => pClassID = classID))
-            .Returns(VSConstants.S_OK);
+    private static void SetClassID(IPersist persist, Guid classID) {
+        persist.GetClassID(out Arg.Any<Guid>()).Returns((args) => {
+            args[0] = classID;
+            return VSConstants.S_OK;
+        });
     }
 
 
@@ -444,14 +455,25 @@ internal static class Factory {
         IReadOnlyDictionary<Guid, List<string>> dependencies,
         IVsSolution solution
     ) {
-        Mock<IVsSolutionBuildManager2> manager;
+        IVsSolutionBuildManager2 manager;
 
 
-        manager = new Mock<IVsSolutionBuildManager2>();
+        manager = Substitute.For<IVsSolutionBuildManager2>();
 
         manager
-            .Setup((x) => x.GetProjectDependencies(It.IsAny<IVsHierarchy>(), It.IsAny<uint>(), It.IsAny<IVsHierarchy[]>(), It.IsAny<uint[]>()))
-            .Returns(new GetProjectDependenciesCallback((hierarchy, count, output, size) => {
+            .GetProjectDependencies(default, default, default, default)
+            .ReturnsForAnyArgs((args) => {
+                IVsHierarchy hierarchy;
+                uint count;
+                IVsHierarchy[] output;
+                uint[] size;
+
+
+                hierarchy = args.ArgAt<IVsHierarchy>(0);
+                count = args.ArgAt<uint>(1);
+                output = args.ArgAt<IVsHierarchy[]>(2);
+                size = args.ArgAt<uint[]>(3);
+
                 if (count == 0) {
                     size[0] = (uint)GetProjectDependencies(root, dependencies, hierarchy, solution).Count;
                 } else {
@@ -459,9 +481,9 @@ internal static class Factory {
                 }
 
                 return VSConstants.S_OK;
-            }));
+            });
 
-        return manager.Object;
+        return manager;
     }
 
 
@@ -487,42 +509,10 @@ internal static class Factory {
 
 
     private static IVsHierarchy EnsureHierarchyExists(TreeItem item, IVsSolution solution) {
-        if (item.Hierarchy is null) {
-            item.Hierarchy = CreateHierarchy(item.Data, solution);
-        }
+        item.Hierarchy ??= CreateHierarchy(item.Data, solution);
 
         return item.Hierarchy;
     }
-
-
-    private delegate void GetClassIDCallback(out Guid pClassID);
-
-
-    private delegate void EnumHierarchiesNextCallback(uint celt, IVsHierarchy[] rgelt, out uint pceltFetched);
-
-
-    private delegate int GetGuidOfProject(IVsHierarchy hierarchy, out Guid guid);
-
-
-    private delegate int GetProjectOfGuid(ref Guid guid, out IVsHierarchy? hierarchy);
-
-
-    private delegate int GetProjectEnum(uint grfEnumFlags, ref Guid rguidEnumOnlyThisType, out IEnumHierarchies ppenum);
-
-
-    private delegate int GetProjectDependenciesCallback(IVsHierarchy pHier, uint celt, IVsHierarchy[] rgpHier, uint[] pcActual);
-
-
-    private delegate int ReloadProjectCallback(ref Guid identifier);
-
-
-    private delegate int UnloadProjectCallback(ref Guid identifier, uint status);
-
-
-    private delegate int GetPropertyCallback(uint itemid, int propid, out object? pvar);
-
-
-    private delegate int GetCanonicalNameCallback(uint itemid, out string pbstrName);
 
 }
 

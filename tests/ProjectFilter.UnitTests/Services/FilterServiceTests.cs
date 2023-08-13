@@ -1,7 +1,7 @@
 using Microsoft.VisualStudio.Sdk.TestFramework;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using Moq;
+using NSubstitute;
 using ProjectFilter.Helpers;
 using System;
 using System.Collections.Generic;
@@ -308,10 +308,10 @@ public static class FilterServiceTests {
 
         [Fact]
         public async Task ExpandsFolderOfProjectsThatWereLoadedWhenOptionIsEnabled() {
-            Mock<ISolutionExplorer> solutionExplorer;
+            ISolutionExplorer solutionExplorer;
 
 
-            solutionExplorer = new Mock<ISolutionExplorer>();
+            solutionExplorer = Substitute.For<ISolutionExplorer>();
 
             Setup(
                 $@"
@@ -324,7 +324,7 @@ public static class FilterServiceTests {
                         </folder>
                     </solution>
                     ",
-                solutionExplorer: solutionExplorer.Object
+                solutionExplorer: solutionExplorer
             );
 
             await ApplyAsync(
@@ -336,13 +336,15 @@ public static class FilterServiceTests {
                 )
             );
 
-            solutionExplorer.Verify((x) => x.ExpandAsync(new[] { ProjectAlpha }), Times.Once);
+            await solutionExplorer
+                .Received(1)
+                .ExpandAsync(Arg.Is<IEnumerable<Guid>>((x) => x.SequenceEqual(new[] { ProjectAlpha })));
         }
 
 
         [Fact]
         public async Task CollapsesProjectsThatWereLoadedWhenOptionIsDisabled() {
-            Mock<ISolutionExplorer> solutionExplorer;
+            ISolutionExplorer solutionExplorer;
             Guid testFolder;
             Guid otherFolder;
 
@@ -350,12 +352,12 @@ public static class FilterServiceTests {
             testFolder = new Guid("{1413358E-AD48-4DB9-92E3-238CFF65743D}");
             otherFolder = new Guid("{11C39F56-668C-48B4-B3E4-91F9BA7DB09F}");
 
-            solutionExplorer = new Mock<ISolutionExplorer>();
+            solutionExplorer = Substitute.For<ISolutionExplorer>();
 
-            solutionExplorer
-                .SetupSequence((x) => x.GetExpandedFoldersAsync())
-                .ReturnsAsync(new[] { testFolder })
-                .ReturnsAsync(new[] { testFolder, otherFolder });
+            solutionExplorer.GetExpandedFoldersAsync().Returns(
+                new[] { testFolder },
+                new[] { testFolder, otherFolder }
+            );
 
             Setup(
                 $@"
@@ -371,7 +373,7 @@ public static class FilterServiceTests {
                         </folder>
                     </solution>
                     ",
-                solutionExplorer: solutionExplorer.Object
+                solutionExplorer: solutionExplorer
             );
 
             await ApplyAsync(
@@ -383,16 +385,20 @@ public static class FilterServiceTests {
                 )
             );
 
-            solutionExplorer.Verify((x) => x.CollapseAsync(new[] { ProjectAlpha, ProjectGamma, otherFolder }), Times.Once);
+            await solutionExplorer
+                .Received(1)
+                .CollapseAsync(
+                    Arg.Is<IEnumerable<Guid>>((x) => x.SequenceEqual(new[] { ProjectAlpha, ProjectGamma, otherFolder }))
+                );
         }
 
 
         [Fact]
         public async Task DoesNotExpandFolderOfProjectsThatWereUnloaded() {
-            Mock<ISolutionExplorer> solutionExplorer;
+            ISolutionExplorer solutionExplorer;
 
 
-            solutionExplorer = new Mock<ISolutionExplorer>();
+            solutionExplorer = Substitute.For<ISolutionExplorer>();
 
             Setup(
                 $@"
@@ -402,7 +408,7 @@ public static class FilterServiceTests {
                         </folder>
                     </solution>
                     ",
-                solutionExplorer: solutionExplorer.Object
+                solutionExplorer: solutionExplorer
             );
 
             await ApplyAsync(
@@ -414,8 +420,8 @@ public static class FilterServiceTests {
                 )
             );
 
-            solutionExplorer.Verify((x) => x.ExpandAsync(It.IsAny<IEnumerable<Guid>>()), Times.Once);
-            solutionExplorer.Verify((x) => x.ExpandAsync(It.Is<IEnumerable<Guid>>((items) => !items.Any())), Times.Once);
+            await solutionExplorer.Received(1).ExpandAsync(Arg.Any<IEnumerable<Guid>>());
+            await solutionExplorer.Received(1).ExpandAsync(Arg.Is<IEnumerable<Guid>>((items) => !items.Any()));
         }
 
 
@@ -432,7 +438,7 @@ public static class FilterServiceTests {
             AddService<SVsSolution>(solution);
             AddService<SVsSolutionBuildManager>(buildManager);
             AddService<IWaitDialogFactory>(MockWaitDialogFactory());
-            AddService<ISolutionExplorer>(solutionExplorer ?? Mock.Of<ISolutionExplorer>());
+            AddService<ISolutionExplorer>(solutionExplorer ?? Substitute.For<ISolutionExplorer>());
         }
 
 
@@ -443,17 +449,17 @@ public static class FilterServiceTests {
 
 
         private static IWaitDialogFactory MockWaitDialogFactory() {
-            Mock<IWaitDialogFactory> factory;
-            Mock<IWaitDialog> dialog;
+            IWaitDialogFactory factory;
+            IWaitDialog dialog;
 
 
-            dialog = new Mock<IWaitDialog>();
-            dialog.SetupGet((x) => x.CancellationToken).Returns(CancellationToken.None);
+            dialog = Substitute.For<IWaitDialog>();
+            dialog.CancellationToken.Returns(CancellationToken.None);
 
-            factory = new Mock<IWaitDialogFactory>();
-            factory.Setup((x) => x.CreateAsync(It.IsAny<string>(), It.IsAny<ThreadedWaitDialogProgressData>())).ReturnsAsync(dialog.Object);
+            factory = Substitute.For<IWaitDialogFactory>();
+            factory.CreateAsync(Arg.Any<string>(), Arg.Any<ThreadedWaitDialogProgressData>()).Returns(dialog);
 
-            return factory.Object;
+            return factory;
         }
 
 
