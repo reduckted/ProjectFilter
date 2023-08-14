@@ -109,6 +109,12 @@ public partial class FilterService : IFilterService {
                 await LoadProjectAsync(identifier, options.LoadProjectDependencies, state);
             }
 
+            // Let Visual Studio catch up with the changes we made before we do
+            // anything else. If we don't do this, then Solution Explorer can
+            // end up hiding projects that we just loaded (though, that only seems
+            // to be a problem if you've loaded a Solution Filter ¯\_(ツ)_/¯).
+            await Task.Yield();
+
             // Even if we've been cancelled, we'll still hide the unloaded
             // projects and show the loaded projects. This prevents us from
             // getting into a state where we've loaded some projects but they
