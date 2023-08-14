@@ -1,3 +1,7 @@
+# 2.4.1 (2023-08-14)
+
+-   🐛 When using a Solution Filter (`.slnf`), projects would sometimes be hidden in Solution Explorer after they were loaded (#4).
+
 # 2.4.0 (2022-10-22)
 
 - ✨ When the option to expand loaded projects is turned off, the projects and any folders they were in will be collapsed instead.
