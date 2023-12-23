@@ -22,13 +22,14 @@ public class HierarchyTreeViewItem : ObservableObject {
 
     public HierarchyTreeViewItem(
         IHierarchyNode node,
+        bool isExpanded,
         IEnumerable<HierarchyTreeViewItem> children
     ) {
         _node = node;
         Children = new HierarchyTreeViewItemCollection(children);
 
         _isChecked = false;
-        _isExpanded = true;
+        _isExpanded = isExpanded;
 
         // Connect the children to this parent item.
         foreach (var child in Children) {

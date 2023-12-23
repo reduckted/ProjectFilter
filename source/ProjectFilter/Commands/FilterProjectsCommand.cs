@@ -35,6 +35,9 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
         IHierarchyProvider hierarchyProvider;
         TextFilterFactory textFilterFactory;
         Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory;
+        IExtensionSettings globalSettings;
+        ISolutionSettingsManager solutionSettingsManager;
+        SolutionSettings? solutionSettings;
 
 
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
@@ -43,19 +46,16 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
         textFilterFactory = await CreateTextFilterFactoryAsync();
         hierarchyFactory = async () => await hierarchyProvider.GetHierarchyAsync();
 
-        using (var vm = new FilterDialogViewModel(hierarchyFactory, Debouncer.Create, textFilterFactory, Package.JoinableTaskFactory)) {
-            IExtensionSettings globalSettings;
-            ISolutionSettingsManager solutionSettingsManager;
-            SolutionSettings? solutionSettings;
+        globalSettings = await VS.GetRequiredServiceAsync<IExtensionSettings, IExtensionSettings>();
+        await globalSettings.LoadAsync();
+
+        solutionSettingsManager = await VS.GetRequiredServiceAsync<ISolutionSettingsManager, ISolutionSettingsManager>();
+        solutionSettings = await solutionSettingsManager.GetSettingsAsync();
+
+        using (var vm = new FilterDialogViewModel(hierarchyFactory, Debouncer.Create, textFilterFactory, solutionSettings?.Nodes, Package.JoinableTaskFactory)) {
             FilterDialog dialog;
             bool result;
 
-
-            globalSettings = await VS.GetRequiredServiceAsync<IExtensionSettings, IExtensionSettings>();
-            await globalSettings.LoadAsync();
-
-            solutionSettingsManager = await VS.GetRequiredServiceAsync<ISolutionSettingsManager, ISolutionSettingsManager>();
-            solutionSettings = await solutionSettingsManager.GetSettingsAsync();
 
             // Initialize the settings with the settings that were last
             // used for this solution. If this solution hasn't been
@@ -73,13 +73,14 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
             // Save the settings for this solution, even if filtering
             // was cancelled. This saves the user from having to re-apply
             // the settings the next time they open the dialog.
-            solutionSettingsManager.SetSettings(
-                new SolutionSettings {
-                    LoadProjectDependencies = vm.LoadProjectDependencies,
-                    UseRegularExpressions = vm.UseRegularExpressions,
-                    ExpandLoadedProjects = vm.ExpandLoadedProjects
-                }
-            );
+            solutionSettings = new SolutionSettings {
+                LoadProjectDependencies = vm.LoadProjectDependencies,
+                UseRegularExpressions = vm.UseRegularExpressions,
+                ExpandLoadedProjects = vm.ExpandLoadedProjects
+            };
+            PopulateNodeSettings(vm.Items, solutionSettings.Nodes);
+
+            solutionSettingsManager.SetSettings(solutionSettings);
 
             // Also save the settings to the global settings so that the same settings
             // can be used for solutions that don't have their own settings yet.
@@ -94,6 +95,19 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
         }
 
         return null;
+    }
+
+
+    private static void PopulateNodeSettings(HierarchyTreeViewItemCollection items, Dictionary<string, SolutionNodeSettings> settings) {
+        foreach (var item in items) {
+            SolutionNodeSettings nodeSettings;
+
+
+            nodeSettings = new SolutionNodeSettings { IsExpanded = item.IsExpanded };
+            PopulateNodeSettings(item.Children, nodeSettings.Children);
+
+            settings[item.Name] = nodeSettings;
+        }
     }
 
 

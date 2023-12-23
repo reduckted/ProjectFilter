@@ -159,9 +159,17 @@ public static class HierarchyTreeViewItemTests {
 
     public class IsExpandedProperty {
 
-        [Fact]
-        public void IsInitiallyTrue() {
-            Assert.True(new HierarchyTreeViewItem(Substitute.For<IHierarchyNode>(), Enumerable.Empty<HierarchyTreeViewItem>()).IsExpanded);
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void IsInitiallySetToTheGivenValue(bool isExpanded) {
+            Assert.Equal(isExpanded,
+                new HierarchyTreeViewItem(
+                    Substitute.For<IHierarchyNode>(),
+                    isExpanded,
+                    Enumerable.Empty<HierarchyTreeViewItem>()
+                ).IsExpanded
+            );
         }
 
 
@@ -172,6 +180,7 @@ public static class HierarchyTreeViewItemTests {
 
             item = new HierarchyTreeViewItem(
                 Substitute.For<IHierarchyNode>(),
+                true,
                 Enumerable.Empty<HierarchyTreeViewItem>()
             );
 
@@ -203,9 +212,7 @@ public static class HierarchyTreeViewItemTests {
             node.CollapsedIcon.Returns(KnownMonikers.FolderClosed);
             node.ExpandedIcon.Returns(KnownMonikers.FolderOpened);
 
-            item = new HierarchyTreeViewItem(node, Enumerable.Empty<HierarchyTreeViewItem>()) {
-                IsExpanded = true
-            };
+            item = new HierarchyTreeViewItem(node, true, Enumerable.Empty<HierarchyTreeViewItem>());
 
             Assert.Equal(KnownMonikers.FolderOpened, item.Icon);
 
@@ -227,7 +234,7 @@ public static class HierarchyTreeViewItemTests {
             node = Substitute.For<IHierarchyNode>();
             node.Name.Returns("Root");
 
-            item = new HierarchyTreeViewItem(node, Enumerable.Empty<HierarchyTreeViewItem>());
+            item = new HierarchyTreeViewItem(node, true, Enumerable.Empty<HierarchyTreeViewItem>());
 
             Assert.Equal("Root", item.Path);
         }
@@ -246,8 +253,8 @@ public static class HierarchyTreeViewItemTests {
             parentNode = Substitute.For<IHierarchyNode>();
             parentNode.Name.Returns("Root");
 
-            childItem = new HierarchyTreeViewItem(childNode, Enumerable.Empty<HierarchyTreeViewItem>());
-            _ = new HierarchyTreeViewItem(parentNode, new[] { childItem });
+            childItem = new HierarchyTreeViewItem(childNode, true, Enumerable.Empty<HierarchyTreeViewItem>());
+            _ = new HierarchyTreeViewItem(parentNode, true, new[] { childItem });
 
             Assert.Equal("Root/Child", childItem.Path);
         }

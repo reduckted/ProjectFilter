@@ -58,7 +58,7 @@ internal static class Factory {
         node = Substitute.For<IHierarchyNode>();
         node.Name.Returns(name);
 
-        return new HierarchyTreeViewItem(node, children ?? Enumerable.Empty<HierarchyTreeViewItem>()) {
+        return new HierarchyTreeViewItem(node, true, children ?? Enumerable.Empty<HierarchyTreeViewItem>()) {
             IsChecked = isChecked
         };
     }

@@ -19,6 +19,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
 
     private readonly Func<Task<IEnumerable<IHierarchyNode>>> _hierarchyFactory;
     private readonly TextFilterFactory _textFilterFactory;
+    private readonly Dictionary<string, SolutionNodeSettings>? _nodeSettings;
     private readonly IDebouncer _debouncer;
     private HierarchyTreeViewItemCollection _items;
     private string _searchText;
@@ -35,6 +36,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
         Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory,
         Func<TimeSpan, IDebouncer> debouncerFactory,
         TextFilterFactory textFilterFactory,
+        Dictionary<string, SolutionNodeSettings>? nodeSettings,
         JoinableTaskFactory joinableTaskFactory
     ) {
         if (debouncerFactory is null) {
@@ -43,6 +45,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
 
         _hierarchyFactory = hierarchyFactory ?? throw new ArgumentNullException(nameof(hierarchyFactory));
         _textFilterFactory = textFilterFactory ?? throw new ArgumentNullException(nameof(textFilterFactory));
+        _nodeSettings = nodeSettings;
 
         _items = new HierarchyTreeViewItemCollection(Enumerable.Empty<HierarchyTreeViewItem>());
         _searchText = "";
@@ -119,18 +122,24 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
 
         hierarchy = await _hierarchyFactory.Invoke();
 
-        Items = new HierarchyTreeViewItemCollection(hierarchy.Select(CreateItem));
+        Items = new HierarchyTreeViewItemCollection(
+            hierarchy.Select((x) => CreateItem(x, GetSettingsForNode(x, _nodeSettings)))
+        );
 
         LoadedVisibility = Visibility.Visible;
         LoadingVisibility = Visibility.Collapsed;
     }
 
 
-    private static HierarchyTreeViewItem CreateItem(IHierarchyNode node) {
+    private static HierarchyTreeViewItem CreateItem(IHierarchyNode node, SolutionNodeSettings? nodeSettings) {
         HierarchyTreeViewItem item;
 
 
-        item = new HierarchyTreeViewItem(node, node.Children.Select(CreateItem));
+        item = new HierarchyTreeViewItem(
+            node,
+            nodeSettings?.IsExpanded ?? true,
+            node.Children.Select((x) => CreateItem(x, GetSettingsForNode(x, nodeSettings?.Children)))
+        );
 
         // Set the checked state of the item. If it has children, then we check 
         // it based on whether all or none of the children are checked. If it 
@@ -145,6 +154,16 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
         );
 
         return item;
+    }
+
+
+    private static SolutionNodeSettings? GetSettingsForNode(IHierarchyNode node, Dictionary<string, SolutionNodeSettings>? nodeSettings) {
+        if (nodeSettings is not null) {
+            nodeSettings.TryGetValue(node.Name, out SolutionNodeSettings settings);
+            return settings;
+        }
+
+        return null;
     }
 
 
