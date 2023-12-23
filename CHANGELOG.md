@@ -1,3 +1,8 @@
+# 2.5.0 (2023-12-23)
+
+- ✨ Filtering options (load dependencies, use regular expressions, etc.) are now stored on a per-solution basis.
+- ✨ The expanded state of nodes in the Project Filter dialog are remembered.
+
 # 2.4.1 (2023-08-14)
 
 -   🐛 When using a Solution Filter (`.slnf`), projects would sometimes be hidden in Solution Explorer after they were loaded (#4).
