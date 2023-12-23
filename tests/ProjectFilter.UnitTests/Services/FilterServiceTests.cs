@@ -5,6 +5,7 @@ using NSubstitute;
 using ProjectFilter.Helpers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Xml.Linq;
@@ -29,6 +30,7 @@ public static class FilterServiceTests {
         private TestHierarchyItem? _root;
 
 
+        [SuppressMessage("Usage", "xUnit1041:Fixture arguments to test classes must have fixture sources", Justification = "False Positive. Fixed in xunit.analyzers@1.8.0")]
         public ApplyMethod(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
 
 

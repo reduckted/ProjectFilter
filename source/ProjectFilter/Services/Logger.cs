@@ -14,9 +14,7 @@ public class Logger : ILogger {
 
     public async Task WriteLineAsync(string message) {
         try {
-            if (_pane is null) {
-                _pane = await OutputWindowPane.CreateAsync(Vsix.Name);
-            }
+            _pane ??= await OutputWindowPane.CreateAsync(Vsix.Name);
 
             await _pane.WriteLineAsync($"{DateTime.Now:HH:mm:ss} - {message}");
 

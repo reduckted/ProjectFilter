@@ -43,7 +43,7 @@ public class WatermarkTests {
     [WpfTheory]
     [InlineData("")]
     [InlineData(null)]
-    public void SetsHideToFalseWhenTheTextBoxDoesNotContainText(string watermark) {
+    public void SetsHideToFalseWhenTheTextBoxDoesNotContainText(string? watermark) {
         TextBox box;
 
 

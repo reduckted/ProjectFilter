@@ -8,6 +8,7 @@ using NSubstitute;
 using ProjectFilter.Helpers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -23,6 +24,7 @@ public static class HierarchyProviderTests {
 
     public class GetHierarchyMethod : ServiceTest<HierarchyProvider> {
 
+        [SuppressMessage("Usage", "xUnit1041:Fixture arguments to test classes must have fixture sources", Justification = "False Positive. Fixed in xunit.analyzers@1.8.0")]
         public GetHierarchyMethod(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
 
 
@@ -300,7 +302,7 @@ public static class HierarchyProviderTests {
         }
 
 
-        private IEnumerable<XElement> ConvertToElements(IEnumerable<IHierarchyNode> nodes) {
+        private static IEnumerable<XElement> ConvertToElements(IEnumerable<IHierarchyNode> nodes) {
             foreach (var node in nodes) {
                 XElement element;
 
@@ -315,7 +317,7 @@ public static class HierarchyProviderTests {
         }
 
 
-        private IEnumerable<IHierarchyNode> Flatten(IEnumerable<IHierarchyNode> nodes) {
+        private static IEnumerable<IHierarchyNode> Flatten(IEnumerable<IHierarchyNode> nodes) {
             foreach (var node in nodes) {
                 yield return node;
 

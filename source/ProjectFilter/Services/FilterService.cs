@@ -157,7 +157,7 @@ public partial class FilterService : IFilterService {
     }
 
 
-    private async Task LoadProjectAsync(Guid identifier, bool loadProjectDependencies, State state) {
+    private static async Task LoadProjectAsync(Guid identifier, bool loadProjectDependencies, State state) {
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
         // Record that we've visited this project. We may have already visited
