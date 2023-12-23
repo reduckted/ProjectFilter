@@ -33,7 +33,6 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
 
     private async Task<FilterOptions?> GetOptionsAsync() {
         IHierarchyProvider hierarchyProvider;
-        IExtensionSettings settings;
         TextFilterFactory textFilterFactory;
         Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory;
 
@@ -41,20 +40,29 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
         hierarchyProvider = await VS.GetRequiredServiceAsync<IHierarchyProvider, IHierarchyProvider>();
-        settings = await VS.GetRequiredServiceAsync<IExtensionSettings, IExtensionSettings>();
-
         textFilterFactory = await CreateTextFilterFactoryAsync();
         hierarchyFactory = async () => await hierarchyProvider.GetHierarchyAsync();
 
         using (var vm = new FilterDialogViewModel(hierarchyFactory, Debouncer.Create, textFilterFactory, Package.JoinableTaskFactory)) {
+            IExtensionSettings globalSettings;
+            ISolutionSettingsManager solutionSettingsManager;
+            SolutionSettings? solutionSettings;
             FilterDialog dialog;
             bool result;
 
 
-            await settings.LoadAsync();
-            vm.LoadProjectDependencies = settings.LoadProjectDependencies;
-            vm.UseRegularExpressions = settings.UseRegularExpressions;
-            vm.ExpandLoadedProjects = settings.ExpandLoadedProjects;
+            globalSettings = await VS.GetRequiredServiceAsync<IExtensionSettings, IExtensionSettings>();
+            await globalSettings.LoadAsync();
+
+            solutionSettingsManager = await VS.GetRequiredServiceAsync<ISolutionSettingsManager, ISolutionSettingsManager>();
+            solutionSettings = await solutionSettingsManager.GetSettingsAsync();
+
+            // Initialize the settings with the settings that were last
+            // used for this solution. If this solution hasn't been
+            // filtered before, then we'll use the global settings.
+            vm.LoadProjectDependencies = solutionSettings?.LoadProjectDependencies ?? globalSettings.LoadProjectDependencies;
+            vm.UseRegularExpressions = solutionSettings?.UseRegularExpressions ?? globalSettings.UseRegularExpressions;
+            vm.ExpandLoadedProjects = solutionSettings?.ExpandLoadedProjects ?? globalSettings.ExpandLoadedProjects;
 
             dialog = new FilterDialog {
                 DataContext = vm
@@ -62,10 +70,23 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
 
             result = dialog.ShowModal().GetValueOrDefault();
 
-            settings.LoadProjectDependencies = vm.LoadProjectDependencies;
-            settings.UseRegularExpressions = vm.UseRegularExpressions;
-            settings.ExpandLoadedProjects = vm.ExpandLoadedProjects;
-            await settings.SaveAsync();
+            // Save the settings for this solution, even if filtering
+            // was cancelled. This saves the user from having to re-apply
+            // the settings the next time they open the dialog.
+            solutionSettingsManager.SetSettings(
+                new SolutionSettings {
+                    LoadProjectDependencies = vm.LoadProjectDependencies,
+                    UseRegularExpressions = vm.UseRegularExpressions,
+                    ExpandLoadedProjects = vm.ExpandLoadedProjects
+                }
+            );
+
+            // Also save the settings to the global settings so that the same settings
+            // can be used for solutions that don't have their own settings yet.
+            globalSettings.LoadProjectDependencies = vm.LoadProjectDependencies;
+            globalSettings.UseRegularExpressions = vm.UseRegularExpressions;
+            globalSettings.ExpandLoadedProjects = vm.ExpandLoadedProjects;
+            await globalSettings.SaveAsync();
 
             if (result) {
                 return vm.Result;
