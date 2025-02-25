@@ -1,17 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net48</TargetFramework>
         <RootNamespace>ProjectFilter</RootNamespace>
         <IsPackable>false</IsPackable>
-        <Nullable>enable</Nullable>
-        <LangVersion>10.0</LangVersion>
-        <AnalysisMode>AllEnabledByDefault</AnalysisMode>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Community.VisualStudio.Toolkit.17" Version="17.0.507" />
-        <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0">
+        <PackageReference Include="Community.VisualStudio.Toolkit.17" Version="17.0.527" />
+        <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
@@ -21,10 +17,6 @@
         <PackageReference Include="Microsoft.VisualStudio.Sdk.TestFramework.Xunit" Version="17.2.7" />
         <PackageReference Include="NSubstitute" Version="5.1.0" />
         <PackageReference Include="xunit" Version="2.6.3" />
-        <PackageReference Include="xunit.runner.msbuild" Version="2.6.3">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
         <PackageReference Include="xunit.runner.visualstudio" Version="2.5.5">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -39,9 +31,5 @@
     <ItemGroup>
         <Reference Include="System.Xaml" />
     </ItemGroup>
-
-    <Target Name="Test">
-        <xunit Assemblies="$(TargetPath)" />
-    </Target>
 
 </Project>

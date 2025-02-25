@@ -1,13 +1,6 @@
 name: Continuous Integration
 
 on:
-    push:
-        branches:
-            - "**"
-
-        tags-ignore:
-            - "**"
-
     pull_request:
         types: [opened, synchronize, edited]
 
@@ -21,13 +14,13 @@ jobs:
 
         steps:
             - name: Checkout
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
 
-            - name: Setup MSBuild
-              uses: microsoft/setup-msbuild@v1.0.2
+            - name: Setup .NET SDK
+              uses: actions/setup-dotnet@v4
 
             - name: Build
-              run: msbuild /t:Rebuild /Restore /v:Minimal
+              run: dotnet build
 
             - name: Test
-              run: msbuild tests/ProjectFilter.UnitTests /t:Test /v:Minimal
+              run: dotnet test tests/ProjectFilter.UnitTests

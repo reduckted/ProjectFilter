@@ -1,18 +1,12 @@
-<Project>
-
-    <Import Sdk="Microsoft.NET.Sdk.WindowsDesktop" Project="Sdk.props" />
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
     <PropertyGroup>
-        <TargetFramework>net48</TargetFramework>
-        <RootNamespace>ProjectFilter</RootNamespace>
-        <UseWPF>true</UseWPF>
-        <Nullable>enable</Nullable>
-        <LangVersion>10.0</LangVersion>
-        <AnalysisMode>AllEnabledByDefault</AnalysisMode>
+        <CustomAfterMicrosoftCSharpTargets Condition="$(VsSDKInstall) != ''">$(VsSDKInstall)\Microsoft.VsSDK.targets</CustomAfterMicrosoftCSharpTargets>
     </PropertyGroup>
 
     <PropertyGroup>
-        <Version>2.5.0</Version>
+        <RootNamespace>ProjectFilter</RootNamespace>
+        <UseWPF>true</UseWPF>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -86,15 +80,15 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Community.VisualStudio.Toolkit.17" Version="17.0.507" />
-        <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0">
+        <PackageReference Include="Community.VisualStudio.Toolkit.17" Version="17.0.527" />
+        <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.0.32112.339" ExcludeAssets="runtime">
             <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.3.2094">
+        <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.13.2126">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
@@ -108,33 +102,8 @@
         <Reference Include="WindowsBase" />
     </ItemGroup>
 
-    <PropertyGroup>
-        <!--
-        Configure the `PostBuildEvent` target to always run. This gives us a
-        target that we can restore the manifest file in, even if the build fails.
-        -->
-        <RunPostBuildEvent>Always</RunPostBuildEvent>
-    </PropertyGroup>
-
-    <Target Name="SetVsixVersion" BeforeTargets="BeforeBuild">
-        <!--
-        We only want to change the version number during
-        the build, so backup the manifest file first.
-        -->
-        <PropertyGroup>
-            <VsixManifestOriginal>source.extension.vsixmanifest</VsixManifestOriginal>
-            <VsixManifestBackup>$(IntermediateOutputPath)$(VsixManifestOriginal).backup</VsixManifestBackup>
-        </PropertyGroup>
-
-        <Copy SourceFiles="$(VsixManifestOriginal)" DestinationFiles="$(VsixManifestBackup)" />
-        <XmlPoke XmlInputPath="source.extension.vsixmanifest" Query="/x:PackageManifest/x:Metadata/x:Identity/@Version" Value="$(Version)" Namespaces="&lt;Namespace Prefix='x' Uri='http://schemas.microsoft.com/developer/vsx-schema/2011' /&gt;" />
-    </Target>
-
-    <Target Name="RestoreVsixVersion" AfterTargets="PostBuildEvent">
-        <!-- Restore the backup of the manifest file. -->
-        <Move SourceFiles="$(VsixManifestBackup)" DestinationFiles="$(VsixManifestOriginal)" />
-    </Target>
-
+    <Target Name="VsixVersion" Returns="$(Version)" />
+    
     <!-- Workaround for https://github.com/dotnet/wpf/issues/6792 -->
     <Target Name="RemoveDuplicateAnalyzers" BeforeTargets="CoreCompile">
         <ItemGroup>
@@ -143,8 +112,5 @@
             <Analyzer Include="@(FilteredAnalyzer)" />
         </ItemGroup>
     </Target>
-
-    <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
-    <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="Exists('$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets')" />
 
 </Project>
