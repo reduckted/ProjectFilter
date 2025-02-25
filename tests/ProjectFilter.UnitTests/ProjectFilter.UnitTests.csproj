@@ -1,12 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net48</TargetFramework>
         <RootNamespace>ProjectFilter</RootNamespace>
         <IsPackable>false</IsPackable>
-        <Nullable>enable</Nullable>
-        <LangVersion>10.0</LangVersion>
-        <AnalysisMode>AllEnabledByDefault</AnalysisMode>
     </PropertyGroup>
 
     <ItemGroup>

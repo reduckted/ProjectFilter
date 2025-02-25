@@ -1,7 +1,11 @@
 <Project>
 
     <PropertyGroup>
-        <LangVersion>10</LangVersion>
+        <Version>2.5.0</Version>
+        <TargetFramework>net48</TargetFramework>
+        <Nullable>enable</Nullable>
+        <LangVersion>10.0</LangVersion>
+        <AnalysisMode>AllEnabledByDefault</AnalysisMode>
     </PropertyGroup>
 
 </Project>
