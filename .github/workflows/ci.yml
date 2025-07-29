@@ -1,26 +1,26 @@
 name: Continuous Integration
 
 on:
-    pull_request:
-        types: [opened, synchronize, edited]
+  pull_request:
+    types: [opened, synchronize, edited]
 
 jobs:
-    build:
-        runs-on: windows-2022
+  build:
+    runs-on: windows-2022
 
-        env:
-            Configuration: Release
-            DeployExtension: false
+    env:
+      Configuration: Release
+      DeployExtension: false
 
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            - name: Setup .NET SDK
-              uses: actions/setup-dotnet@v4
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
 
-            - name: Build
-              run: dotnet build
+      - name: Build
+        run: dotnet build
 
-            - name: Test
-              run: dotnet test tests/ProjectFilter.UnitTests
+      - name: Test
+        run: dotnet test tests/ProjectFilter.UnitTests
