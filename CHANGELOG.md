@@ -1,3 +1,7 @@
+# 2.5.1 (2025-07-29)
+
+- 🐛 Improved error handling when loading or unloading projects fails.
+
 # 2.5.0 (2023-12-23)
 
 - ✨ Filtering options (load dependencies, use regular expressions, etc.) are now stored on a per-solution basis.
@@ -5,7 +9,7 @@
 
 # 2.4.1 (2023-08-14)
 
--   🐛 When using a Solution Filter (`.slnf`), projects would sometimes be hidden in Solution Explorer after they were loaded (#4).
+- 🐛 When using a Solution Filter (`.slnf`), projects would sometimes be hidden in Solution Explorer after they were loaded (#4).
 
 # 2.4.0 (2022-10-22)
 
