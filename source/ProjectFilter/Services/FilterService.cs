@@ -137,19 +137,26 @@ public partial class FilterService : IFilterService {
 
         if (IsLoaded(state.Solution, identifier)) {
             string name;
-            int result;
 
 
             name = state.Solution.GetName(identifier);
             state.SetProgressText($"Unloading {name}...");
 
-            result = state.Solution.UnloadProject(
-                identifier,
-                (uint)_VSProjectUnloadStatus.UNLOADSTATUS_UnloadedByUser
-            );
+            try {
+                int result;
 
-            if (ErrorHandler.Failed(result)) {
-                await LogFailureAsync($"Failed to unload project '{name}'.", result);
+
+                result = state.Solution.UnloadProject(
+                    identifier,
+                    (uint)_VSProjectUnloadStatus.UNLOADSTATUS_UnloadedByUser
+                );
+
+                if (ErrorHandler.Failed(result)) {
+                    await LogFailureAsync($"Failed to unload project '{name}'.", result);
+                }
+
+            } catch (Exception ex) when (!ErrorHandler.IsCriticalException(ex)) {
+                await LogFailureAsync($"Failed to unload project '{name}'.", ex);
             }
 
             state.OnProjectUnloaded(identifier);
@@ -166,23 +173,33 @@ public partial class FilterService : IFilterService {
         // visited it before, then we don't need to do anything this time.
         if (state.ProjectsVisitedWhileLoading.Add(identifier)) {
             IEnumerable<Guid>? dependencies;
-            bool loaded;
+            bool wasLoaded;
 
 
             dependencies = null;
-            loaded = false;
+            wasLoaded = false;
 
             if (!IsLoaded(state.Solution, identifier)) {
                 string name;
-                int result;
 
 
                 name = state.Solution.GetName(identifier);
                 state.SetProgressText($"Loading {name}...");
-                result = state.Solution.ReloadProject(identifier);
 
-                if (ErrorHandler.Failed(result)) {
-                    await LogFailureAsync($"Failed to load project '{name}'.", result);
+                try {
+                    int result;
+
+
+                    result = state.Solution.ReloadProject(identifier);
+
+                    if (ErrorHandler.Failed(result)) {
+                        await LogFailureAsync($"Failed to load project '{name}'.", result);
+                        return;
+                    }
+
+                } catch (Exception ex) when (!ErrorHandler.IsCriticalException(ex)) {
+                    await LogFailureAsync($"Failed to load project '{name}'.", ex);
+                    return;
                 }
 
                 // Don't record that we've loaded the project _yet_. If we do that
@@ -193,7 +210,7 @@ public partial class FilterService : IFilterService {
                 // the progress will increase to 100% and then immediately decrease.
                 // We'll wait until we've recorded that the dependencies need to be
                 // loaded before we record that this project was loaded.
-                loaded = true;
+                wasLoaded = true;
 
                 // Whenever a project is loaded, we should recalculate project dependencies
                 // to ensure that the new project's dependencies are correct.
@@ -219,7 +236,7 @@ public partial class FilterService : IFilterService {
             // if we actually loaded the given project, then we can record that
             // it has been loaded. This prevents the progress from increasing
             // and then decreasing (instead, it will decrease and then increase).
-            if (loaded) {
+            if (wasLoaded) {
                 state.OnProjectLoaded(identifier);
             }
 
@@ -357,13 +374,21 @@ public partial class FilterService : IFilterService {
     }
 
 
-    private static async Task LogFailureAsync(string message, int result) {
+    private static Task LogFailureAsync(string message, int result) {
+        return LogFailureAsync(message, Marshal.GetExceptionForHR(result));
+    }
+
+
+    private static async Task LogFailureAsync(string message, Exception? ex) {
         ILogger logger;
+        string exceptionMessage;
 
 
         logger = await VS.GetRequiredServiceAsync<ILogger, ILogger>();
 
-        await logger.WriteLineAsync($"{message} {Marshal.GetExceptionForHR(result).Message}");
+        exceptionMessage = ex?.Message ?? "[Unknown Error]";
+
+        await logger.WriteLineAsync($"{message} {exceptionMessage}");
     }
 
 }
