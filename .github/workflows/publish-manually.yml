@@ -1,0 +1,32 @@
+name: Publish Extension Manually
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Tag to publish"
+        required: true
+
+jobs:
+  publish:
+    runs-on: windows-2022
+
+    env:
+      Configuration: Release
+      DeployExtension: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version }}
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Publish
+        run: msbuild source/ProjectFilter/ProjectFilter.csproj /t:PublishToMarketplace /Restore /v:Minimal /p:BuildBeforePublish=true /p:PersonalAccessToken=${{ secrets.PUBLISHER_TOKEN }}
+        env:
+          # This workflow should be used when the `VsixPublisher` from the `Microsoft.VSSDK.BuildTools`
+          # package fails, so we'll use the `VsixPublisher` that is installed with Visual Studio.
+          VsixPublisher: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VSSDK\\VisualStudioIntegration\\Tools\\Bin\\VsixPublisher.exe"
