@@ -11,6 +11,10 @@ insert_final_newline = true
 [*.yml]
 indent_size = 2
 
+[Directory.Packages.props]
+indent_size = 2
+insert_final_newline = false
+
 # C# files
 [*.cs]
 

@@ -15,6 +15,7 @@ using Xunit;
 namespace ProjectFilter.UI;
 
 
+[SuppressMessage("Usage", "VSTHRD003:Avoid awaiting foreign Tasks", Justification = "Not using VS services.")]
 public static class FilterDialogViewModelTests {
 
     public class LoadingVisibilityProperty : TestBase {
