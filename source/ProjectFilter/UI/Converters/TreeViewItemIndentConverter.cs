@@ -30,7 +30,11 @@ public class TreeViewItemIndentConverter : IValueConverter {
             }
         }
 
-        return new Thickness(Length * depth, 0, 0, 0);
+        if (parameter is not int baseMargin) {
+            baseMargin = 0;
+        }
+
+        return new Thickness((Length * depth) + baseMargin, baseMargin, baseMargin, baseMargin);
     }
 
 

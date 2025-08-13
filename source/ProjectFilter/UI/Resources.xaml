@@ -138,20 +138,25 @@
 
     <ControlTemplate x:Key="TreeViewItemTemplate"  TargetType="{x:Type TreeViewItem}">
         <StackPanel Orientation="Vertical">
-            <Border Name="Bd"
+            <Border
+                x:Name="Bd"
                 Background="{TemplateBinding Background}"
                 BorderBrush="{TemplateBinding BorderBrush}"
-                BorderThickness="{TemplateBinding BorderThickness}"
-                Padding="{TemplateBinding Padding}"
+                BorderThickness="1"
                 >
 
-                <Grid Margin="{Binding RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource IndentConverter}}">
+                <Border.Resources>
+                    <!-- Apply a negative margin to cancel out the border thickness. -->
+                    <system:Int32 x:Key="BaseMargin">-1</system:Int32>
+                </Border.Resources>
+
+                <Grid Margin="{Binding RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource IndentConverter}, ConverterParameter={StaticResource BaseMargin}}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" MinWidth="{StaticResource IndentSize}"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <ToggleButton 
+                    <ToggleButton
                         x:Name="Expander"
                         Grid.Column="0"
                         Style="{StaticResource ExpandCollapseToggleStyle}"
@@ -161,7 +166,7 @@
                         />
 
                     <Border
-                        Grid.Column="1" 
+                        Grid.Column="1"
                         SnapsToDevicePixels="True"
                         >
 
@@ -194,6 +199,7 @@
 
             <Trigger Property="IsSelected" Value="True">
                 <Setter TargetName="Bd" Property="Background" Value="{DynamicResource {x:Static platform:TreeViewColors.SelectedItemActiveBrushKey}}"/>
+                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource {x:Static platform:TreeViewColors.FocusVisualBorderBrushKey}}"/>
                 <Setter Property="Foreground" Value="{DynamicResource {x:Static platform:TreeViewColors.SelectedItemActiveTextBrushKey}}"/>
             </Trigger>
 
@@ -204,6 +210,7 @@
                 </MultiTrigger.Conditions>
 
                 <Setter TargetName="Bd" Property="Background" Value="{DynamicResource {x:Static platform:TreeViewColors.SelectedItemInactiveBrushKey}}"/>
+                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource {x:Static platform:TreeViewColors.SelectedItemActiveBrushKey}}"/>
                 <Setter Property="Foreground" Value="{DynamicResource {x:Static platform:TreeViewColors.SelectedItemInactiveTextBrushKey}}"/>
             </MultiTrigger>
         </ControlTemplate.Triggers>
@@ -275,10 +282,12 @@
                             <Setter TargetName="Watermark" Property="Foreground" Value="{DynamicResource {x:Static platform:SearchControlColors.MouseOverWatermarkTextBrushKey}}" />
                         </Trigger>
 
-                        <!-- 
-                        Keep the watermark visible but fade it out if
-                        the TextBox is focused and has no text (the next
-                        trigger will hide the watermark if there's text)
+                        <!--
+                        Keep the watermark visible but fade it out if the TextBox is focused and has
+                        no text (the next trigger will hide the watermark if there's text). This isn't
+                        the same as the search box in Solution Explorer (the watermark is always hidden
+                        when focused), but since this search box is focused when the dialog is opened,
+                        we want to keep the watermark so that you understand what the search box is for.
                         -->
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="Watermark" Property="Foreground" Value="{DynamicResource {x:Static platform:SearchControlColors.UnfocusedWatermarkTextBrushKey}}" />
@@ -346,7 +355,7 @@
                             </MultiTrigger.Conditions>
 
                             <Setter TargetName="border" Property="Background" Value="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarHoverOverSelectedIconBrushKey}}" />
-                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarSelectedBorderBrushKey}}" />
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarHoverOverSelectedIconBorderBrushKey}}" />
                         </MultiTrigger>
 
                         <MultiTrigger>
@@ -356,7 +365,7 @@
                             </MultiTrigger.Conditions>
 
                             <Setter TargetName="border" Property="Background" Value="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarMouseDownBackgroundGradientBrushKey}}" />
-                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarSelectedBorderBrushKey}}" />
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarBorderBrushKey}}" />
                         </MultiTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
