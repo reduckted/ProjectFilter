@@ -114,7 +114,7 @@ public static class HierarchyTreeViewItemCollectionTests {
     public class FilterMethod {
 
         [Fact]
-        public void FiltersCollectionToOnlyContainItemsThatMatchFilterWhenItemshaveNoChildren() {
+        public void FiltersCollectionToOnlyContainItemsThatMatchFilterWhenItemsHaveNoChildren() {
             HierarchyTreeViewItemCollection collection;
             HierarchyTreeViewItem foo;
             HierarchyTreeViewItem bar;
