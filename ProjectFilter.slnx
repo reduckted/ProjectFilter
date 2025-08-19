@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/.github/" />
+  <Folder Name="/.github/workflows/">
+    <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/publish.yml" />
+  </Folder>
+  <Folder Name="/.solution/">
+    <File Path=".editorconfig" />
+    <File Path="CHANGELOG.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="nuget.config" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/source/">
+    <Project Path="source/ProjectFilter/ProjectFilter.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ProjectFilter.UnitTests/ProjectFilter.UnitTests.csproj" />
+  </Folder>
+</Solution>
