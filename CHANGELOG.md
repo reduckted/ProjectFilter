@@ -1,3 +1,7 @@
+# 2.6.1 (2025-08-19)
+
+-   🔧 Dependency updates.
+
 # 2.6.0 (2025-08-16)
 
 -   ✨ Updated styling to match changes to Visual Studio's Solution Explorer.
