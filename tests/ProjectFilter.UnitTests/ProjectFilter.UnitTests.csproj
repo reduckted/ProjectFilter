@@ -4,6 +4,7 @@
         <RootNamespace>ProjectFilter</RootNamespace>
         <OutputType>Exe</OutputType>
         <IsPackable>false</IsPackable>
+        <CheckNewtonsoftJsonVersion>false</CheckNewtonsoftJsonVersion>
     </PropertyGroup>
 
     <ItemGroup>

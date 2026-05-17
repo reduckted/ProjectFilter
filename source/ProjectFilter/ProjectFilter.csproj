@@ -1,43 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
     <PropertyGroup>
-        <CustomAfterMicrosoftCSharpTargets Condition="$(VsSDKInstall) != ''">$(VsSDKInstall)\Microsoft.VsSDK.targets</CustomAfterMicrosoftCSharpTargets>
-    </PropertyGroup>
-
-    <PropertyGroup>
         <RootNamespace>ProjectFilter</RootNamespace>
         <UseWPF>true</UseWPF>
     </PropertyGroup>
 
     <PropertyGroup>
-        <SchemaVersion>2.0</SchemaVersion>
-        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <VSSDKBuildToolsAutoSetup>true</VSSDKBuildToolsAutoSetup>
+        <VsixDeployOnDebug>true</VsixDeployOnDebug>
         <GeneratePkgDefFile>true</GeneratePkgDefFile>
-        <UseCodebase>true</UseCodebase>
         <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
         <IncludeDebugSymbolsInVSIXContainer>false</IncludeDebugSymbolsInVSIXContainer>
         <IncludeDebugSymbolsInLocalVSIXDeployment>false</IncludeDebugSymbolsInLocalVSIXDeployment>
-        <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
-        <CopyOutputSymbolsToOutputDirectory>false</CopyOutputSymbolsToOutputDirectory>
-    </PropertyGroup>
-
-    <PropertyGroup>
-        <StartAction>Program</StartAction>
-        <StartProgram Condition="'$(DevEnvDir)' != ''">$(DevEnvDir)devenv.exe</StartProgram>
-        <StartArguments>/rootsuffix Exp</StartArguments>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-        <IncludeDebugSymbolsInVSIXContainer>true</IncludeDebugSymbolsInVSIXContainer>
-        <DeployExtension>true</DeployExtension>
-        <DebugType>full</DebugType>
-        <DebugSymbols>true</DebugSymbols>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-        <DeployExtension>false</DeployExtension>
-        <DebugType>pdbonly</DebugType>
-        <DebugSymbols>true</DebugSymbols>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
 

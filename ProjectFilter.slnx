@@ -14,7 +14,9 @@
     <File Path="README.md" />
   </Folder>
   <Folder Name="/source/">
-    <Project Path="source/ProjectFilter/ProjectFilter.csproj" />
+    <Project Path="source/ProjectFilter/ProjectFilter.csproj">
+      <Deploy Solution="Debug|*" />
+    </Project>
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/ProjectFilter.UnitTests/ProjectFilter.UnitTests.csproj" />
