@@ -29,6 +29,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
     private Visibility _loadedVisibility;
     private bool _useRegularExpressions;
     private bool _expandLoadedProjects;
+    private bool _hideSolutionFoldersWithoutLoadedProjects;
     private bool _invalidFilter;
 
 
@@ -92,6 +93,12 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
 
         ToggleExpandLoadedProjectsCommand = new DelegateCommand(
             (_) => ExpandLoadedProjects = !ExpandLoadedProjects,
+            CanAlwaysExecute,
+            joinableTaskFactory
+        );
+
+        ToggleHideSolutionFoldersWithoutLoadedProjectsCommand = new DelegateCommand(
+            (_) => HideSolutionFoldersWithoutLoadedProjects = !HideSolutionFoldersWithoutLoadedProjects,
             CanAlwaysExecute,
             joinableTaskFactory
         );
@@ -206,6 +213,9 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
     public DelegateCommand ToggleExpandLoadedProjectsCommand { get; }
 
 
+    public DelegateCommand ToggleHideSolutionFoldersWithoutLoadedProjectsCommand { get; }
+
+
     public DelegateCommand FocusSearchBoxCommand { get; }
 
 
@@ -257,6 +267,12 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
     public bool ExpandLoadedProjects {
         get { return _expandLoadedProjects; }
         set { SetProperty(ref _expandLoadedProjects, value); }
+    }
+
+
+    public bool HideSolutionFoldersWithoutLoadedProjects {
+        get { return _hideSolutionFoldersWithoutLoadedProjects; }
+        set { SetProperty(ref _hideSolutionFoldersWithoutLoadedProjects, value); }
     }
 
 
@@ -328,7 +344,8 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
             projects[true],
             projects[false],
             LoadProjectDependencies,
-            ExpandLoadedProjects
+            ExpandLoadedProjects,
+            HideSolutionFoldersWithoutLoadedProjects
         );
     }
 

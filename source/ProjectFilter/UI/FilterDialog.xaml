@@ -48,6 +48,8 @@
 
         <KeyBinding Key="X" Modifiers="Alt" Command="{Binding ToggleExpandLoadedProjectsCommand}"/>
 
+        <KeyBinding Key="H" Modifiers="Alt" Command="{Binding ToggleHideSolutionFoldersWithNoProjectsCommand}"/>
+
         <KeyBinding Key="F" Modifiers="Alt" Command="{Binding FocusSearchBoxCommand}"/>
         <KeyBinding Key="F" Modifiers="Ctrl" Command="{Binding FocusSearchBoxCommand}"/>
     </platform:DialogWindow.InputBindings>
@@ -96,6 +98,17 @@
 
                         <imaging:CrispImage
                             Moniker="{x:Static catalog:KnownMonikers.TreeView}"
+                            imaging:CrispImage.Dpi="96"
+                            />
+                    </ToggleButton>
+
+                    <ToggleButton 
+                        ToolTip="Hide solution folders without loaded projects (Alt+H)"
+                        IsChecked="{Binding HideSolutionFoldersWithoutLoadedProjects}"
+                        >
+
+                        <imaging:CrispImage
+                            Moniker="{x:Static catalog:KnownMonikers.ShowOrHideFolder}"
                             imaging:CrispImage.Dpi="96"
                             />
                     </ToggleButton>

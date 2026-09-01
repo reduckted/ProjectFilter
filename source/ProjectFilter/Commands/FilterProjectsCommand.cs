@@ -63,6 +63,7 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
             vm.LoadProjectDependencies = solutionSettings?.LoadProjectDependencies ?? globalSettings.LoadProjectDependencies;
             vm.UseRegularExpressions = solutionSettings?.UseRegularExpressions ?? globalSettings.UseRegularExpressions;
             vm.ExpandLoadedProjects = solutionSettings?.ExpandLoadedProjects ?? globalSettings.ExpandLoadedProjects;
+            vm.HideSolutionFoldersWithoutLoadedProjects = solutionSettings?.HideSolutionFoldersWithoutLoadedProjects ?? globalSettings.HideSolutionFoldersWithoutLoadedProjects;
 
             dialog = new FilterDialog {
                 DataContext = vm
@@ -76,7 +77,8 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
             solutionSettings = new SolutionSettings {
                 LoadProjectDependencies = vm.LoadProjectDependencies,
                 UseRegularExpressions = vm.UseRegularExpressions,
-                ExpandLoadedProjects = vm.ExpandLoadedProjects
+                ExpandLoadedProjects = vm.ExpandLoadedProjects,
+                HideSolutionFoldersWithoutLoadedProjects = vm.HideSolutionFoldersWithoutLoadedProjects
             };
             PopulateNodeSettings(vm.Items, solutionSettings.Nodes);
 
@@ -87,6 +89,7 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
             globalSettings.LoadProjectDependencies = vm.LoadProjectDependencies;
             globalSettings.UseRegularExpressions = vm.UseRegularExpressions;
             globalSettings.ExpandLoadedProjects = vm.ExpandLoadedProjects;
+            globalSettings.HideSolutionFoldersWithoutLoadedProjects = vm.HideSolutionFoldersWithoutLoadedProjects;
             await globalSettings.SaveAsync();
 
             if (result) {
