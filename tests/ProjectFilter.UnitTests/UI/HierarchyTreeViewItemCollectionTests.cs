@@ -17,10 +17,10 @@ public static class HierarchyTreeViewItemCollectionTests {
             HierarchyTreeViewItemCollection collection;
 
 
-            collection = new HierarchyTreeViewItemCollection(new[] {
+            collection = new HierarchyTreeViewItemCollection([
                     Factory.CreateTreeViewItem(name:"foo"),
                     Factory.CreateTreeViewItem(name:"bar")
-                });
+                ]);
 
             Assert.Equal(2, collection.Count);
 
@@ -43,7 +43,7 @@ public static class HierarchyTreeViewItemCollectionTests {
             HierarchyTreeViewItemCollection collection;
 
 
-            collection = new HierarchyTreeViewItemCollection(Enumerable.Empty<HierarchyTreeViewItem>());
+            collection = new HierarchyTreeViewItemCollection([]);
 
             Assert.False(collection.CalculateCheckedState());
         }
@@ -54,11 +54,11 @@ public static class HierarchyTreeViewItemCollectionTests {
             HierarchyTreeViewItemCollection collection;
 
 
-            collection = new HierarchyTreeViewItemCollection(new[] {
+            collection = new HierarchyTreeViewItemCollection([
                     Factory.CreateTreeViewItem(isChecked: false),
                     Factory.CreateTreeViewItem(isChecked: false),
                     Factory.CreateTreeViewItem(isChecked: false)
-                });
+                ]);
 
             Assert.False(collection.CalculateCheckedState());
         }
@@ -69,11 +69,11 @@ public static class HierarchyTreeViewItemCollectionTests {
             HierarchyTreeViewItemCollection collection;
 
 
-            collection = new HierarchyTreeViewItemCollection(new[] {
+            collection = new HierarchyTreeViewItemCollection([
                     Factory.CreateTreeViewItem(isChecked: true),
                     Factory.CreateTreeViewItem(isChecked: true),
                     Factory.CreateTreeViewItem(isChecked: true),
-                });
+                ]);
 
             Assert.True(collection.CalculateCheckedState());
         }
@@ -84,11 +84,11 @@ public static class HierarchyTreeViewItemCollectionTests {
             HierarchyTreeViewItemCollection collection;
 
 
-            collection = new HierarchyTreeViewItemCollection(new[] {
+            collection = new HierarchyTreeViewItemCollection([
                     Factory.CreateTreeViewItem(isChecked: true),
                     Factory.CreateTreeViewItem(isChecked: false),
                     Factory.CreateTreeViewItem(isChecked: true),
-                });
+                ]);
 
             Assert.Null(collection.CalculateCheckedState());
         }
@@ -99,11 +99,11 @@ public static class HierarchyTreeViewItemCollectionTests {
             HierarchyTreeViewItemCollection collection;
 
 
-            collection = new HierarchyTreeViewItemCollection(new[] {
+            collection = new HierarchyTreeViewItemCollection([
                     Factory.CreateTreeViewItem(isChecked: null),
                     Factory.CreateTreeViewItem(isChecked: null),
                     Factory.CreateTreeViewItem(isChecked: null),
-                });
+                ]);
 
             Assert.Null(collection.CalculateCheckedState());
         }
@@ -125,10 +125,10 @@ public static class HierarchyTreeViewItemCollectionTests {
             bar = Factory.CreateTreeViewItem(name: "bar");
             meep = Factory.CreateTreeViewItem(name: "meep");
 
-            collection = new HierarchyTreeViewItemCollection(new[] { foo, bar, meep });
+            collection = new HierarchyTreeViewItemCollection([foo, bar, meep]);
             collection.Filter(new RegexTextFilter("foo"));
 
-            Assert.Equal(new[] { foo }, collection);
+            Assert.Equal([foo], collection);
         }
 
 
@@ -140,14 +140,14 @@ public static class HierarchyTreeViewItemCollectionTests {
             HierarchyTreeViewItem meep;
 
 
-            foo = Factory.CreateTreeViewItem(name: "foo", children: new[] { Factory.CreateTreeViewItem(name: "x") });
-            bar = Factory.CreateTreeViewItem(name: "bar", children: new[] { Factory.CreateTreeViewItem(name: "y") });
-            meep = Factory.CreateTreeViewItem(name: "meep", children: new[] { Factory.CreateTreeViewItem(name: "fff") });
+            foo = Factory.CreateTreeViewItem(name: "foo", children: [Factory.CreateTreeViewItem(name: "x")]);
+            bar = Factory.CreateTreeViewItem(name: "bar", children: [Factory.CreateTreeViewItem(name: "y")]);
+            meep = Factory.CreateTreeViewItem(name: "meep", children: [Factory.CreateTreeViewItem(name: "fff")]);
 
-            collection = new HierarchyTreeViewItemCollection(new[] { foo, bar, meep });
+            collection = new HierarchyTreeViewItemCollection([foo, bar, meep]);
             collection.Filter(new RegexTextFilter("f"));
 
-            Assert.Equal(new[] { foo, meep }, collection);
+            Assert.Equal([foo, meep], collection);
         }
 
 
@@ -163,14 +163,14 @@ public static class HierarchyTreeViewItemCollectionTests {
             bar = Factory.CreateTreeViewItem(name: "bar");
             meep = Factory.CreateTreeViewItem(name: "meep");
 
-            collection = new HierarchyTreeViewItemCollection(new[] { foo, bar, meep });
+            collection = new HierarchyTreeViewItemCollection([foo, bar, meep]);
             collection.Filter(new RegexTextFilter("foo"));
 
-            Assert.Equal(new[] { foo }, collection);
+            Assert.Equal([foo], collection);
 
             collection.Filter(new RegexTextFilter("bar"));
 
-            Assert.Equal(new[] { bar }, collection);
+            Assert.Equal([bar], collection);
         }
 
 
@@ -182,7 +182,7 @@ public static class HierarchyTreeViewItemCollectionTests {
 
             raised = false;
 
-            collection = new HierarchyTreeViewItemCollection(Enumerable.Empty<HierarchyTreeViewItem>());
+            collection = new HierarchyTreeViewItemCollection([]);
             collection.CollectionChanged += (s, e) => raised = true;
 
             collection.Filter(new RegexTextFilter("foo"));
@@ -197,10 +197,10 @@ public static class HierarchyTreeViewItemCollectionTests {
             Assert.RaisedEvent<NotifyCollectionChangedEventArgs> e;
 
 
-            collection = new HierarchyTreeViewItemCollection(new[]{
+            collection = new HierarchyTreeViewItemCollection([
                     Factory.CreateTreeViewItem(name: "foo"),
                     Factory.CreateTreeViewItem(name: "bar")
-                });
+                ]);
 
             e = Assert.Raises<NotifyCollectionChangedEventArgs>(
                 (x) => collection.CollectionChanged += new NotifyCollectionChangedEventHandler(x),
@@ -228,14 +228,14 @@ public static class HierarchyTreeViewItemCollectionTests {
             bar = Factory.CreateTreeViewItem(name: "bar");
             meep = Factory.CreateTreeViewItem(name: "meep");
 
-            collection = new HierarchyTreeViewItemCollection(new[] { foo, bar, meep });
+            collection = new HierarchyTreeViewItemCollection([foo, bar, meep]);
             collection.Filter(new RegexTextFilter("foo"));
 
-            Assert.Equal(new[] { foo }, collection);
+            Assert.Equal([foo], collection);
 
             collection.ClearFilter();
 
-            Assert.Equal(new[] { foo, bar, meep }, collection);
+            Assert.Equal([foo, bar, meep], collection);
         }
 
 
@@ -251,18 +251,18 @@ public static class HierarchyTreeViewItemCollectionTests {
             childA = Factory.CreateTreeViewItem(name: "A");
             childB = Factory.CreateTreeViewItem(name: "B");
             childC = Factory.CreateTreeViewItem(name: "C");
-            item = Factory.CreateTreeViewItem(name: "Root", children: new[] { childA, childB, childC });
+            item = Factory.CreateTreeViewItem(name: "Root", children: [childA, childB, childC]);
 
-            collection = new HierarchyTreeViewItemCollection(new[] { item });
+            collection = new HierarchyTreeViewItemCollection([item]);
             collection.Filter(new RegexTextFilter("B"));
 
-            Assert.Equal(new[] { item }, collection);
-            Assert.Equal(new[] { childB }, item.Children);
+            Assert.Equal([item], collection);
+            Assert.Equal([childB], item.Children);
 
             collection.ClearFilter();
 
-            Assert.Equal(new[] { item }, collection);
-            Assert.Equal(new[] { childA, childB, childC }, item.Children);
+            Assert.Equal([item], collection);
+            Assert.Equal([childA, childB, childC], item.Children);
         }
 
 
@@ -274,7 +274,7 @@ public static class HierarchyTreeViewItemCollectionTests {
 
             raised = false;
 
-            collection = new HierarchyTreeViewItemCollection(Enumerable.Empty<HierarchyTreeViewItem>());
+            collection = new HierarchyTreeViewItemCollection([]);
             collection.Filter(new RegexTextFilter("A"));
 
             collection.CollectionChanged += (s, e) => raised = true;
@@ -290,10 +290,10 @@ public static class HierarchyTreeViewItemCollectionTests {
             Assert.RaisedEvent<NotifyCollectionChangedEventArgs> e;
 
 
-            collection = new HierarchyTreeViewItemCollection(new[] {
+            collection = new HierarchyTreeViewItemCollection([
                     Factory.CreateTreeViewItem(name: "Foo"),
                     Factory.CreateTreeViewItem(name: "Bar"),
-                });
+                ]);
 
             collection.Filter(new RegexTextFilter("F"));
 
@@ -324,22 +324,22 @@ public static class HierarchyTreeViewItemCollectionTests {
 
             grandchild1 = Factory.CreateTreeViewItem();
             grandchild2 = Factory.CreateTreeViewItem();
-            child1 = Factory.CreateTreeViewItem(children: new[] { grandchild1 });
-            child2 = Factory.CreateTreeViewItem(children: new[] { grandchild2 });
-            root1 = Factory.CreateTreeViewItem(children: new[] { child1 });
-            root2 = Factory.CreateTreeViewItem(children: new[] { child2 });
+            child1 = Factory.CreateTreeViewItem(children: [grandchild1]);
+            child2 = Factory.CreateTreeViewItem(children: [grandchild2]);
+            root1 = Factory.CreateTreeViewItem(children: [child1]);
+            root2 = Factory.CreateTreeViewItem(children: [child2]);
 
-            collection = new HierarchyTreeViewItemCollection(new[] { root1, root2 });
+            collection = new HierarchyTreeViewItemCollection([root1, root2]);
 
             Assert.Equal(
-                new[] {
+                [
                         root1,
                         child1,
                         grandchild1,
                         root2,
                         child2,
                         grandchild2
-                },
+                ],
                 collection.GetFullHierarchy()
             );
         }
@@ -358,24 +358,24 @@ public static class HierarchyTreeViewItemCollectionTests {
 
             grandchild1 = Factory.CreateTreeViewItem(name: "x");
             grandchild2 = Factory.CreateTreeViewItem(name: "a");
-            child1 = Factory.CreateTreeViewItem(name: "x", children: new[] { grandchild1 });
-            child2 = Factory.CreateTreeViewItem(name: "x", children: new[] { grandchild2 });
-            root1 = Factory.CreateTreeViewItem(name: "x", children: new[] { child1 });
-            root2 = Factory.CreateTreeViewItem(name: "a", children: new[] { child2 });
+            child1 = Factory.CreateTreeViewItem(name: "x", children: [grandchild1]);
+            child2 = Factory.CreateTreeViewItem(name: "x", children: [grandchild2]);
+            root1 = Factory.CreateTreeViewItem(name: "x", children: [child1]);
+            root2 = Factory.CreateTreeViewItem(name: "a", children: [child2]);
 
-            collection = new HierarchyTreeViewItemCollection(new[] { root1, root2 });
+            collection = new HierarchyTreeViewItemCollection([root1, root2]);
 
             collection.Filter(new RegexTextFilter("x"));
 
             Assert.Equal(
-                new[] {
+                [
                         root1,
                         child1,
                         grandchild1,
                         root2,
                         child2,
                         grandchild2
-                },
+                ],
                 collection.GetFullHierarchy()
             );
         }
@@ -397,12 +397,12 @@ public static class HierarchyTreeViewItemCollectionTests {
             root2 = Factory.CreateTreeViewItem(name: "a");
             root3 = Factory.CreateTreeViewItem(name: "x");
 
-            collection = new HierarchyTreeViewItemCollection(new[] { root1, root2, root3 });
+            collection = new HierarchyTreeViewItemCollection([root1, root2, root3]);
 
             collection.Filter(new RegexTextFilter("x"));
 
             Assert.Equal(
-                new[] { root1, root3 },
+                [root1, root3],
                 collection
             );
         }

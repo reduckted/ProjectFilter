@@ -12,7 +12,7 @@ namespace ProjectFilter.Helpers;
 
 internal class TestComponentModel : IComponentModel2 {
 
-    private readonly List<(Type ServiceType, object Implementation)> _services = new();
+    private readonly List<(Type ServiceType, object Implementation)> _services = [];
 
 
     public CompositionScopeDefinition DefaultScopedCatalog => throw new NotSupportedException();
@@ -31,10 +31,9 @@ internal class TestComponentModel : IComponentModel2 {
 
 
     public IEnumerable<T> GetExtensions<T>() where T : class {
-        return _services
+        return [.. _services
             .Where((x) => x.ServiceType == typeof(T))
-            .Select((x) => (T)x.Implementation)
-            .ToList();
+            .Select((x) => (T)x.Implementation)];
     }
 
 

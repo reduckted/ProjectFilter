@@ -62,8 +62,8 @@ public partial class FilterService : IFilterService {
                 expandedFolders = new HashSet<Guid>();
             }
 
-            projectsToUnload = options.ProjectsToUnload.ToList();
-            projectsToLoad = options.ProjectsToLoad.ToList();
+            projectsToUnload = [.. options.ProjectsToUnload];
+            projectsToLoad = [.. options.ProjectsToLoad];
 
             // Work out which projects actually need to be unloaded
             // so that we can calculate an accurate progress. If a
@@ -271,7 +271,7 @@ public partial class FilterService : IFilterService {
 
         solutionBuildManager = (IVsSolutionBuildManager2)await VS.Services.GetSolutionBuildManagerAsync();
 
-        output = new List<Guid>();
+        output = [];
 
         if (state.Solution.TryGetHierarchy(identifier, out IVsHierarchy hierarchy)) {
             IVsHierarchy[] dependencies;
@@ -291,7 +291,7 @@ public partial class FilterService : IFilterService {
                 state.RequiresProjectDependencyCalculation = false;
             }
 
-            dependencies = Array.Empty<IVsHierarchy>();
+            dependencies = [];
 
             // First we need to ask for the dependencies without specifying an
             // array so that we can find out how many dependencies there are.
@@ -373,7 +373,7 @@ public partial class FilterService : IFilterService {
 
 
         // All of the projects that were loaded should be collapsed.
-        projects = state.GetLoadedProjects().ToHashSet();
+        projects = [.. state.GetLoadedProjects()];
 
         // Any solution folders that are now expanded
         // and were not originally expanded should also be collapsed.

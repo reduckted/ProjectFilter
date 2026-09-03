@@ -132,13 +132,12 @@ public class HierarchyTreeViewItem : ObservableObject {
             return matches;
         }
 
-        return matches
+        return [.. matches
             // Exclude any spans that end before the name starts.
             .Where((x) => x.End > nameStartOffset)
             // Create new spans starting from zero, and truncate any ranges start
             // before the start of the name but end after the start of the name.
-            .Select((x) => Span.FromBounds(Math.Max(x.Start - nameStartOffset, 0), x.End - nameStartOffset))
-            .ToList();
+            .Select((x) => Span.FromBounds(Math.Max(x.Start - nameStartOffset, 0), x.End - nameStartOffset))];
     }
 
 

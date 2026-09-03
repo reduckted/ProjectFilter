@@ -38,10 +38,10 @@ public static class FilterDialogViewModelTests {
                 Assert.Equal(Visibility.Visible, vm.LoadingVisibility);
 
                 hierarchy.SetResult(
-                    new[] {
+                    [
                             CreateNode("a", isLoaded: true),
                             CreateNode("b", isLoaded: false)
-                    }
+                    ]
                 );
 
                 await loaded;
@@ -73,10 +73,10 @@ public static class FilterDialogViewModelTests {
                 Assert.Equal(Visibility.Collapsed, vm.LoadedVisibility);
 
                 hierarchy.SetResult(
-                    new[] {
+                    [
                             CreateNode("a", isLoaded: true),
                             CreateNode("b", isLoaded: false)
-                    }
+                    ]
                 );
 
                 await loaded;
@@ -108,19 +108,19 @@ public static class FilterDialogViewModelTests {
                 Assert.Empty(vm.Items);
 
                 hierarchy.SetResult(
-                    new[] {
+                    [
                         CreateNode("a", isLoaded: true),
                         CreateNode("b", isLoaded: false)
-                    }
+                    ]
                 );
 
                 await loaded;
 
                 Assert.Equal(
-                    new[] {
+                    [
                         ("a", (bool?)true),
                         ("b", (bool?)false)
-                    },
+                    ],
                     vm.Items.Select((x) => (x.Name, x.IsChecked))
                 );
             }
@@ -132,23 +132,23 @@ public static class FilterDialogViewModelTests {
             IEnumerable<IHierarchyNode> hierarchy;
 
 
-            hierarchy = new[] {
+            hierarchy = [
                 CreateNode("a", isLoaded: true),
                 CreateNode("b", isLoaded: false),
-                CreateNode("c", children: new[] { CreateNode("d", isLoaded: true) }),
-                CreateNode("e", children: new[] { CreateNode("f", isLoaded: true), CreateNode("g", isLoaded: false) }),
-            };
+                CreateNode("c", children: [CreateNode("d", isLoaded: true)]),
+                CreateNode("e", children: [CreateNode("f", isLoaded: true), CreateNode("g", isLoaded: false)]),
+            ];
 
             using (var vm = CreateViewModel(hierarchy)) {
                 await vm.OnLoadedAsync();
 
                 Assert.Equal(
-                    new[] {
+                    [
                         ("a",true),
                         ("b",false),
                         ("c",true),
                         ("e",(bool?)null)
-                    },
+                    ],
                     vm.Items.Select((x) => (x.Name, x.IsChecked))
                 );
             }
@@ -160,18 +160,18 @@ public static class FilterDialogViewModelTests {
             IEnumerable<IHierarchyNode> hierarchy;
 
 
-            hierarchy = new[] {
+            hierarchy = [
                 CreateNode("a"),
                 CreateNode("b"),
-                CreateNode("c", children: new[] { CreateNode("d") }),
-                CreateNode("e", children: new[] { CreateNode("f", children: new[] { CreateNode("g") }) }),
-            };
+                CreateNode("c", children: [CreateNode("d")]),
+                CreateNode("e", children: [CreateNode("f", children: [CreateNode("g")])]),
+            ];
 
             using (var vm = CreateViewModel(hierarchy, nodeSettings: null)) {
                 await vm.OnLoadedAsync();
 
                 Assert.Equal(
-                    new[] {
+                    [
                         ("a", true),
                         ("b", true),
                         ("c", true),
@@ -179,7 +179,7 @@ public static class FilterDialogViewModelTests {
                         ("e", true),
                         ("f", true),
                         ("g", true)
-                    },
+                    ],
                     Flatten(vm.Items).Select((x) => (x.Name, x.IsExpanded))
                 );
             }
@@ -193,14 +193,14 @@ public static class FilterDialogViewModelTests {
             Dictionary<string, SolutionNodeSettings> nodeSettings;
 
 
-            hierarchy = new[] {
+            hierarchy = [
                 CreateNode("a"),
                 CreateNode("b"),
-                CreateNode("c", children: new[] { CreateNode("d") }),
-                CreateNode("e", children: new[] { CreateNode("f", children: new[] { CreateNode("g") }) }),
-            };
+                CreateNode("c", children: [CreateNode("d")]),
+                CreateNode("e", children: [CreateNode("f", children: [CreateNode("g")])]),
+            ];
 
-            nodeSettings = new Dictionary<string, SolutionNodeSettings>();
+            nodeSettings = [];
             AddNodeSetting(nodeSettings, "a", true);
             AddNodeSetting(nodeSettings, "b", false);
             AddNodeSetting(nodeSettings, "c", true);
@@ -213,7 +213,7 @@ public static class FilterDialogViewModelTests {
                 await vm.OnLoadedAsync();
 
                 Assert.Equal(
-                    new[] {
+                    [
                         ("a", true),
                         ("b", false),
                         ("c", true),
@@ -221,7 +221,7 @@ public static class FilterDialogViewModelTests {
                         ("e", true),
                         ("f", false),
                         ("g", true)
-                    },
+                    ],
                     Flatten(vm.Items).Select((x) => (x.Name, x.IsExpanded))
                 );
             }
@@ -243,9 +243,7 @@ public static class FilterDialogViewModelTests {
                     collection = node.Children;
                 }
 
-                if (node is not null) {
-                    node.IsExpanded = isExpanded;
-                }
+                node?.IsExpanded = isExpanded;
             }
         }
 
@@ -267,7 +265,7 @@ public static class FilterDialogViewModelTests {
 
         [Fact]
         public async Task TogglesTheLoadProjectDependenciesProperty() {
-            using (var vm = CreateViewModel(Enumerable.Empty<IHierarchyNode>())) {
+            using (var vm = CreateViewModel([])) {
                 await vm.OnLoadedAsync();
 
                 Assert.False(vm.LoadProjectDependencies);
@@ -292,18 +290,18 @@ public static class FilterDialogViewModelTests {
             IEnumerable<IHierarchyNode> hierarchy;
 
 
-            hierarchy = new[] {
-                    CreateNode(name: "a", children: new [] {
-                        CreateNode("b", children: new[] {
+            hierarchy = [
+                    CreateNode(name: "a", children: [
+                        CreateNode("b", children: [
                             CreateNode("c")
-                        })
-                    }),
-                    CreateNode(name: "d", children: new [] {
-                        CreateNode("e", children: new[] {
+                        ])
+                    ]),
+                    CreateNode(name: "d", children: [
+                        CreateNode("e", children: [
                             CreateNode("f")
-                        })
-                    })
-                };
+                        ])
+                    ])
+                ];
 
             using (var vm = CreateViewModel(hierarchy)) {
                 await vm.OnLoadedAsync();
@@ -319,18 +317,18 @@ public static class FilterDialogViewModelTests {
             IEnumerable<IHierarchyNode> hierarchy;
 
 
-            hierarchy = new[] {
-                    CreateNode(name: "a", children: new [] {
-                        CreateNode("b", children: new[] {
+            hierarchy = [
+                    CreateNode(name: "a", children: [
+                        CreateNode("b", children: [
                             CreateNode("c")
-                        })
-                    }),
-                    CreateNode(name: "d", children: new [] {
-                        CreateNode("e", children: new[] {
+                        ])
+                    ]),
+                    CreateNode(name: "d", children: [
+                        CreateNode("e", children: [
                             CreateNode("f")
-                        })
-                    })
-                };
+                        ])
+                    ])
+                ];
 
             using (var vm = CreateViewModel(hierarchy)) {
                 await vm.OnLoadedAsync();
@@ -338,14 +336,14 @@ public static class FilterDialogViewModelTests {
                 vm.CollapseAllCommand.Execute(GetItem(vm, "b"));
 
                 Assert.Equal(
-                    new[] {
+                    [
                             ("a", true),
                             ("b", false),
                             ("c", false),
                             ("d", true),
                             ("e", true),
                             ("f", true)
-                    },
+                    ],
                     vm.Items.GetFullHierarchy().Select((x) => (x.Name, x.IsExpanded))
                 );
             }
@@ -357,18 +355,18 @@ public static class FilterDialogViewModelTests {
             IEnumerable<IHierarchyNode> hierarchy;
 
 
-            hierarchy = new[] {
-                    CreateNode(name: "a", children: new [] {
-                        CreateNode("b", children: new[] {
+            hierarchy = [
+                    CreateNode(name: "a", children: [
+                        CreateNode("b", children: [
                             CreateNode("c")
-                        })
-                    }),
-                    CreateNode(name: "d", children: new [] {
-                        CreateNode("e", children: new[] {
+                        ])
+                    ]),
+                    CreateNode(name: "d", children: [
+                        CreateNode("e", children: [
                             CreateNode("f")
-                        })
-                    })
-                };
+                        ])
+                    ])
+                ];
 
             using (var vm = CreateViewModel(hierarchy)) {
                 await vm.OnLoadedAsync();
@@ -376,14 +374,14 @@ public static class FilterDialogViewModelTests {
                 vm.CollapseAllCommand.Execute(GetItem(vm, "f"));
 
                 Assert.Equal(
-                    new[] {
+                    [
                             ("a", true),
                             ("b", true),
                             ("c", true),
                             ("d", true),
                             ("e", false),
                             ("f", false)
-                    },
+                    ],
                     vm.Items.GetFullHierarchy().Select((x) => (x.Name, x.IsExpanded))
                 );
             }
@@ -399,18 +397,18 @@ public static class FilterDialogViewModelTests {
             IEnumerable<IHierarchyNode> hierarchy;
 
 
-            hierarchy = new[] {
-                    CreateNode(name: "a", children: new [] {
-                        CreateNode("b", children: new[] {
+            hierarchy = [
+                    CreateNode(name: "a", children: [
+                        CreateNode("b", children: [
                             CreateNode("c")
-                        })
-                    }),
-                    CreateNode(name: "d", children: new [] {
-                        CreateNode("e", children: new[] {
+                        ])
+                    ]),
+                    CreateNode(name: "d", children: [
+                        CreateNode("e", children: [
                             CreateNode("f")
-                        })
-                    })
-                };
+                        ])
+                    ])
+                ];
 
             using (var vm = CreateViewModel(hierarchy)) {
                 await vm.OnLoadedAsync();
@@ -427,18 +425,18 @@ public static class FilterDialogViewModelTests {
             IEnumerable<IHierarchyNode> hierarchy;
 
 
-            hierarchy = new[] {
-                    CreateNode(name: "a", children: new [] {
-                        CreateNode("b", children: new[] {
+            hierarchy = [
+                    CreateNode(name: "a", children: [
+                        CreateNode("b", children: [
                             CreateNode("c")
-                        })
-                    }),
-                    CreateNode(name: "d", children: new [] {
-                        CreateNode("e", children: new[] {
+                        ])
+                    ]),
+                    CreateNode(name: "d", children: [
+                        CreateNode("e", children: [
                             CreateNode("f")
-                        })
-                    })
-                };
+                        ])
+                    ])
+                ];
 
             using (var vm = CreateViewModel(hierarchy)) {
                 await vm.OnLoadedAsync();
@@ -447,14 +445,14 @@ public static class FilterDialogViewModelTests {
                 vm.ExpandAllCommand.Execute(GetItem(vm, "b"));
 
                 Assert.Equal(
-                    new[] {
+                    [
                             ("a", false),
                             ("b", true),
                             ("c", true),
                             ("d", false),
                             ("e", false),
                             ("f", false)
-                    },
+                    ],
                     vm.Items.GetFullHierarchy().Select((x) => (x.Name, x.IsExpanded))
                 );
             }
@@ -470,18 +468,18 @@ public static class FilterDialogViewModelTests {
             IEnumerable<IHierarchyNode> hierarchy;
 
 
-            hierarchy = new[] {
-                    CreateNode(name: "a", children: new [] {
-                        CreateNode("b", children: new[] {
+            hierarchy = [
+                    CreateNode(name: "a", children: [
+                        CreateNode("b", children: [
                             CreateNode("c", isLoaded: false)
-                        })
-                    }),
-                    CreateNode(name: "d", children: new [] {
-                        CreateNode("e", children: new[] {
+                        ])
+                    ]),
+                    CreateNode(name: "d", children: [
+                        CreateNode("e", children: [
                             CreateNode("f", isLoaded: false)
-                        })
-                    })
-                };
+                        ])
+                    ])
+                ];
 
             using (var vm = CreateViewModel(hierarchy)) {
                 await vm.OnLoadedAsync();
@@ -504,18 +502,18 @@ public static class FilterDialogViewModelTests {
             IEnumerable<IHierarchyNode> hierarchy;
 
 
-            hierarchy = new[] {
-                    CreateNode(name: "a", children: new [] {
-                        CreateNode("b", children: new[] {
+            hierarchy = [
+                    CreateNode(name: "a", children: [
+                        CreateNode("b", children: [
                             CreateNode("c", isLoaded: true)
-                        })
-                    }),
-                    CreateNode(name: "d", children: new [] {
-                        CreateNode("e", children: new[] {
+                        ])
+                    ]),
+                    CreateNode(name: "d", children: [
+                        CreateNode("e", children: [
                             CreateNode("f", isLoaded: true)
-                        })
-                    })
-                };
+                        ])
+                    ])
+                ];
 
             using (var vm = CreateViewModel(hierarchy)) {
                 await vm.OnLoadedAsync();
@@ -540,10 +538,10 @@ public static class FilterDialogViewModelTests {
             IEnumerable<IHierarchyNode> hierarchy;
 
 
-            hierarchy = new[] {
+            hierarchy = [
                     CreateNode(name: "a"),
                     CreateNode(name: "b")
-                };
+                ];
 
             using (var vm = CreateViewModel(hierarchy)) {
                 await vm.OnLoadedAsync();
@@ -563,20 +561,20 @@ public static class FilterDialogViewModelTests {
             IEnumerable<IHierarchyNode> hierarchy;
 
 
-            hierarchy = new[] {
-                    CreateNode(name: "a", children: new [] {
+            hierarchy = [
+                    CreateNode(name: "a", children: [
                         CreateNode("b"),
-                        CreateNode("c", children: new[] {
+                        CreateNode("c", children: [
                             CreateNode("d")
-                        })
-                    }),
-                    CreateNode(name: "e", children: new [] {
+                        ])
+                    ]),
+                    CreateNode(name: "e", children: [
                         CreateNode("f"),
-                        CreateNode("g", children: new[] {
+                        CreateNode("g", children: [
                             CreateNode("h")
-                        })
-                    })
-                };
+                        ])
+                    ])
+                ];
 
             using (var vm = CreateViewModel(hierarchy)) {
                 await vm.OnLoadedAsync();
@@ -591,12 +589,12 @@ public static class FilterDialogViewModelTests {
                 Assert.NotNull(vm.Result);
 
                 Assert.Equal(
-                    new[] { GetItem(vm, "b").Identifier, GetItem(vm, "h").Identifier },
+                    [GetItem(vm, "b").Identifier, GetItem(vm, "h").Identifier],
                     vm.Result!.ProjectsToLoad
                 );
 
                 Assert.Equal(
-                    new[] { GetItem(vm, "d").Identifier, GetItem(vm, "f").Identifier },
+                    [GetItem(vm, "d").Identifier, GetItem(vm, "f").Identifier],
                     vm.Result!.ProjectsToUnload
                 );
             }
@@ -609,20 +607,20 @@ public static class FilterDialogViewModelTests {
             IDebouncer debouncer;
 
 
-            hierarchy = new[] {
-                    CreateNode(name: "a", children: new [] {
+            hierarchy = [
+                    CreateNode(name: "a", children: [
                         CreateNode("b"),
-                        CreateNode("c", children: new[] {
+                        CreateNode("c", children: [
                             CreateNode("d")
-                        })
-                    }),
-                    CreateNode(name: "e", children: new [] {
+                        ])
+                    ]),
+                    CreateNode(name: "e", children: [
                         CreateNode("f"),
-                        CreateNode("g", children: new[] {
+                        CreateNode("g", children: [
                             CreateNode("h")
-                        })
-                    })
-                };
+                        ])
+                    ])
+                ];
 
             debouncer = Substitute.For<IDebouncer>();
 
@@ -638,19 +636,19 @@ public static class FilterDialogViewModelTests {
                 debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
 
                 // Verify that our test is setup by confirming that filtering has occurred.
-                Assert.Equal(new[] { "a" }, vm.Items.Select((x) => x.Name));
+                Assert.Equal(["a"], vm.Items.Select((x) => x.Name));
 
                 vm.AcceptCommand.Execute(null);
 
                 Assert.NotNull(vm.Result);
 
                 Assert.Equal(
-                    new[] { GetItem(vm, "d").Identifier, GetItem(vm, "f").Identifier },
+                    [GetItem(vm, "d").Identifier, GetItem(vm, "f").Identifier],
                     vm.Result!.ProjectsToLoad
                 );
 
                 Assert.Equal(
-                    new[] { GetItem(vm, "b").Identifier, GetItem(vm, "h").Identifier },
+                    [GetItem(vm, "b").Identifier, GetItem(vm, "h").Identifier],
                     vm.Result!.ProjectsToUnload
                 );
             }
@@ -667,16 +665,16 @@ public static class FilterDialogViewModelTests {
             IDebouncer debouncer;
 
 
-            hierarchy = new[] {
-                    CreateNode(name: "a", children: new [] {
+            hierarchy = [
+                    CreateNode(name: "a", children: [
                         CreateNode("b"),
                         CreateNode("c")
-                    }),
-                    CreateNode(name: "d", children: new [] {
+                    ]),
+                    CreateNode(name: "d", children: [
                         CreateNode("e"),
                         CreateNode("f")
-                    })
-                };
+                    ])
+                ];
 
             debouncer = Substitute.For<IDebouncer>();
 
@@ -688,16 +686,16 @@ public static class FilterDialogViewModelTests {
                 vm.SearchText = "d";
                 debouncer.Received(1).Start();
 
-                Assert.Equal(new[] { "a", "d" }, vm.Items.Select((x) => x.Name));
+                Assert.Equal(["a", "d"], vm.Items.Select((x) => x.Name));
 
                 vm.SearchText = "a";
                 debouncer.Received(2).Start();
 
-                Assert.Equal(new[] { "a", "d" }, vm.Items.Select((x) => x.Name));
+                Assert.Equal(["a", "d"], vm.Items.Select((x) => x.Name));
 
                 debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
 
-                Assert.Equal(new[] { "a" }, vm.Items.Select((x) => x.Name));
+                Assert.Equal(["a"], vm.Items.Select((x) => x.Name));
             }
         }
 
@@ -708,16 +706,16 @@ public static class FilterDialogViewModelTests {
             IDebouncer debouncer;
 
 
-            hierarchy = new[] {
-                    CreateNode(name: "a", children: new [] {
+            hierarchy = [
+                    CreateNode(name: "a", children: [
                         CreateNode("b"),
                         CreateNode("c")
-                    }),
-                    CreateNode(name: "d", children: new [] {
+                    ]),
+                    CreateNode(name: "d", children: [
                         CreateNode("e"),
                         CreateNode("f")
-                    })
-                };
+                    ])
+                ];
 
             debouncer = Substitute.For<IDebouncer>();
 
@@ -743,16 +741,16 @@ public static class FilterDialogViewModelTests {
             IDebouncer debouncer;
 
 
-            hierarchy = new[] {
-                    CreateNode(name: "a", children: new [] {
+            hierarchy = [
+                    CreateNode(name: "a", children: [
                         CreateNode("b"),
                         CreateNode("c")
-                    }),
-                    CreateNode(name: "d", children: new [] {
+                    ]),
+                    CreateNode(name: "d", children: [
                         CreateNode("e"),
                         CreateNode("f")
-                    })
-                };
+                    ])
+                ];
 
             debouncer = Substitute.For<IDebouncer>();
 
@@ -762,10 +760,10 @@ public static class FilterDialogViewModelTests {
                 vm.SearchText = "d";
                 debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
 
-                Assert.Equal(new[] { "d" }, vm.Items.Select((x) => x.Name));
+                Assert.Equal(["d"], vm.Items.Select((x) => x.Name));
 
                 vm.SearchText = "";
-                Assert.Equal(new[] { "a", "d" }, vm.Items.Select((x) => x.Name));
+                Assert.Equal(["a", "d"], vm.Items.Select((x) => x.Name));
             }
         }
 
@@ -781,12 +779,12 @@ public static class FilterDialogViewModelTests {
             TextFilterFactory factory;
 
 
-            hierarchy = new[] {
-                CreateNode(name: "a", children: new [] {
+            hierarchy = [
+                CreateNode(name: "a", children: [
                     CreateNode("b"),
                     CreateNode("c")
-                })
-            };
+                ])
+            ];
 
             debouncer = Substitute.For<IDebouncer>();
 
@@ -810,12 +808,12 @@ public static class FilterDialogViewModelTests {
             bool throwError;
 
 
-            hierarchy = new[] {
-                CreateNode(name: "a", children: new [] {
+            hierarchy = [
+                CreateNode(name: "a", children: [
                     CreateNode("b"),
                     CreateNode("c")
-                })
-            };
+                ])
+            ];
 
             debouncer = Substitute.For<IDebouncer>();
 
@@ -847,12 +845,12 @@ public static class FilterDialogViewModelTests {
             TextFilterFactory factory;
 
 
-            hierarchy = new[] {
-                CreateNode(name: "a", children: new [] {
+            hierarchy = [
+                CreateNode(name: "a", children: [
                     CreateNode("b"),
                     CreateNode("c")
-                })
-            };
+                ])
+            ];
 
             debouncer = Substitute.For<IDebouncer>();
 
@@ -923,13 +921,13 @@ public static class FilterDialogViewModelTests {
         IHierarchyNode node;
 
 
-        children ??= Enumerable.Empty<IHierarchyNode>();
+        children ??= [];
 
         node = Substitute.For<IHierarchyNode>();
         node.Name.Returns(name);
         node.Identifier.Returns(Guid.NewGuid());
         node.IsLoaded.Returns(isLoaded);
-        node.Children.Returns(children.ToList());
+        node.Children.Returns([.. children]);
         node.IsFolder.Returns(children.Any());
 
         return node;

@@ -48,7 +48,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
         _textFilterFactory = textFilterFactory ?? throw new ArgumentNullException(nameof(textFilterFactory));
         _nodeSettings = nodeSettings;
 
-        _items = new HierarchyTreeViewItemCollection(Enumerable.Empty<HierarchyTreeViewItem>());
+        _items = new HierarchyTreeViewItemCollection([]);
         _searchText = "";
         _loadingVisibility = Visibility.Visible;
         _loadedVisibility = Visibility.Collapsed;
@@ -291,7 +291,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
             }
 
             if (root is not null) {
-                SetIsExpandedRecursively(new[] { root }, false);
+                SetIsExpandedRecursively([root], false);
             }
 
         } else {
@@ -302,7 +302,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
 
     private void ExpandAll(HierarchyTreeViewItem? root) {
         if (root is not null) {
-            SetIsExpandedRecursively(new[] { root }, true);
+            SetIsExpandedRecursively([root], true);
         } else {
             SetIsExpandedRecursively(Items, true);
         }

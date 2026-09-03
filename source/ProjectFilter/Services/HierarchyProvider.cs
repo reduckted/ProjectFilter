@@ -23,7 +23,7 @@ public class HierarchyProvider : IHierarchyProvider {
 
 
         nodes = await GetNodesAsync();
-        mapping = new Dictionary<Guid, HierarchyNode>();
+        mapping = [];
 
         foreach (var item in nodes) {
             mapping[item.Hierarchy.Identifier] = item.Hierarchy;
@@ -34,7 +34,7 @@ public class HierarchyProvider : IHierarchyProvider {
         // to sort each collection of children individually.
         nodes.Sort((x, y) => CompareNodes(x.Hierarchy, y.Hierarchy));
 
-        roots = new List<HierarchyNode>();
+        roots = [];
 
         // Add child nodes to the parents and find the root nodes.
         foreach (var node in nodes) {
@@ -64,7 +64,7 @@ public class HierarchyProvider : IHierarchyProvider {
         imageService = (IVsImageService2)await VS.Services.GetImageServiceAsync();
         hierarchyItemManager = await VS.GetMefServiceAsync<IVsHierarchyItemManager>();
 
-        output = new List<(HierarchyNode Hierarchy, Guid Parent)>();
+        output = [];
 
         foreach (var hierarchy in solution.GetAllProjectHierarchies(ProjectStateFilter.All)) {
             if (!TryGetIdentifier(solution, hierarchy, out Guid identifier)) {

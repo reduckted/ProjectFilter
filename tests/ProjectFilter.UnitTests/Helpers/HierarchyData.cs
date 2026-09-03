@@ -16,7 +16,7 @@ internal class HierarchyData {
         Name = name;
         Parent = parent;
         IsShared = isShared;
-        DependencyNames = Enumerable.Empty<string>();
+        DependencyNames = [];
     }
 
 
@@ -46,10 +46,10 @@ internal class HierarchyData {
 
     public IEnumerable<HierarchyData> GetDependencyData() {
         if (_lookup is not null) {
-            return DependencyNames.Select((x) => _lookup[x]).ToList();
+            return [.. DependencyNames.Select((x) => _lookup[x])];
         }
 
-        return Enumerable.Empty<HierarchyData>();
+        return [];
     }
 
 
@@ -61,7 +61,7 @@ internal class HierarchyData {
 
 
     public void SetDependencies(IEnumerable<string> dependencies, Dictionary<string, HierarchyData> lookup) {
-        DependencyNames = dependencies.ToList();
+        DependencyNames = [.. dependencies];
         _lookup = lookup;
     }
 

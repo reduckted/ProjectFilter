@@ -17,14 +17,14 @@ public class HierarchyTreeViewItemCollection : IReadOnlyCollection<HierarchyTree
     public HierarchyTreeViewItemCollection(IEnumerable<HierarchyTreeViewItem> items) {
         // Store the original items so that we always 
         // have a complete list to use when filtering.
-        _originalItems = new List<HierarchyTreeViewItem>(items);
+        _originalItems = [.. items];
 
         // Copy the original items into another list that is the collection 
         // we will expose from this class. Note that we use the original 
         // items as the source rather than the given collection, because 
         // the given collection can be lazy-evaluated, and enumerating 
         // it twice would result in different objects being created.
-        _items = new List<HierarchyTreeViewItem>(_originalItems);
+        _items = [.. _originalItems];
     }
 
 

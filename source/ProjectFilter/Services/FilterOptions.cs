@@ -15,8 +15,8 @@ public class FilterOptions {
         bool expandLoadedProjects,
         bool hideSolutionFoldersWithoutLoadedProjects
     ) {
-        ProjectsToLoad = projectsToLoad.ToList();
-        ProjectsToUnload = projectsToUnload.ToList();
+        ProjectsToLoad = [.. projectsToLoad];
+        ProjectsToUnload = [.. projectsToUnload];
         LoadProjectDependencies = loadProjectDependencies;
         ExpandLoadedProjects = expandLoadedProjects;
         HideSolutionFoldersWithoutLoadedProjects = hideSolutionFoldersWithoutLoadedProjects;

@@ -21,7 +21,7 @@ public class HierarchyNode : IHierarchyNode {
         Name = name;
         CollapsedIcon = collapsedIcon;
         ExpandedIcon = expandedIcon;
-        _children = new List<HierarchyNode>();
+        _children = [];
 
         IsFolder = false;
         IsLoaded = false;
