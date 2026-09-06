@@ -16,9 +16,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup MSBuild
+      - name: Setup .NET
         uses: actions/setup-dotnet@v6
 
       - name: Publish
         working-directory: source/ProjectFilter
-        run: dotnet msbuild -target:PublishToMarketplace -property:BuildBeforePublish=true -property:PersonalAccessToken=${{ secrets.PUBLISHER_TOKEN }}
+        run: |
+          dotnet restore
+          dotnet msbuild -target:PublishToMarketplace -property:BuildBeforePublish=true -property:PersonalAccessToken=${{ secrets.PUBLISHER_TOKEN }}
