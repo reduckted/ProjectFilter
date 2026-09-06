@@ -17,6 +17,9 @@ public interface IExtensionSettings {
     bool ExpandLoadedProjects { get; set; }
 
 
+    bool HideSolutionFoldersWithoutLoadedProjects { get; set; }
+
+
     Task LoadAsync();
 
 

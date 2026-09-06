@@ -9,7 +9,7 @@ internal class TreeItem {
 
     public TreeItem(HierarchyData data) {
         Data = data;
-        Children = new List<TreeItem>();
+        Children = [];
     }
 
 

@@ -24,13 +24,13 @@ partial class FilterService {
             _currentProgress = initialProgress;
             Solution = solution;
 
-            _projectsToLoad = new HashSet<Guid>();
-            _loadedProjects = new HashSet<Guid>();
+            _projectsToLoad = [];
+            _loadedProjects = [];
 
-            _projectsToUnload = new HashSet<Guid>();
-            _unloadedProjects = new HashSet<Guid>();
+            _projectsToUnload = [];
+            _unloadedProjects = [];
 
-            ProjectsVisitedWhileLoading = new HashSet<Guid>();
+            ProjectsVisitedWhileLoading = [];
             RequiresProjectDependencyCalculation = true;
         }
 
@@ -109,7 +109,7 @@ partial class FilterService {
 
 
         public IEnumerable<Guid> GetLoadedProjects() {
-            return _loadedProjects.ToList();
+            return [.. _loadedProjects];
         }
 
 

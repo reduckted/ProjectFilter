@@ -16,6 +16,9 @@ public interface ISolutionExplorer {
     Task HideUnloadedProjectsAsync();
 
 
+    Task HideSolutionFoldersWithoutLoadedProjectsAsync();
+
+
     Task ExpandAsync(IEnumerable<Guid> projects);
 
 

@@ -31,21 +31,21 @@ public static class HierarchyTreeViewItemTests {
             grandchildC = Factory.CreateTreeViewItem();
             grandchildB = Factory.CreateTreeViewItem();
             grandchildA = Factory.CreateTreeViewItem();
-            childB = Factory.CreateTreeViewItem(children: new[] { grandchildC });
-            childA = Factory.CreateTreeViewItem(children: new[] { grandchildA, grandchildB });
-            root = Factory.CreateTreeViewItem(children: new[] { childA, childB });
+            childB = Factory.CreateTreeViewItem(children: [grandchildC]);
+            childA = Factory.CreateTreeViewItem(children: [grandchildA, grandchildB]);
+            root = Factory.CreateTreeViewItem(children: [childA, childB]);
 
             root.IsChecked = true;
 
             Assert.True(root.IsChecked);
-            Assert.Equal(new bool?[] { true, true }, new bool?[] { childA.IsChecked, childB.IsChecked });
-            Assert.Equal(new bool?[] { true, true, true }, new bool?[] { grandchildA.IsChecked, grandchildB.IsChecked, grandchildC.IsChecked });
+            Assert.Equal(new bool?[] { true, true }, [childA.IsChecked, childB.IsChecked]);
+            Assert.Equal(new bool?[] { true, true, true }, [grandchildA.IsChecked, grandchildB.IsChecked, grandchildC.IsChecked]);
 
             root.IsChecked = false;
 
             Assert.False(root.IsChecked);
-            Assert.Equal(new bool?[] { false, false }, new bool?[] { childA.IsChecked, childB.IsChecked });
-            Assert.Equal(new bool?[] { false, false, false }, new bool?[] { grandchildA.IsChecked, grandchildB.IsChecked, grandchildC.IsChecked });
+            Assert.Equal(new bool?[] { false, false }, [childA.IsChecked, childB.IsChecked]);
+            Assert.Equal(new bool?[] { false, false, false }, [grandchildA.IsChecked, grandchildB.IsChecked, grandchildC.IsChecked]);
         }
 
 
@@ -58,7 +58,7 @@ public static class HierarchyTreeViewItemTests {
 
             childB = Factory.CreateTreeViewItem();
             childA = Factory.CreateTreeViewItem();
-            root = Factory.CreateTreeViewItem(children: new[] { childA, childB });
+            root = Factory.CreateTreeViewItem(children: [childA, childB]);
 
             childA.IsChecked = true;
             Assert.Null(root.IsChecked);
@@ -74,7 +74,7 @@ public static class HierarchyTreeViewItemTests {
 
             childB = Factory.CreateTreeViewItem();
             childA = Factory.CreateTreeViewItem();
-            root = Factory.CreateTreeViewItem(children: new[] { childA, childB });
+            root = Factory.CreateTreeViewItem(children: [childA, childB]);
 
             childA.IsChecked = true;
             childB.IsChecked = true;
@@ -93,7 +93,7 @@ public static class HierarchyTreeViewItemTests {
 
             childB = Factory.CreateTreeViewItem();
             childA = Factory.CreateTreeViewItem();
-            root = Factory.CreateTreeViewItem(children: new[] { childA, childB });
+            root = Factory.CreateTreeViewItem(children: [childA, childB]);
 
             childA.IsChecked = true;
             childB.IsChecked = true;
@@ -110,7 +110,7 @@ public static class HierarchyTreeViewItemTests {
 
             childB = Factory.CreateTreeViewItem();
             childA = Factory.CreateTreeViewItem();
-            root = Factory.CreateTreeViewItem(children: new[] { childA, childB });
+            root = Factory.CreateTreeViewItem(children: [childA, childB]);
 
             childA.IsChecked = true;
             childB.IsChecked = true;
@@ -134,9 +134,9 @@ public static class HierarchyTreeViewItemTests {
             grandchildC = Factory.CreateTreeViewItem();
             grandchildB = Factory.CreateTreeViewItem();
             grandchildA = Factory.CreateTreeViewItem();
-            childB = Factory.CreateTreeViewItem(children: new[] { grandchildC });
-            childA = Factory.CreateTreeViewItem(children: new[] { grandchildA, grandchildB });
-            root = Factory.CreateTreeViewItem(children: new[] { childA, childB });
+            childB = Factory.CreateTreeViewItem(children: [grandchildC]);
+            childA = Factory.CreateTreeViewItem(children: [grandchildA, grandchildB]);
+            root = Factory.CreateTreeViewItem(children: [childA, childB]);
 
             grandchildC.IsChecked = true;
             Assert.True(childB.IsChecked);
@@ -167,7 +167,7 @@ public static class HierarchyTreeViewItemTests {
                 new HierarchyTreeViewItem(
                     Substitute.For<IHierarchyNode>(),
                     isExpanded,
-                    Enumerable.Empty<HierarchyTreeViewItem>()
+                    []
                 ).IsExpanded
             );
         }
@@ -181,7 +181,7 @@ public static class HierarchyTreeViewItemTests {
             item = new HierarchyTreeViewItem(
                 Substitute.For<IHierarchyNode>(),
                 true,
-                Enumerable.Empty<HierarchyTreeViewItem>()
+                []
             );
 
             Assert.PropertyChanged(
@@ -212,7 +212,7 @@ public static class HierarchyTreeViewItemTests {
             node.CollapsedIcon.Returns(KnownMonikers.FolderClosed);
             node.ExpandedIcon.Returns(KnownMonikers.FolderOpened);
 
-            item = new HierarchyTreeViewItem(node, true, Enumerable.Empty<HierarchyTreeViewItem>());
+            item = new HierarchyTreeViewItem(node, true, []);
 
             Assert.Equal(KnownMonikers.FolderOpened, item.Icon);
 
@@ -234,7 +234,7 @@ public static class HierarchyTreeViewItemTests {
             node = Substitute.For<IHierarchyNode>();
             node.Name.Returns("Root");
 
-            item = new HierarchyTreeViewItem(node, true, Enumerable.Empty<HierarchyTreeViewItem>());
+            item = new HierarchyTreeViewItem(node, true, []);
 
             Assert.Equal("Root", item.Path);
         }
@@ -253,8 +253,8 @@ public static class HierarchyTreeViewItemTests {
             parentNode = Substitute.For<IHierarchyNode>();
             parentNode.Name.Returns("Root");
 
-            childItem = new HierarchyTreeViewItem(childNode, true, Enumerable.Empty<HierarchyTreeViewItem>());
-            _ = new HierarchyTreeViewItem(parentNode, true, new[] { childItem });
+            childItem = new HierarchyTreeViewItem(childNode, true, []);
+            _ = new HierarchyTreeViewItem(parentNode, true, [childItem]);
 
             Assert.Equal("Root/Child", childItem.Path);
         }
@@ -292,10 +292,10 @@ public static class HierarchyTreeViewItemTests {
 
 
 
-            item = Factory.CreateTreeViewItem(name: "Foo", children: new[] {
+            item = Factory.CreateTreeViewItem(name: "Foo", children: [
                     Factory.CreateTreeViewItem(name:"Bar"),
                     Factory.CreateTreeViewItem(name:"Meep")
-                });
+                ]);
 
             Assert.True(item.Filter(new RegexTextFilter("B")));
         }
@@ -309,7 +309,7 @@ public static class HierarchyTreeViewItemTests {
             item = Factory.CreateTreeViewItem(name: "Foo");
 
             Assert.True(item.Filter(new RegexTextFilter("F")));
-            Assert.Equal(new[] { Span.FromBounds(0, 1) }, item.HighlightSpans);
+            Assert.Equal([Span.FromBounds(0, 1)], item.HighlightSpans);
         }
 
 
@@ -336,12 +336,12 @@ public static class HierarchyTreeViewItemTests {
                 item.Filter(
                     new PatternTextFilter(
                         ".",
-                        Factory.CreatePatternMatcherFactory(new[] { Span.FromBounds(0, 1), Span.FromBounds(4, 5) })
+                        Factory.CreatePatternMatcherFactory([Span.FromBounds(0, 1), Span.FromBounds(4, 5)])
                     )
                 )
             );
 
-            Assert.Equal(new[] { Span.FromBounds(0, 1), Span.FromBounds(4, 5) }, item.HighlightSpans);
+            Assert.Equal([Span.FromBounds(0, 1), Span.FromBounds(4, 5)], item.HighlightSpans);
         }
 
 
@@ -359,7 +359,7 @@ public static class HierarchyTreeViewItemTests {
 
 
             child = Factory.CreateTreeViewItem(name: "Bar");
-            parent = Factory.CreateTreeViewItem(name: "Foo", children: new[] { child });
+            parent = Factory.CreateTreeViewItem(name: "Foo", children: [child]);
 
             child.Filter(new PatternTextFilter(".", Factory.CreatePatternMatcherFactory(ParseSpans(matchingSpans))));
 
@@ -367,14 +367,13 @@ public static class HierarchyTreeViewItemTests {
             Assert.Equal(ParseSpans(expectedSpans), child.HighlightSpans);
 
             static IEnumerable<Span> ParseSpans(string spans) {
-                return spans
-                    .Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                return [.. spans
+                    .Split([' '], StringSplitOptions.RemoveEmptyEntries)
                     .Select((x) => Regex.Match(x, "\\[(?<start>\\d+),(?<end>\\d+)\\]").Groups)
                     .Select((x) => Span.FromBounds(
                         int.Parse(x["start"].Value, CultureInfo.InvariantCulture),
                         int.Parse(x["end"].Value, CultureInfo.InvariantCulture)
-                    ))
-                    .ToList();
+                    ))];
             }
         }
 
@@ -403,7 +402,7 @@ public static class HierarchyTreeViewItemTests {
             HierarchyTreeViewItem item;
 
 
-            item = Factory.CreateTreeViewItem(name: "Foo", children: new[] { Factory.CreateTreeViewItem(name: "Bar") });
+            item = Factory.CreateTreeViewItem(name: "Foo", children: [Factory.CreateTreeViewItem(name: "Bar")]);
 
             item.Filter(new RegexTextFilter("X"));
             Assert.Empty(item.Children);
@@ -430,32 +429,32 @@ public static class HierarchyTreeViewItemTests {
             grandchildC = Factory.CreateTreeViewItem();
             grandchildB = Factory.CreateTreeViewItem();
             grandchildA = Factory.CreateTreeViewItem();
-            childB = Factory.CreateTreeViewItem(children: new[] { grandchildC });
-            childA = Factory.CreateTreeViewItem(children: new[] { grandchildA, grandchildB });
-            root = Factory.CreateTreeViewItem(children: new[] { childA, childB });
+            childB = Factory.CreateTreeViewItem(children: [grandchildC]);
+            childA = Factory.CreateTreeViewItem(children: [grandchildA, grandchildB]);
+            root = Factory.CreateTreeViewItem(children: [childA, childB]);
 
             Assert.Equal(
-                new[] { root, childA, grandchildA, grandchildB, childB, grandchildC },
+                [root, childA, grandchildA, grandchildB, childB, grandchildC],
                 root.DescendantsAndSelf()
             );
 
             Assert.Equal(
-                new[] { childA, grandchildA, grandchildB },
+                [childA, grandchildA, grandchildB],
                 childA.DescendantsAndSelf()
             );
 
             Assert.Equal(
-                new[] { childB, grandchildC },
+                [childB, grandchildC],
                 childB.DescendantsAndSelf()
             );
 
             Assert.Equal(
-                new[] { grandchildA },
+                [grandchildA],
                 grandchildA.DescendantsAndSelf()
             );
 
             Assert.Equal(
-                new[] { grandchildB },
+                [grandchildB],
                 grandchildB.DescendantsAndSelf()
             );
         }

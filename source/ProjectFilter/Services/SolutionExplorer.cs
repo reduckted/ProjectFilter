@@ -8,6 +8,8 @@ using ProjectFilter.Extensions;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
+using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Task = System.Threading.Tasks.Task;
@@ -21,6 +23,7 @@ public class SolutionExplorer : ISolutionExplorer {
     private static readonly CommandID HideUnloadedProjectsCommand = new(VSConstants.CMDSETID.StandardCommandSet15_guid, 1654);
     private static readonly CommandID ShowUnloadedProjectsCommand = new(VSConstants.CMDSETID.StandardCommandSet15_guid, 1653);
     private static readonly CommandID UnhideFoldersCommand = KnownCommands.Project_UnhideFolders;
+    private static readonly CommandID HideSolutionFolderCommand = new(VSConstants.CMDSETID.StandardCommandSet2K_guid, 1608);
 
 
     public async Task<bool?> IsEmptyAsync() {
@@ -79,8 +82,9 @@ public class SolutionExplorer : ISolutionExplorer {
                     selection = await solutionExplorer.GetSelectionAsync();
                     solutionExplorer.SetSelection(solution);
 
-                    // The commands that we need to execute only work when Solution Explorer
-                    // has the focus. Remember the current window, then focus Solution Explorer.
+                    // The commands that we need to execute may only work when
+                    // Solution Explorer has the focus. Play it safe and remember
+                    // the current window, then focus Solution Explorer.
                     window = await VS.Windows.GetCurrentWindowAsync();
                     solutionExplorer.Frame.Show();
 
@@ -113,6 +117,127 @@ public class SolutionExplorer : ISolutionExplorer {
                         await window.ShowAsync();
                     }
                 }
+            }
+        }
+    }
+
+
+    public async Task HideSolutionFoldersWithoutLoadedProjectsAsync() {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+        SolutionExplorerWindow? solutionExplorer;
+
+
+        solutionExplorer = await VS.Windows.GetSolutionExplorerWindowAsync();
+
+        if (solutionExplorer is not null) {
+            IVsSolution solution;
+            IHierarchyProvider provider;
+            IEnumerable<IHierarchyNode> nodes;
+            IEnumerable<SolutionItem> selection;
+            WindowFrame? window;
+            bool focused;
+
+
+            solution = await VS.Services.GetSolutionAsync();
+            provider = await VS.GetRequiredServiceAsync<IHierarchyProvider, IHierarchyProvider>();
+            nodes = await provider.GetHierarchyAsync();
+
+            window = null;
+            focused = false;
+
+            // We need to execute some commands that operate on the solution folders,
+            // which means we may need to change the selected item solution explorer.
+            // Remember the current selection so that we can restore it.
+            selection = await solutionExplorer.GetSelectionAsync();
+
+            // We only want to hide folders that contain projects where all of the projects are
+            // unloaded. We don't want to hide folders that only contain miscellaneous files like
+            // the "Solution Items" folder. The nodes we get from the `IHierarchyProvider` only
+            // include nodes that contain projects either within them directly or somewhere within
+            // a descendant folder. That means if we encounter a folder that doesn't have loaded
+            // projects within it, then we know it must contain only unloaded projects.
+            foreach (IHierarchyNode node in GetSolutionFoldersWithoutLoadedProjects(nodes)) {
+                if (ErrorHandler.Succeeded(solution.GetProjectOfGuid(node.Identifier, out IVsHierarchy hierarchy))) {
+                    SolutionItem? folder;
+
+
+                    folder = await SolutionItem.FromHierarchyAsync(hierarchy, VSConstants.VSITEMID_ROOT);
+
+                    if (folder is not null) {
+                        folder.GetItemInfo(out IVsHierarchy vsHierarchy, out uint itemID, out var _);
+
+                        if (vsHierarchy is IVsUIHierarchy uiHierarchy) {
+                            // The commands that we need to execute may only work when
+                            // Solution Explorer has the focus. Play it safe and remember
+                            // the current window, then focus Solution Explorer.
+                            if (!focused) {
+                                window = await VS.Windows.GetCurrentWindowAsync();
+                                solutionExplorer.Frame.Show();
+                                focused = true;
+                            }
+
+                            solutionExplorer.SetSelection(folder);
+                            ExecuteCommand(uiHierarchy, itemID, HideSolutionFolderCommand);
+                        }
+                    }
+                }
+            }
+
+            // Restore the original selection.
+            solutionExplorer.SetSelection(selection);
+
+            // Restore the previously-active window.
+            if (window is not null) {
+                await window.ShowAsync();
+            }
+        }
+    }
+
+
+    public static List<IHierarchyNode> GetSolutionFoldersWithoutLoadedProjects(IEnumerable<IHierarchyNode> nodes) {
+        List<IHierarchyNode> folders;
+
+
+        folders = [];
+
+        foreach (IHierarchyNode child in nodes) {
+            if (child.IsFolder) {
+                Visit(child, folders, out _);
+            }
+        }
+
+        return folders;
+
+        static void Visit(
+            IHierarchyNode folder,
+            List<IHierarchyNode> foldersWithoutLoadedProjects,
+            out bool hasLoadedProjectsWithin
+        ) {
+            bool hasLoadedProjectsDirectly;
+            bool hasLoadedProjectsInDescendants;
+
+
+            hasLoadedProjectsDirectly = false;
+            hasLoadedProjectsInDescendants = false;
+
+            foreach (IHierarchyNode child in folder.Children) {
+                if (child.IsFolder) {
+                    Visit(child, foldersWithoutLoadedProjects, out bool hasLoadedProjectsWithinFolder);
+
+                    if (hasLoadedProjectsWithinFolder) {
+                        hasLoadedProjectsInDescendants = true;
+                    }
+
+                } else if (child.IsLoaded) {
+                    hasLoadedProjectsDirectly = true;
+                }
+            }
+
+            hasLoadedProjectsWithin = hasLoadedProjectsDirectly || hasLoadedProjectsInDescendants;
+
+            if (!hasLoadedProjectsWithin) {
+                foldersWithoutLoadedProjects.Add(folder);
             }
         }
     }
@@ -160,7 +285,7 @@ public class SolutionExplorer : ISolutionExplorer {
 
 
             solution = (IVsSolution4)await VS.Services.GetSolutionAsync();
-            items = new List<SolutionItem>();
+            items = [];
 
             foreach (var project in projects) {
                 if (solution.TryGetHierarchy(project, out IVsHierarchy hierarchy)) {
@@ -190,7 +315,7 @@ public class SolutionExplorer : ISolutionExplorer {
 
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-        expanded = new HashSet<Guid>();
+        expanded = [];
 
         solutionExplorer = await VS.Windows.GetSolutionExplorerWindowAsync();
         solution = await VS.Services.GetSolutionAsync() as IVsSolution4;
@@ -236,6 +361,51 @@ public class SolutionExplorer : ISolutionExplorer {
         }
 
         return false;
+    }
+
+
+    [DebuggerDisplay("{SolutionItem.Name,nq}")]
+    private class Node : ISolutionExplorerNode {
+
+        private List<Node>? _children;
+
+
+        public Node(SolutionItem solutionItem) {
+            SolutionItem = solutionItem;
+        }
+
+
+        public SolutionItem SolutionItem { get; }
+
+
+        public bool IsFolder {
+            get {
+                return SolutionItem.Type == SolutionItemType.SolutionFolder;
+            }
+        }
+
+
+        public bool IsProject {
+            get {
+                return SolutionItem.Type == SolutionItemType.Project;
+            }
+        }
+
+
+        public bool IsLoaded {
+            get {
+                return SolutionItem is Project project && project.IsLoaded;
+            }
+        }
+
+
+        public IReadOnlyList<ISolutionExplorerNode> Children {
+            get {
+                // TODO: The children do not include unloaded projects.
+                return _children ??= [.. SolutionItem.Children.Where((x) => x is not null).Select(x => new Node(x!))];
+            }
+        }
+
     }
 
 }

@@ -1,11 +1,12 @@
 <Project>
 
     <PropertyGroup>
-        <Version>2.6.1</Version>
+        <Version>2.7.0</Version>
         <TargetFramework>net48</TargetFramework>
         <Nullable>enable</Nullable>
-        <LangVersion>10.0</LangVersion>
+        <LangVersion>latest</LangVersion>
         <AnalysisMode>AllEnabledByDefault</AnalysisMode>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     </PropertyGroup>
 
 </Project>

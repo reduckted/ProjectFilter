@@ -1,11 +1,10 @@
 using Microsoft.VisualStudio.Text;
-using ProjectFilter.Services;
 using System.Collections.Immutable;
 using System.Linq;
 using Xunit;
 
 
-namespace ProjectFilter.UI;
+namespace ProjectFilter.Services;
 
 
 public class RegexTextFilterTests {
@@ -36,10 +35,10 @@ public class RegexTextFilterTests {
             endIndex = text.IndexOf(']');
 
             text = text.Remove(endIndex, 1);
-            expectedSpans = ImmutableArray.Create(Span.FromBounds(startIndex, endIndex));
+            expectedSpans = [Span.FromBounds(startIndex, endIndex)];
 
         } else {
-            expectedSpans = ImmutableArray<Span>.Empty;
+            expectedSpans = [];
         }
 
         Assert.Equal(expectedSpans.AsEnumerable(), filter.TryMatch(text).AsEnumerable());

@@ -69,7 +69,7 @@ public static class HierarchyProviderTests {
                     "
             );
 
-            nodes = (await CreateService().GetHierarchyAsync()).ToList();
+            nodes = [.. (await CreateService().GetHierarchyAsync())];
             node = Flatten(nodes).First((x) => x.Name == "foo");
 
             Assert.Equal(GetImageMoniker("FolderOpened"), node.ExpandedIcon);
@@ -293,7 +293,7 @@ public static class HierarchyProviderTests {
 
 
             solution = XElement.Parse("<root/>");
-            solution.Add(ConvertToElements(await CreateService().GetHierarchyAsync()).ToArray());
+            solution.Add([.. ConvertToElements(await CreateService().GetHierarchyAsync())]);
 
             Assert.Equal(
                 XDocument.Parse(expected).Root.ToString(),
@@ -310,7 +310,7 @@ public static class HierarchyProviderTests {
                 element = new XElement(XName.Get(node.IsFolder ? "folder" : node.IsLoaded ? "project" : "unloaded"));
                 element.SetAttributeValue("name", node.Name);
 
-                element.Add(ConvertToElements(node.Children).ToArray());
+                element.Add([.. ConvertToElements(node.Children)]);
 
                 yield return element;
             }
@@ -331,7 +331,7 @@ public static class HierarchyProviderTests {
         private class HierarchyItem : TreeItem {
 
             public HierarchyItem(HierarchyData data) : base(data) {
-                Icons = new Dictionary<(VSConstants.VSITEMID, __VSHIERARCHYIMAGEASPECT), ImageMoniker>();
+                Icons = [];
             }
 
 

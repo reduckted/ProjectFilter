@@ -253,3 +253,21 @@ dotnet_naming_style.begins_with__.capitalization = camel_case
 dotnet_diagnostic.CA1014.severity = none
 dotnet_diagnostic.CA2007.severity = none
 dotnet_diagnostic.IDE0070.severity = none
+
+# IDE0028: Simplify collection initialization
+dotnet_diagnostic.IDE0028.severity = warning
+
+# IDE0290: Use primary constructor
+dotnet_diagnostic.IDE0290.severity = none
+
+# IDE0300: Simplify collection initialization
+dotnet_diagnostic.IDE0300.severity = warning
+
+# IDE0301: Simplify collection initialization
+dotnet_diagnostic.IDE0301.severity = warning
+
+# IDE0303: Simplify collection initialization
+dotnet_diagnostic.IDE0303.severity = warning
+
+# IDE0305: Simplify collection initialization
+dotnet_diagnostic.IDE0305.severity = warning

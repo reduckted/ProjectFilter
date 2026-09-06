@@ -26,11 +26,10 @@ public static class FilterServiceTests {
 
     public class ApplyMethod : ServiceTest<FilterService> {
 
-        private readonly Dictionary<Guid, List<string>> _dependencies = new();
+        private readonly Dictionary<Guid, List<string>> _dependencies = [];
         private TestHierarchyItem? _root;
 
 
-        [SuppressMessage("Usage", "xUnit1041:Fixture arguments to test classes must have fixture sources", Justification = "False Positive. Fixed in xunit.analyzers@1.8.0")]
         public ApplyMethod(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
 
 
@@ -49,8 +48,9 @@ public static class FilterServiceTests {
 
             await ApplyAsync(
                 new FilterOptions(
-                    new Guid[] { ProjectAlpha, ProjectBeta },
-                    Enumerable.Empty<Guid>(),
+                    [ProjectAlpha, ProjectBeta],
+                    [],
+                    false,
                     false,
                     false
                 )
@@ -84,8 +84,9 @@ public static class FilterServiceTests {
 
             await ApplyAsync(
                 new FilterOptions(
-                    Enumerable.Empty<Guid>(),
-                    new Guid[] { ProjectAlpha, ProjectBeta },
+                    [],
+                    [ProjectAlpha, ProjectBeta],
+                    false,
                     false,
                     false
                 )
@@ -119,8 +120,9 @@ public static class FilterServiceTests {
 
             await ApplyAsync(
                 new FilterOptions(
-                    new Guid[] { ProjectBeta },
-                    new Guid[] { ProjectAlpha },
+                    [ProjectBeta],
+                    [ProjectAlpha],
+                    false,
                     false,
                     false
                 )
@@ -154,9 +156,10 @@ public static class FilterServiceTests {
 
             await ApplyAsync(
                 new FilterOptions(
-                    new Guid[] { ProjectAlpha },
-                    Enumerable.Empty<Guid>(),
+                    [ProjectAlpha],
+                    [],
                     true,
+                    false,
                     false
                 )
             );
@@ -189,8 +192,9 @@ public static class FilterServiceTests {
 
             await ApplyAsync(
                 new FilterOptions(
-                    new Guid[] { ProjectAlpha },
-                    Enumerable.Empty<Guid>(),
+                    [ProjectAlpha],
+                    [],
+                    false,
                     false,
                     false
                 )
@@ -222,9 +226,10 @@ public static class FilterServiceTests {
 
             await ApplyAsync(
                 new FilterOptions(
-                    new Guid[] { ProjectAlpha },
-                    new Guid[] { ProjectBeta },
+                    [ProjectAlpha],
+                    [ProjectBeta],
                     true,
+                    false,
                     false
                 )
             );
@@ -255,9 +260,10 @@ public static class FilterServiceTests {
 
             await ApplyAsync(
                 new FilterOptions(
-                    new Guid[] { ProjectAlpha },
-                    Enumerable.Empty<Guid>(),
+                    [ProjectAlpha],
+                    [],
                     true,
+                    false,
                     false
                 )
             );
@@ -289,9 +295,10 @@ public static class FilterServiceTests {
 
             await ApplyAsync(
                 new FilterOptions(
-                    new Guid[] { ProjectAlpha },
-                    Enumerable.Empty<Guid>(),
+                    [ProjectAlpha],
+                    [],
                     true,
+                    false,
                     false
                 )
             );
@@ -331,10 +338,11 @@ public static class FilterServiceTests {
 
             await ApplyAsync(
                 new FilterOptions(
-                    new Guid[] { ProjectAlpha },
-                    Enumerable.Empty<Guid>(),
+                    [ProjectAlpha],
+                    [],
                     false,
-                    true
+                    true,
+                    false
                 )
             );
 
@@ -357,8 +365,8 @@ public static class FilterServiceTests {
             solutionExplorer = Substitute.For<ISolutionExplorer>();
 
             solutionExplorer.GetExpandedFoldersAsync().Returns(
-                new[] { testFolder },
-                new[] { testFolder, otherFolder }
+                [testFolder],
+                [testFolder, otherFolder]
             );
 
             Setup(
@@ -380,8 +388,9 @@ public static class FilterServiceTests {
 
             await ApplyAsync(
                 new FilterOptions(
-                    new Guid[] { ProjectAlpha, ProjectGamma },
-                    Enumerable.Empty<Guid>(),
+                    [ProjectAlpha, ProjectGamma],
+                    [],
+                    false,
                     false,
                     false
                 )
@@ -415,15 +424,99 @@ public static class FilterServiceTests {
 
             await ApplyAsync(
                 new FilterOptions(
-                    Enumerable.Empty<Guid>(),
-                    new Guid[] { ProjectAlpha },
+                    [],
+                    [ProjectAlpha],
                     false,
-                    true
+                    true,
+                    false
                 )
             );
 
             await solutionExplorer.Received(1).ExpandAsync(Arg.Any<IEnumerable<Guid>>());
             await solutionExplorer.Received(1).ExpandAsync(Arg.Is<IEnumerable<Guid>>((items) => !items.Any()));
+        }
+
+
+        [Fact]
+        public async Task HidesSolutionFoldersWithoutLoadedProjectsWhenOptionIsEnabled() {
+            ISolutionExplorer solutionExplorer;
+
+
+            solutionExplorer = Substitute.For<ISolutionExplorer>();
+
+            Setup(
+                $@"
+                <solution name='root'>
+                    <folder name='core'>
+                        <folder name='test'>
+                            <unloaded name='alpha' guid='{ProjectAlpha}'/>
+                            <project name='beta' guid='{ProjectBeta}'/>
+                        </folder>
+                    </folder>
+                </solution>
+                ",
+                solutionExplorer: solutionExplorer
+            );
+
+            await ApplyAsync(
+                new FilterOptions(
+                    [ProjectAlpha],
+                    [],
+                    false,
+                    false,
+                    true
+                )
+            );
+
+            await solutionExplorer.Received(1).HideSolutionFoldersWithoutLoadedProjectsAsync();
+        }
+
+
+        [Fact]
+        public async Task DoesNotHideSolutionFoldersWithoutLoadedProjectsWhenOptionIsDisabled() {
+            ISolutionExplorer solutionExplorer;
+            Guid testFolder;
+            Guid otherFolder;
+
+
+            testFolder = new Guid("{1413358E-AD48-4DB9-92E3-238CFF65743D}");
+            otherFolder = new Guid("{11C39F56-668C-48B4-B3E4-91F9BA7DB09F}");
+
+            solutionExplorer = Substitute.For<ISolutionExplorer>();
+
+            solutionExplorer.GetExpandedFoldersAsync().Returns(
+                [testFolder],
+                [testFolder, otherFolder]
+            );
+
+            Setup(
+                $@"
+                <solution name='root'>
+                    <folder name='core'>
+                        <folder name='test'>
+                            <unloaded name='alpha' guid='{ProjectAlpha}'/>
+                            <project name='beta' guid='{ProjectBeta}'/>
+                        </folder>
+                    </folder>
+                    <folder name='other'>
+                        <unloaded name='alpha' guid='{ProjectGamma}'/>
+                    </folder>
+                </solution>
+                ",
+                solutionExplorer: solutionExplorer
+            );
+
+            await ApplyAsync(
+                new FilterOptions(
+                    [ProjectAlpha, ProjectGamma],
+                    [],
+                    false,
+                    false,
+                    false
+                )
+            );
+
+            await solutionExplorer.DidNotReceive().HideSolutionFoldersWithoutLoadedProjectsAsync();
         }
 
 
@@ -445,7 +538,7 @@ public static class FilterServiceTests {
 
 
         private TestHierarchyItem CreateNode(XElement _, HierarchyData data) {
-            _dependencies[data.Identifier] = data.DependencyNames.ToList();
+            _dependencies[data.Identifier] = [.. data.DependencyNames];
             return new TestHierarchyItem(data);
         }
 
@@ -494,7 +587,7 @@ public static class FilterServiceTests {
             element = new XElement(XName.Get(Factory.TypeToElementName(node.Data.Type)));
             element.SetAttributeValue("name", node.Data.Name);
 
-            element.Add(node.Children.Cast<TestHierarchyItem>().Select(ConvertToElement).ToArray());
+            element.Add([.. node.Children.Cast<TestHierarchyItem>().Select(ConvertToElement)]);
 
             return element;
         }

@@ -29,6 +29,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
     private Visibility _loadedVisibility;
     private bool _useRegularExpressions;
     private bool _expandLoadedProjects;
+    private bool _hideSolutionFoldersWithoutLoadedProjects;
     private bool _invalidFilter;
 
 
@@ -47,7 +48,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
         _textFilterFactory = textFilterFactory ?? throw new ArgumentNullException(nameof(textFilterFactory));
         _nodeSettings = nodeSettings;
 
-        _items = new HierarchyTreeViewItemCollection(Enumerable.Empty<HierarchyTreeViewItem>());
+        _items = new HierarchyTreeViewItemCollection([]);
         _searchText = "";
         _loadingVisibility = Visibility.Visible;
         _loadedVisibility = Visibility.Collapsed;
@@ -92,6 +93,12 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
 
         ToggleExpandLoadedProjectsCommand = new DelegateCommand(
             (_) => ExpandLoadedProjects = !ExpandLoadedProjects,
+            CanAlwaysExecute,
+            joinableTaskFactory
+        );
+
+        ToggleHideSolutionFoldersWithoutLoadedProjectsCommand = new DelegateCommand(
+            (_) => HideSolutionFoldersWithoutLoadedProjects = !HideSolutionFoldersWithoutLoadedProjects,
             CanAlwaysExecute,
             joinableTaskFactory
         );
@@ -206,6 +213,9 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
     public DelegateCommand ToggleExpandLoadedProjectsCommand { get; }
 
 
+    public DelegateCommand ToggleHideSolutionFoldersWithoutLoadedProjectsCommand { get; }
+
+
     public DelegateCommand FocusSearchBoxCommand { get; }
 
 
@@ -260,6 +270,12 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
     }
 
 
+    public bool HideSolutionFoldersWithoutLoadedProjects {
+        get { return _hideSolutionFoldersWithoutLoadedProjects; }
+        set { SetProperty(ref _hideSolutionFoldersWithoutLoadedProjects, value); }
+    }
+
+
     public bool InvalidFilter {
         get { return _invalidFilter; }
         private set { SetProperty(ref _invalidFilter, value); }
@@ -275,7 +291,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
             }
 
             if (root is not null) {
-                SetIsExpandedRecursively(new[] { root }, false);
+                SetIsExpandedRecursively([root], false);
             }
 
         } else {
@@ -286,7 +302,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
 
     private void ExpandAll(HierarchyTreeViewItem? root) {
         if (root is not null) {
-            SetIsExpandedRecursively(new[] { root }, true);
+            SetIsExpandedRecursively([root], true);
         } else {
             SetIsExpandedRecursively(Items, true);
         }
@@ -328,7 +344,8 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
             projects[true],
             projects[false],
             LoadProjectDependencies,
-            ExpandLoadedProjects
+            ExpandLoadedProjects,
+            HideSolutionFoldersWithoutLoadedProjects
         );
     }
 

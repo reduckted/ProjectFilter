@@ -13,6 +13,7 @@ public class ExtensionSettings : BaseOptionModel<ExtensionSettings>, IExtensionS
         LoadProjectDependencies = true;
         UseRegularExpressions = false;
         ExpandLoadedProjects = true;
+        HideSolutionFoldersWithoutLoadedProjects = false;
     }
 
 
@@ -23,5 +24,8 @@ public class ExtensionSettings : BaseOptionModel<ExtensionSettings>, IExtensionS
 
 
     public bool ExpandLoadedProjects { get; set; }
+
+
+    public bool HideSolutionFoldersWithoutLoadedProjects { get; set; }
 
 }

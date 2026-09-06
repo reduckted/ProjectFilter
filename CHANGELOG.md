@@ -1,3 +1,7 @@
+# 2.7.0 (2026-09-06)
+
+-   ✨ New option to hide folders that only contain unloaded projects and miscellaneous files.
+  - 
 # 2.6.1 (2025-08-19)
 
 -   🔧 Dependency updates.

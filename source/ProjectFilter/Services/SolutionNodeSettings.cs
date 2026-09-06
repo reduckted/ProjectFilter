@@ -7,7 +7,7 @@ namespace ProjectFilter.Services;
 public class SolutionNodeSettings {
 
     public SolutionNodeSettings() {
-        Children = new Dictionary<string, SolutionNodeSettings>();
+        Children = [];
     }
 
 

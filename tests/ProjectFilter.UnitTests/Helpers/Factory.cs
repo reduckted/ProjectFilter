@@ -33,7 +33,7 @@ internal static class Factory {
                 PatternMatchKind.Exact,
                 false,
                 false,
-                ImmutableArray.CreateRange(matches)
+                [.. matches]
             )
         );
 
@@ -58,14 +58,14 @@ internal static class Factory {
         node = Substitute.For<IHierarchyNode>();
         node.Name.Returns(name);
 
-        return new HierarchyTreeViewItem(node, true, children ?? Enumerable.Empty<HierarchyTreeViewItem>()) {
+        return new HierarchyTreeViewItem(node, true, children ?? []) {
             IsChecked = isChecked
         };
     }
 
 
     public static T ParseHierarchies<T>(string data, TreeItemFactory<T> factory) where T : TreeItem {
-        return ParseHierarchyElement(XDocument.Parse(data).Root, factory, new Dictionary<string, HierarchyData>(), null);
+        return ParseHierarchyElement(XDocument.Parse(data).Root, factory, [], null);
     }
 
 
@@ -264,7 +264,7 @@ internal static class Factory {
                 List<HierarchyData> dependencies;
 
 
-                dependencies = data.GetDependencyData().Where((x) => x.IsShared).ToList();
+                dependencies = [.. data.GetDependencyData().Where((x) => x.IsShared)];
 
                 if (dependencies.Count > 0) {
                     args[2] = string.Join(
@@ -495,16 +495,15 @@ internal static class Factory {
     ) {
         if (ErrorHandler.Succeeded(solution.GetGuidOfProject(source, out Guid identifier))) {
             if (dependencies.TryGetValue(identifier, out List<string> names)) {
-                return root
+                return [.. root
                     .Descendants()
                     .Where((x) => names.Contains(x.Data.Name))
                     .Where((x) => !x.Data.IsShared)
-                    .Select((x) => EnsureHierarchyExists(x, solution))
-                    .ToList();
+                    .Select((x) => EnsureHierarchyExists(x, solution))];
             }
         }
 
-        return new List<IVsHierarchy>();
+        return [];
     }
 
 
