@@ -166,26 +166,7 @@
                     </ToggleButton>
                 </ToolBar>
 
-                <TextBox
-                    x:Name="SearchBox"
-                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                    Margin="2,1,2,2"
-                    properties:Watermark.Text="Filter projects... (Ctrl+F)"
-                    properties:ClearOnEscape.Enabled="True"
-                    properties:FocusWhenVisible.Enabled="True"
-                    properties:FocusWhenRequested.Source="{Binding FocusSearchBoxSource}"
-                    >
-
-                    <TextBox.Style>
-                        <Style TargetType="TextBox" BasedOn="{StaticResource SearchTextBoxStyle}">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding InvalidFilter}" Value="True">
-                                    <Setter Property="BorderBrush" Value="{DynamicResource {x:Static ui:FilterDialog.ErrorBorderBrushKey}}"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBox.Style>
-                </TextBox>
+                <Grid x:Name="SearchContainer" Margin="2,0,2,4"></Grid>
             </StackPanel>
 
             <TreeView 

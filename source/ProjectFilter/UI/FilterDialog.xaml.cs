@@ -1,6 +1,10 @@
+using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
-using System;
+using Microsoft.VisualStudio.Shell.Interop;
+using System.Reflection;
+using System.Threading.Tasks;
+using System.Windows;
 
 
 namespace ProjectFilter.UI;
@@ -8,17 +12,9 @@ namespace ProjectFilter.UI;
 
 public partial class FilterDialog : DialogWindow {
 
-    private static ThemeResourceKey? _errorBorderBrushKey;
-
-
-    /// <summary>
-    /// This is the same as the resource key with the same name that is used in the internal "Find UI" control.
-    /// </summary>
-    public static ThemeResourceKey ErrorBorderBrushKey => _errorBorderBrushKey ??= new ThemeResourceKey(
-        new Guid("4370282e-987e-4ac4-ad14-5ffed2ad1e14"),
-        "ErrorBorder",
-        ThemeResourceKeyType.BackgroundBrush
-    );
+    private static readonly object? ToolBarStyleKey = typeof(SearchControl)
+        .GetProperty("ToolBarStyleKey", BindingFlags.Public | BindingFlags.Static)?
+        .GetValue(null);
 
 
     public FilterDialog() {
@@ -26,8 +22,31 @@ public partial class FilterDialog : DialogWindow {
     }
 
 
-    private void OnLoaded(object sender, System.Windows.RoutedEventArgs e) {
-        ((FilterDialogViewModel)DataContext).OnLoadedAsync().FileAndForget(nameof(FilterDialog), faultDescription: nameof(OnLoaded));
+    private void OnLoaded(object sender, RoutedEventArgs e) {
+        OnLoadedAsync((FilterDialogViewModel)DataContext).FileAndForget(
+            nameof(FilterDialog),
+            faultDescription: nameof(OnLoaded)
+        );
+    }
+
+
+    private async Task OnLoadedAsync(FilterDialogViewModel vm) {
+        IVsWindowSearchHostFactory factory;
+        IVsWindowSearchHost host;
+
+
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+        factory = await VS.GetRequiredServiceAsync<SVsWindowSearchHostFactory, IVsWindowSearchHostFactory>();
+        host = factory.CreateWindowSearchHost(SearchContainer);
+
+        await vm.OnLoadedAsync(host);
+
+        if (host.GetType().GetProperty("SearchControl")?.GetValue(host) is SearchControl control) {
+            if (ToolBarStyleKey is not null) {
+                control.SetResourceReference(StyleProperty, ToolBarStyleKey);
+            }
+        }
     }
 
 }

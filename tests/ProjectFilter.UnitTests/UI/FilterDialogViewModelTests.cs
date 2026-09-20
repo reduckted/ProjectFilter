@@ -1,8 +1,11 @@
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Sdk.TestFramework;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Threading;
 using NSubstitute;
 using ProjectFilter.Helpers;
 using ProjectFilter.Services;
-using ProjectFilter.UI.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -20,34 +23,36 @@ public static class FilterDialogViewModelTests {
 
     public class LoadingVisibilityProperty : TestBase {
 
+        public LoadingVisibilityProperty(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
+
+
         [Fact]
         public async Task IsVisibleUntilHierarchyIsRetrieved() {
             TaskCompletionSource<IEnumerable<IHierarchyNode>> hierarchy;
+            FilterDialogViewModel vm;
+            Task loaded;
 
 
             hierarchy = new TaskCompletionSource<IEnumerable<IHierarchyNode>>();
 
-            using (var vm = CreateViewModel(() => hierarchy.Task)) {
-                Task loaded;
+            vm = CreateViewModel(() => hierarchy.Task);
 
+            Assert.Equal(Visibility.Visible, vm.LoadingVisibility);
 
-                Assert.Equal(Visibility.Visible, vm.LoadingVisibility);
+            loaded = vm.OnLoadedAsync(SearchHost);
 
-                loaded = vm.OnLoadedAsync();
+            Assert.Equal(Visibility.Visible, vm.LoadingVisibility);
 
-                Assert.Equal(Visibility.Visible, vm.LoadingVisibility);
-
-                hierarchy.SetResult(
-                    [
-                            CreateNode("a", isLoaded: true),
+            hierarchy.SetResult(
+                [
+                        CreateNode("a", isLoaded: true),
                             CreateNode("b", isLoaded: false)
-                    ]
-                );
+                ]
+            );
 
-                await loaded;
+            await loaded;
 
-                Assert.Equal(Visibility.Collapsed, vm.LoadingVisibility);
-            }
+            Assert.Equal(Visibility.Collapsed, vm.LoadingVisibility);
         }
 
     }
@@ -55,34 +60,37 @@ public static class FilterDialogViewModelTests {
 
     public class LoadedVisibilityProperty : TestBase {
 
+        public LoadedVisibilityProperty(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
+
+
         [Fact]
         public async Task IsCollapsedUntilHierarchyIsRetrieved() {
             TaskCompletionSource<IEnumerable<IHierarchyNode>> hierarchy;
+            FilterDialogViewModel vm;
+            Task loaded;
 
 
             hierarchy = new TaskCompletionSource<IEnumerable<IHierarchyNode>>();
 
-            using (var vm = CreateViewModel(() => hierarchy.Task)) {
-                Task loaded;
+            vm = CreateViewModel(() => hierarchy.Task);
 
 
-                Assert.Equal(Visibility.Collapsed, vm.LoadedVisibility);
+            Assert.Equal(Visibility.Collapsed, vm.LoadedVisibility);
 
-                loaded = vm.OnLoadedAsync();
+            loaded = vm.OnLoadedAsync(SearchHost);
 
-                Assert.Equal(Visibility.Collapsed, vm.LoadedVisibility);
+            Assert.Equal(Visibility.Collapsed, vm.LoadedVisibility);
 
-                hierarchy.SetResult(
-                    [
-                            CreateNode("a", isLoaded: true),
+            hierarchy.SetResult(
+                [
+                        CreateNode("a", isLoaded: true),
                             CreateNode("b", isLoaded: false)
-                    ]
-                );
+                ]
+            );
 
-                await loaded;
+            await loaded;
 
-                Assert.Equal(Visibility.Visible, vm.LoadedVisibility);
-            }
+            Assert.Equal(Visibility.Visible, vm.LoadedVisibility);
         }
 
     }
@@ -90,46 +98,49 @@ public static class FilterDialogViewModelTests {
 
     public class ItemsProperty : TestBase {
 
+        public ItemsProperty(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
+
+
         [Fact]
         public async Task IsEmptyUntilHierarchyIsRetrieved() {
             TaskCompletionSource<IEnumerable<IHierarchyNode>> hierarchy;
+            FilterDialogViewModel vm;
+            Task loaded;
 
 
             hierarchy = new TaskCompletionSource<IEnumerable<IHierarchyNode>>();
 
-            using (var vm = CreateViewModel(() => hierarchy.Task)) {
-                Task loaded;
+            vm = CreateViewModel(() => hierarchy.Task);
 
+            Assert.Empty(vm.Items);
 
-                Assert.Empty(vm.Items);
+            loaded = vm.OnLoadedAsync(SearchHost);
 
-                loaded = vm.OnLoadedAsync();
+            Assert.Empty(vm.Items);
 
-                Assert.Empty(vm.Items);
+            hierarchy.SetResult(
+                [
+                    CreateNode("a", isLoaded: true),
+                    CreateNode("b", isLoaded: false)
+                ]
+            );
 
-                hierarchy.SetResult(
-                    [
-                        CreateNode("a", isLoaded: true),
-                        CreateNode("b", isLoaded: false)
-                    ]
-                );
+            await loaded;
 
-                await loaded;
-
-                Assert.Equal(
-                    [
-                        ("a", (bool?)true),
+            Assert.Equal(
+                [
+                    ("a", (bool?)true),
                         ("b", (bool?)false)
-                    ],
-                    vm.Items.Select((x) => (x.Name, x.IsChecked))
-                );
-            }
+                ],
+                vm.Items.Select((x) => (x.Name, x.IsChecked))
+            );
         }
 
 
         [Fact]
         public async Task InitiallyChecksItemsBasedOnWhetherTheyAreLoadedOrTheirChildrenAreChecked() {
             IEnumerable<IHierarchyNode> hierarchy;
+            FilterDialogViewModel vm;
 
 
             hierarchy = [
@@ -139,25 +150,25 @@ public static class FilterDialogViewModelTests {
                 CreateNode("e", children: [CreateNode("f", isLoaded: true), CreateNode("g", isLoaded: false)]),
             ];
 
-            using (var vm = CreateViewModel(hierarchy)) {
-                await vm.OnLoadedAsync();
+            vm = CreateViewModel(hierarchy);
+            await vm.OnLoadedAsync(SearchHost);
 
-                Assert.Equal(
-                    [
-                        ("a",true),
-                        ("b",false),
-                        ("c",true),
-                        ("e",(bool?)null)
-                    ],
-                    vm.Items.Select((x) => (x.Name, x.IsChecked))
-                );
-            }
+            Assert.Equal(
+                [
+                    ("a", true),
+                    ("b", false),
+                    ("c", true),
+                    ("e", null)
+                ],
+                vm.Items.Select((x) => (x.Name, x.IsChecked))
+            );
         }
 
 
         [Fact]
         public async Task InitiallyExpandsAllItemsWhenThereAreNoNodeSettings() {
             IEnumerable<IHierarchyNode> hierarchy;
+            FilterDialogViewModel vm;
 
 
             hierarchy = [
@@ -167,30 +178,29 @@ public static class FilterDialogViewModelTests {
                 CreateNode("e", children: [CreateNode("f", children: [CreateNode("g")])]),
             ];
 
-            using (var vm = CreateViewModel(hierarchy, nodeSettings: null)) {
-                await vm.OnLoadedAsync();
+            vm = CreateViewModel(hierarchy, nodeSettings: null);
+            await vm.OnLoadedAsync(SearchHost);
 
-                Assert.Equal(
-                    [
-                        ("a", true),
-                        ("b", true),
-                        ("c", true),
-                        ("d", true),
-                        ("e", true),
-                        ("f", true),
-                        ("g", true)
-                    ],
-                    Flatten(vm.Items).Select((x) => (x.Name, x.IsExpanded))
-                );
-            }
+            Assert.Equal(
+                [
+                    ("a", true),
+                    ("b", true),
+                    ("c", true),
+                    ("d", true),
+                    ("e", true),
+                    ("f", true),
+                    ("g", true)
+                ],
+                Flatten(vm.Items).Select((x) => (x.Name, x.IsExpanded))
+            );
         }
-
 
 
         [Fact]
         public async Task InitiallyExpandsItemsBasedOnTheGivenNodeSettings() {
             IEnumerable<IHierarchyNode> hierarchy;
             Dictionary<string, SolutionNodeSettings> nodeSettings;
+            FilterDialogViewModel vm;
 
 
             hierarchy = [
@@ -209,22 +219,21 @@ public static class FilterDialogViewModelTests {
             AddNodeSetting(nodeSettings, "e/f", false);
             // Omit "g" to prove that the default is to be expanded.
 
-            using (var vm = CreateViewModel(hierarchy, nodeSettings: nodeSettings)) {
-                await vm.OnLoadedAsync();
+            vm = CreateViewModel(hierarchy, nodeSettings: nodeSettings);
+            await vm.OnLoadedAsync(SearchHost);
 
-                Assert.Equal(
-                    [
-                        ("a", true),
-                        ("b", false),
-                        ("c", true),
-                        ("d", false),
-                        ("e", true),
-                        ("f", false),
-                        ("g", true)
-                    ],
-                    Flatten(vm.Items).Select((x) => (x.Name, x.IsExpanded))
-                );
-            }
+            Assert.Equal(
+                [
+                    ("a", true),
+                    ("b", false),
+                    ("c", true),
+                    ("d", false),
+                    ("e", true),
+                    ("f", false),
+                    ("g", true)
+                ],
+                Flatten(vm.Items).Select((x) => (x.Name, x.IsExpanded))
+            );
 
             static void AddNodeSetting(Dictionary<string, SolutionNodeSettings> nodeSettings, string path, bool isExpanded) {
                 Dictionary<string, SolutionNodeSettings> collection;
@@ -263,21 +272,26 @@ public static class FilterDialogViewModelTests {
 
     public class ToggleLoadProjectDependenciesCommandProperty : TestBase {
 
+        public ToggleLoadProjectDependenciesCommandProperty(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
+
+
         [Fact]
         public async Task TogglesTheLoadProjectDependenciesProperty() {
-            using (var vm = CreateViewModel([])) {
-                await vm.OnLoadedAsync();
+            FilterDialogViewModel vm;
 
-                Assert.False(vm.LoadProjectDependencies);
 
-                vm.ToggleLoadProjectDependenciesCommand.Execute(null);
+            vm = CreateViewModel([]);
+            await vm.OnLoadedAsync(SearchHost);
 
-                Assert.True(vm.LoadProjectDependencies);
+            Assert.False(vm.LoadProjectDependencies);
 
-                vm.ToggleLoadProjectDependenciesCommand.Execute(null);
+            vm.ToggleLoadProjectDependenciesCommand.Execute(null);
 
-                Assert.False(vm.LoadProjectDependencies);
-            }
+            Assert.True(vm.LoadProjectDependencies);
+
+            vm.ToggleLoadProjectDependenciesCommand.Execute(null);
+
+            Assert.False(vm.LoadProjectDependencies);
         }
 
     }
@@ -285,9 +299,13 @@ public static class FilterDialogViewModelTests {
 
     public class CollapseAllCommandProperty : TestBase {
 
+        public CollapseAllCommandProperty(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
+
+
         [Fact]
         public async Task CollapsesAllItemsWhenNoParameterIsSpecified() {
             IEnumerable<IHierarchyNode> hierarchy;
+            FilterDialogViewModel vm;
 
 
             hierarchy = [
@@ -303,88 +321,87 @@ public static class FilterDialogViewModelTests {
                     ])
                 ];
 
-            using (var vm = CreateViewModel(hierarchy)) {
-                await vm.OnLoadedAsync();
+            vm = CreateViewModel(hierarchy);
+            await vm.OnLoadedAsync(SearchHost);
 
-                vm.CollapseAllCommand.Execute(null);
-                Assert.All(vm.Items.GetFullHierarchy(), (x) => Assert.False(x.IsExpanded));
-            }
+            vm.CollapseAllCommand.Execute(null);
+            Assert.All(vm.Items.GetFullHierarchy(), (x) => Assert.False(x.IsExpanded));
         }
 
 
         [Fact]
         public async Task CollapsesSpecifiedItemAndAllOfItsDescendantsWhenItHasChildren() {
             IEnumerable<IHierarchyNode> hierarchy;
+            FilterDialogViewModel vm;
 
 
             hierarchy = [
-                    CreateNode(name: "a", children: [
-                        CreateNode("b", children: [
-                            CreateNode("c")
-                        ])
-                    ]),
-                    CreateNode(name: "d", children: [
-                        CreateNode("e", children: [
-                            CreateNode("f")
-                        ])
+                CreateNode(name: "a", children: [
+                    CreateNode("b", children: [
+                        CreateNode("c")
                     ])
-                ];
+                ]),
+                CreateNode(name: "d", children: [
+                    CreateNode("e", children: [
+                        CreateNode("f")
+                    ])
+                ])
+            ];
 
-            using (var vm = CreateViewModel(hierarchy)) {
-                await vm.OnLoadedAsync();
+            vm = CreateViewModel(hierarchy);
+            await vm.OnLoadedAsync(SearchHost);
 
-                vm.CollapseAllCommand.Execute(GetItem(vm, "b"));
+            vm.CollapseAllCommand.Execute(GetItem(vm, "b"));
 
-                Assert.Equal(
-                    [
-                            ("a", true),
-                            ("b", false),
-                            ("c", false),
-                            ("d", true),
-                            ("e", true),
-                            ("f", true)
-                    ],
-                    vm.Items.GetFullHierarchy().Select((x) => (x.Name, x.IsExpanded))
-                );
-            }
+            Assert.Equal(
+                [
+                    ("a", true),
+                    ("b", false),
+                    ("c", false),
+                    ("d", true),
+                    ("e", true),
+                    ("f", true)
+                ],
+                vm.Items.GetFullHierarchy().Select((x) => (x.Name, x.IsExpanded))
+            );
         }
 
 
         [Fact]
         public async Task CollapsesParentOfSpecifiedItemWhenSpecifiedItemHasNoChildren() {
             IEnumerable<IHierarchyNode> hierarchy;
+            FilterDialogViewModel vm;
 
 
             hierarchy = [
-                    CreateNode(name: "a", children: [
-                        CreateNode("b", children: [
-                            CreateNode("c")
-                        ])
-                    ]),
-                    CreateNode(name: "d", children: [
-                        CreateNode("e", children: [
-                            CreateNode("f")
-                        ])
+                CreateNode(name: "a", children: [
+                    CreateNode("b", children: [
+                        CreateNode("c")
                     ])
-                ];
+                ]),
+                CreateNode(name: "d", children: [
+                    CreateNode("e", children: [
+                        CreateNode("f")
+                    ])
+                ])
+            ];
 
-            using (var vm = CreateViewModel(hierarchy)) {
-                await vm.OnLoadedAsync();
+            vm = CreateViewModel(hierarchy);
+            await vm.OnLoadedAsync(SearchHost);
 
-                vm.CollapseAllCommand.Execute(GetItem(vm, "f"));
+            vm.CollapseAllCommand.Execute(GetItem(vm, "f"));
 
-                Assert.Equal(
-                    [
-                            ("a", true),
-                            ("b", true),
-                            ("c", true),
-                            ("d", true),
-                            ("e", false),
-                            ("f", false)
-                    ],
-                    vm.Items.GetFullHierarchy().Select((x) => (x.Name, x.IsExpanded))
-                );
-            }
+            Assert.Equal(
+                [
+                        ("a", true),
+                        ("b", true),
+                        ("c", true),
+                        ("d", true),
+                        ("e", false),
+                        ("f", false)
+                ],
+                vm.Items.GetFullHierarchy().Select((x) => (x.Name, x.IsExpanded))
+            );
         }
 
     }
@@ -392,70 +409,73 @@ public static class FilterDialogViewModelTests {
 
     public class ExpandAllCommandProperty : TestBase {
 
+        public ExpandAllCommandProperty(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
+
+
         [Fact]
         public async Task ExpandsAllItemsWhenNoParameterIsSpecified() {
             IEnumerable<IHierarchyNode> hierarchy;
+            FilterDialogViewModel vm;
 
 
             hierarchy = [
-                    CreateNode(name: "a", children: [
-                        CreateNode("b", children: [
-                            CreateNode("c")
-                        ])
-                    ]),
-                    CreateNode(name: "d", children: [
-                        CreateNode("e", children: [
-                            CreateNode("f")
-                        ])
+                CreateNode(name: "a", children: [
+                    CreateNode("b", children: [
+                        CreateNode("c")
                     ])
-                ];
+                ]),
+                CreateNode(name: "d", children: [
+                    CreateNode("e", children: [
+                        CreateNode("f")
+                    ])
+                ])
+            ];
 
-            using (var vm = CreateViewModel(hierarchy)) {
-                await vm.OnLoadedAsync();
+            vm = CreateViewModel(hierarchy);
+            await vm.OnLoadedAsync(SearchHost);
 
-                vm.CollapseAllCommand.Execute(null);
-                vm.ExpandAllCommand.Execute(null);
-                Assert.All(vm.Items.GetFullHierarchy(), (x) => Assert.True(x.IsExpanded));
-            }
+            vm.CollapseAllCommand.Execute(null);
+            vm.ExpandAllCommand.Execute(null);
+            Assert.All(vm.Items.GetFullHierarchy(), (x) => Assert.True(x.IsExpanded));
         }
 
 
         [Fact]
         public async Task ExpandsTheSpecifiedItemAndAllOfItsDescendants() {
             IEnumerable<IHierarchyNode> hierarchy;
+            FilterDialogViewModel vm;
 
 
             hierarchy = [
-                    CreateNode(name: "a", children: [
-                        CreateNode("b", children: [
-                            CreateNode("c")
-                        ])
-                    ]),
-                    CreateNode(name: "d", children: [
-                        CreateNode("e", children: [
-                            CreateNode("f")
-                        ])
+                CreateNode(name: "a", children: [
+                    CreateNode("b", children: [
+                        CreateNode("c")
                     ])
-                ];
+                ]),
+                CreateNode(name: "d", children: [
+                    CreateNode("e", children: [
+                        CreateNode("f")
+                    ])
+                ])
+            ];
 
-            using (var vm = CreateViewModel(hierarchy)) {
-                await vm.OnLoadedAsync();
+            vm = CreateViewModel(hierarchy);
+            await vm.OnLoadedAsync(SearchHost);
 
-                vm.CollapseAllCommand.Execute(null);
-                vm.ExpandAllCommand.Execute(GetItem(vm, "b"));
+            vm.CollapseAllCommand.Execute(null);
+            vm.ExpandAllCommand.Execute(GetItem(vm, "b"));
 
-                Assert.Equal(
-                    [
-                            ("a", false),
-                            ("b", true),
-                            ("c", true),
-                            ("d", false),
-                            ("e", false),
-                            ("f", false)
-                    ],
-                    vm.Items.GetFullHierarchy().Select((x) => (x.Name, x.IsExpanded))
-                );
-            }
+            Assert.Equal(
+                [
+                    ("a", false),
+                    ("b", true),
+                    ("c", true),
+                    ("d", false),
+                    ("e", false),
+                    ("f", false)
+                ],
+                vm.Items.GetFullHierarchy().Select((x) => (x.Name, x.IsExpanded))
+            );
         }
 
     }
@@ -463,33 +483,36 @@ public static class FilterDialogViewModelTests {
 
     public class CheckAllCommandProperty : TestBase {
 
+        public CheckAllCommandProperty(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
+
+
         [Fact]
         public async Task ChecksAllItems() {
             IEnumerable<IHierarchyNode> hierarchy;
+            FilterDialogViewModel vm;
 
 
             hierarchy = [
-                    CreateNode(name: "a", children: [
-                        CreateNode("b", children: [
-                            CreateNode("c", isLoaded: false)
-                        ])
-                    ]),
-                    CreateNode(name: "d", children: [
-                        CreateNode("e", children: [
-                            CreateNode("f", isLoaded: false)
-                        ])
+                CreateNode(name: "a", children: [
+                    CreateNode("b", children: [
+                        CreateNode("c", isLoaded: false)
                     ])
-                ];
+                ]),
+                CreateNode(name: "d", children: [
+                    CreateNode("e", children: [
+                        CreateNode("f", isLoaded: false)
+                    ])
+                ])
+            ];
 
-            using (var vm = CreateViewModel(hierarchy)) {
-                await vm.OnLoadedAsync();
+            vm = CreateViewModel(hierarchy);
+            await vm.OnLoadedAsync(SearchHost);
 
-                Assert.All(vm.Items.GetFullHierarchy(), (x) => Assert.False(x.IsChecked));
+            Assert.All(vm.Items.GetFullHierarchy(), (x) => Assert.False(x.IsChecked));
 
-                vm.CheckAllCommand.Execute(null);
+            vm.CheckAllCommand.Execute(null);
 
-                Assert.All(vm.Items.GetFullHierarchy(), (x) => Assert.True(x.IsChecked));
-            }
+            Assert.All(vm.Items.GetFullHierarchy(), (x) => Assert.True(x.IsChecked));
         }
 
     }
@@ -497,33 +520,68 @@ public static class FilterDialogViewModelTests {
 
     public class UncheckAllCommandProperty : TestBase {
 
+        public UncheckAllCommandProperty(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
+
+
         [Fact]
         public async Task UnchecksAllItems() {
             IEnumerable<IHierarchyNode> hierarchy;
+            FilterDialogViewModel vm;
 
 
             hierarchy = [
-                    CreateNode(name: "a", children: [
-                        CreateNode("b", children: [
-                            CreateNode("c", isLoaded: true)
-                        ])
-                    ]),
-                    CreateNode(name: "d", children: [
-                        CreateNode("e", children: [
-                            CreateNode("f", isLoaded: true)
-                        ])
+                CreateNode(name: "a", children: [
+                    CreateNode("b", children: [
+                        CreateNode("c", isLoaded: true)
                     ])
-                ];
+                ]),
+                CreateNode(name: "d", children: [
+                    CreateNode("e", children: [
+                        CreateNode("f", isLoaded: true)
+                    ])
+                ])
+            ];
 
-            using (var vm = CreateViewModel(hierarchy)) {
-                await vm.OnLoadedAsync();
+            vm = CreateViewModel(hierarchy);
+            await vm.OnLoadedAsync(SearchHost);
 
-                Assert.All(vm.Items.GetFullHierarchy(), (x) => Assert.True(x.IsChecked));
+            Assert.All(vm.Items.GetFullHierarchy(), (x) => Assert.True(x.IsChecked));
 
-                vm.UncheckAllCommand.Execute(null);
+            vm.UncheckAllCommand.Execute(null);
 
-                Assert.All(vm.Items.GetFullHierarchy(), (x) => Assert.False(x.IsChecked));
-            }
+            Assert.All(vm.Items.GetFullHierarchy(), (x) => Assert.False(x.IsChecked));
+        }
+
+    }
+
+
+    public class FocusSearchBoxCommandProperty : TestBase {
+
+        public FocusSearchBoxCommandProperty(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
+
+
+        [Fact]
+        public async Task ActivatesSearchHost() {
+            IEnumerable<IHierarchyNode> hierarchy;
+            FilterDialogViewModel vm;
+
+
+            hierarchy = [CreateNode(name: "a")];
+
+            vm = CreateViewModel(hierarchy);
+            await vm.OnLoadedAsync(SearchHost);
+
+            // The search host should always be
+            // activated when the view model loads.
+            SearchHost.Received(1).Activate();
+
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(
+                TestContext.Current.CancellationToken
+            );
+
+            // Requesting focus should activate it again.
+            vm.FocusSearchBoxCommand.Execute(null);
+            SearchHost.Received(2).Activate();
         }
 
     }
@@ -531,387 +589,326 @@ public static class FilterDialogViewModelTests {
 
     public class AcceptCommandProperty : TestBase {
 
+        public AcceptCommandProperty(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
+
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SetsOptionsFromProperties(bool loadDependencies) {
             IEnumerable<IHierarchyNode> hierarchy;
+            FilterDialogViewModel vm;
 
 
             hierarchy = [
-                    CreateNode(name: "a"),
-                    CreateNode(name: "b")
-                ];
+                CreateNode(name: "a"),
+                CreateNode(name: "b")
+            ];
 
-            using (var vm = CreateViewModel(hierarchy)) {
-                await vm.OnLoadedAsync();
+            vm = CreateViewModel(hierarchy);
+            await vm.OnLoadedAsync(SearchHost);
 
-                vm.LoadProjectDependencies = loadDependencies;
+            vm.LoadProjectDependencies = loadDependencies;
 
-                vm.AcceptCommand.Execute(null);
+            vm.AcceptCommand.Execute(null);
 
-                Assert.NotNull(vm.Result);
-                Assert.Equal(loadDependencies, vm.Result!.LoadProjectDependencies);
-            }
+            Assert.NotNull(vm.Result);
+            Assert.Equal(loadDependencies, vm.Result!.LoadProjectDependencies);
         }
 
 
         [Fact]
         public async Task SetsProjectsBasedOnCheckedState() {
             IEnumerable<IHierarchyNode> hierarchy;
+            FilterDialogViewModel vm;
 
 
             hierarchy = [
-                    CreateNode(name: "a", children: [
-                        CreateNode("b"),
-                        CreateNode("c", children: [
-                            CreateNode("d")
-                        ])
-                    ]),
-                    CreateNode(name: "e", children: [
-                        CreateNode("f"),
-                        CreateNode("g", children: [
-                            CreateNode("h")
-                        ])
+                CreateNode(name: "a", children: [
+                    CreateNode("b"),
+                    CreateNode("c", children: [
+                        CreateNode("d")
                     ])
-                ];
+                ]),
+                CreateNode(name: "e", children: [
+                    CreateNode("f"),
+                    CreateNode("g", children: [
+                        CreateNode("h")
+                    ])
+                ])
+            ];
 
-            using (var vm = CreateViewModel(hierarchy)) {
-                await vm.OnLoadedAsync();
+            vm = CreateViewModel(hierarchy);
+            await vm.OnLoadedAsync(SearchHost);
 
-                GetItem(vm, "b").IsChecked = true;
-                GetItem(vm, "d").IsChecked = false;
-                GetItem(vm, "f").IsChecked = false;
-                GetItem(vm, "h").IsChecked = true;
+            GetItem(vm, "b").IsChecked = true;
+            GetItem(vm, "d").IsChecked = false;
+            GetItem(vm, "f").IsChecked = false;
+            GetItem(vm, "h").IsChecked = true;
 
-                vm.AcceptCommand.Execute(null);
+            vm.AcceptCommand.Execute(null);
 
-                Assert.NotNull(vm.Result);
+            Assert.NotNull(vm.Result);
 
-                Assert.Equal(
-                    [GetItem(vm, "b").Identifier, GetItem(vm, "h").Identifier],
-                    vm.Result!.ProjectsToLoad
-                );
+            Assert.Equal(
+                [GetItem(vm, "b").Identifier, GetItem(vm, "h").Identifier],
+                vm.Result!.ProjectsToLoad
+            );
 
-                Assert.Equal(
-                    [GetItem(vm, "d").Identifier, GetItem(vm, "f").Identifier],
-                    vm.Result!.ProjectsToUnload
-                );
-            }
+            Assert.Equal(
+                [GetItem(vm, "d").Identifier, GetItem(vm, "f").Identifier],
+                vm.Result!.ProjectsToUnload
+            );
         }
 
 
         [Fact]
         public async Task IncludesProjectsThatHaveBeenFilteredOut() {
             IEnumerable<IHierarchyNode> hierarchy;
-            IDebouncer debouncer;
+            FilterDialogViewModel vm;
 
 
             hierarchy = [
-                    CreateNode(name: "a", children: [
-                        CreateNode("b"),
-                        CreateNode("c", children: [
-                            CreateNode("d")
-                        ])
-                    ]),
-                    CreateNode(name: "e", children: [
-                        CreateNode("f"),
-                        CreateNode("g", children: [
-                            CreateNode("h")
-                        ])
+                CreateNode(name: "a", children: [
+                    CreateNode("b"),
+                    CreateNode("c", children: [
+                        CreateNode("d")
                     ])
-                ];
+                ]),
+                CreateNode(name: "e", children: [
+                    CreateNode("f"),
+                    CreateNode("g", children: [
+                        CreateNode("h")
+                    ])
+                ])
+            ];
 
-            debouncer = Substitute.For<IDebouncer>();
+            vm = CreateViewModel(hierarchy);
+            await vm.OnLoadedAsync(SearchHost);
 
-            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer)) {
-                await vm.OnLoadedAsync();
+            GetItem(vm, "b").IsChecked = false;
+            GetItem(vm, "d").IsChecked = true;
+            GetItem(vm, "f").IsChecked = true;
+            GetItem(vm, "h").IsChecked = false;
 
-                GetItem(vm, "b").IsChecked = false;
-                GetItem(vm, "d").IsChecked = true;
-                GetItem(vm, "f").IsChecked = true;
-                GetItem(vm, "h").IsChecked = false;
+            Assert.Equal(0, (await SearchAsync("d")).ErrorCode);
 
-                vm.SearchText = "d";
-                debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
+            // Verify that our test is setup by confirming that filtering has occurred.
+            Assert.Equal(["a"], vm.Items.Select((x) => x.Name));
 
-                // Verify that our test is setup by confirming that filtering has occurred.
-                Assert.Equal(["a"], vm.Items.Select((x) => x.Name));
+            vm.AcceptCommand.Execute(null);
 
-                vm.AcceptCommand.Execute(null);
+            Assert.NotNull(vm.Result);
 
-                Assert.NotNull(vm.Result);
+            Assert.Equal(
+                [GetItem(vm, "d").Identifier, GetItem(vm, "f").Identifier],
+                vm.Result!.ProjectsToLoad
+            );
 
-                Assert.Equal(
-                    [GetItem(vm, "d").Identifier, GetItem(vm, "f").Identifier],
-                    vm.Result!.ProjectsToLoad
-                );
-
-                Assert.Equal(
-                    [GetItem(vm, "b").Identifier, GetItem(vm, "h").Identifier],
-                    vm.Result!.ProjectsToUnload
-                );
-            }
+            Assert.Equal(
+                [GetItem(vm, "b").Identifier, GetItem(vm, "h").Identifier],
+                vm.Result!.ProjectsToUnload
+            );
         }
 
     }
 
 
-    public class SearchTextProperty : TestBase {
+    public class Searching : TestBase {
 
-        [Fact]
-        public async Task WaitsBeforeFilteringWhenTextIsNotEmpty() {
-            IEnumerable<IHierarchyNode> hierarchy;
-            IDebouncer debouncer;
-
-
-            hierarchy = [
-                    CreateNode(name: "a", children: [
-                        CreateNode("b"),
-                        CreateNode("c")
-                    ]),
-                    CreateNode(name: "d", children: [
-                        CreateNode("e"),
-                        CreateNode("f")
-                    ])
-                ];
-
-            debouncer = Substitute.For<IDebouncer>();
-
-            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer)) {
-                await vm.OnLoadedAsync();
-
-                debouncer.DidNotReceive().Start();
-
-                vm.SearchText = "d";
-                debouncer.Received(1).Start();
-
-                Assert.Equal(["a", "d"], vm.Items.Select((x) => x.Name));
-
-                vm.SearchText = "a";
-                debouncer.Received(2).Start();
-
-                Assert.Equal(["a", "d"], vm.Items.Select((x) => x.Name));
-
-                debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
-
-                Assert.Equal(["a"], vm.Items.Select((x) => x.Name));
-            }
-        }
+        public Searching(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
 
 
         [Fact]
-        public async Task CancelsDebouncerWhenTextIsEmpty() {
+        public async Task FiltersTheItemsByTheSearchText() {
             IEnumerable<IHierarchyNode> hierarchy;
-            IDebouncer debouncer;
-
-
-            hierarchy = [
-                    CreateNode(name: "a", children: [
-                        CreateNode("b"),
-                        CreateNode("c")
-                    ]),
-                    CreateNode(name: "d", children: [
-                        CreateNode("e"),
-                        CreateNode("f")
-                    ])
-                ];
-
-            debouncer = Substitute.For<IDebouncer>();
-
-            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer)) {
-                await vm.OnLoadedAsync();
-
-                debouncer.DidNotReceive().Start();
-
-                vm.SearchText = "d";
-                debouncer.Received(1).Cancel();
-                debouncer.Received(1).Start();
-
-                vm.SearchText = "";
-                debouncer.Received(2).Cancel();
-                debouncer.Received(1).Start();
-            }
-        }
-
-
-        [Fact]
-        public async Task ClearsFilterImmediatelyWhenTextIsEmpty() {
-            IEnumerable<IHierarchyNode> hierarchy;
-            IDebouncer debouncer;
-
-
-            hierarchy = [
-                    CreateNode(name: "a", children: [
-                        CreateNode("b"),
-                        CreateNode("c")
-                    ]),
-                    CreateNode(name: "d", children: [
-                        CreateNode("e"),
-                        CreateNode("f")
-                    ])
-                ];
-
-            debouncer = Substitute.For<IDebouncer>();
-
-            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer)) {
-                await vm.OnLoadedAsync();
-
-                vm.SearchText = "d";
-                debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
-
-                Assert.Equal(["d"], vm.Items.Select((x) => x.Name));
-
-                vm.SearchText = "";
-                Assert.Equal(["a", "d"], vm.Items.Select((x) => x.Name));
-            }
-        }
-
-    }
-
-
-    public class InvalidFilterProperty : TestBase {
-
-        [Fact]
-        public async Task IsTrueWhenExceptionIsThrownByFilterFactory() {
-            IEnumerable<IHierarchyNode> hierarchy;
-            IDebouncer debouncer;
-            TextFilterFactory factory;
+            FilterDialogViewModel vm;
 
 
             hierarchy = [
                 CreateNode(name: "a", children: [
                     CreateNode("b"),
                     CreateNode("c")
+                ]),
+                CreateNode(name: "d", children: [
+                    CreateNode("e"),
+                    CreateNode("f")
                 ])
             ];
 
-            debouncer = Substitute.For<IDebouncer>();
+            vm = CreateViewModel(hierarchy);
+            await vm.OnLoadedAsync(SearchHost);
+
+            await SearchAsync("a");
+
+            Assert.Equal(["a"], vm.Items.Select((x) => x.Name));
+        }
+
+
+        [Fact]
+        public async Task ClearsFilterWhenSearchIsCleared() {
+            IEnumerable<IHierarchyNode> hierarchy;
+            FilterDialogViewModel vm;
+
+
+            hierarchy = [
+                CreateNode(name: "a", children: [
+                    CreateNode("b"),
+                    CreateNode("c")
+                ]),
+                CreateNode(name: "d", children: [
+                    CreateNode("e"),
+                    CreateNode("f")
+                ])
+            ];
+
+            vm = CreateViewModel(hierarchy);
+            await vm.OnLoadedAsync(SearchHost);
+
+            await SearchAsync("d");
+            Assert.Equal(["d"], vm.Items.Select((x) => x.Name));
+
+            SearchHost.SearchObject.ClearSearch();
+
+            Assert.Equal(["a", "d"], vm.Items.Select((x) => x.Name));
+        }
+
+
+        [Fact]
+        public async Task IndicatesErrorAndNoResultsWhenExceptionIsThrownByFilterFactory() {
+            TextFilterFactory factory;
+            FilterDialogViewModel vm;
+
 
             factory = (_, _) => throw new ArgumentException("Boom");
 
-            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer, textFilterFactory: factory)) {
-                await vm.OnLoadedAsync();
+            vm = CreateViewModel([], textFilterFactory: factory);
+            await vm.OnLoadedAsync(SearchHost);
 
-                vm.SearchText = "a";
-                debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
-                Assert.True(vm.InvalidFilter);
-            }
+            Assert.Equal((VSConstants.E_FAIL, 0), await SearchAsync("a"));
         }
 
 
         [Fact]
-        public async Task IsFalseWhenExceptionIsNotThrownFromFilterFactory() {
-            IEnumerable<IHierarchyNode> hierarchy;
-            IDebouncer debouncer;
+        public async Task IndicatesNoErrorAndResultsWhenFilterFactoryRunsSuccessfully() {
             TextFilterFactory factory;
-            bool throwError;
+            FilterDialogViewModel vm;
 
 
-            hierarchy = [
-                CreateNode(name: "a", children: [
-                    CreateNode("b"),
-                    CreateNode("c")
-                ])
-            ];
+            factory = (_, _) => Factory.CreateTextFilter("", true);
 
-            debouncer = Substitute.For<IDebouncer>();
+            vm = CreateViewModel([], textFilterFactory: factory);
+            await vm.OnLoadedAsync(SearchHost);
 
-            throwError = false;
-            factory = (_, _) => throwError ? throw new ArgumentException("Boom") : Factory.CreateTextFilter("", true);
-
-            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer, textFilterFactory: factory)) {
-                await vm.OnLoadedAsync();
-
-                // Cause the property to be set to true so that
-                // we can verify that it is set back to false.
-                throwError = true;
-                vm.SearchText = "a";
-                debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
-                Assert.True(vm.InvalidFilter);
-
-                throwError = false;
-                vm.SearchText = "b";
-                debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
-                Assert.False(vm.InvalidFilter);
-            }
+            Assert.Equal((0, 1), await SearchAsync("a"));
         }
 
 
-        [Fact]
-        public async Task IsFalseWhenFilterTextIsCleared() {
-            IEnumerable<IHierarchyNode> hierarchy;
-            IDebouncer debouncer;
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task UsesRegularExpressionWhenOptionIsEnabled(bool useRegularExpressions) {
             TextFilterFactory factory;
+            FilterDialogViewModel vm;
+            string? capturedText;
+            bool? capturedUseRegularExpressions;
 
 
-            hierarchy = [
-                CreateNode(name: "a", children: [
-                    CreateNode("b"),
-                    CreateNode("c")
-                ])
-            ];
+            capturedText = null;
+            capturedUseRegularExpressions = null;
 
-            debouncer = Substitute.For<IDebouncer>();
 
-            factory = (_, _) => throw new ArgumentException("Boom");
+            factory = (t, r) => {
+                capturedText = t;
+                capturedUseRegularExpressions = r;
+                return Factory.CreateTextFilter("", true);
+            };
 
-            using (var vm = CreateViewModel(hierarchy, debouncer: debouncer, textFilterFactory: factory)) {
-                await vm.OnLoadedAsync();
+            vm = CreateViewModel([], textFilterFactory: factory);
+            await vm.OnLoadedAsync(SearchHost);
 
-                // Cause the property to be set to true so that
-                // we can verify that it is set back to false.
-                vm.SearchText = "d";
-                debouncer.Stable += Raise.EventWith(debouncer, EventArgs.Empty);
-                Assert.True(vm.InvalidFilter);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(
+                TestContext.Current.CancellationToken
+            );
 
-                vm.SearchText = "";
-                Assert.False(vm.InvalidFilter);
-            }
+            vm.UseRegularExpressions = useRegularExpressions;
+
+            Assert.Equal((0, 1), await SearchAsync("a"));
+
+            Assert.Equal("a", capturedText);
+            Assert.Equal(useRegularExpressions, capturedUseRegularExpressions);
         }
 
     }
 
 
-    public abstract class TestBase : IDisposable {
-
-        private readonly JoinableTaskContext _joinableTaskContext;
-        private readonly JoinableTaskFactory _joinableTaskFactory;
-
+    public abstract class TestBase : ServiceTest<object> {
 
         [SuppressMessage("Reliability", "VSSDK005:Avoid instantiating JoinableTaskContext", Justification = "Unit tests.")]
-        protected TestBase() {
-            _joinableTaskContext = new JoinableTaskContext();
-            _joinableTaskFactory = new JoinableTaskFactory(_joinableTaskContext);
+        protected TestBase(GlobalServiceProvider serviceProvider) : base(serviceProvider) {
+            IVsWindowSearch? search;
+
+
+            search = null;
+
+            SearchHost = Substitute.For<IVsWindowSearchHost>();
+
+            SearchHost
+                .When((x) => x.SetupSearch(Arg.Any<IVsWindowSearch>()))
+                .Do((info) => search = info.ArgAt<IVsWindowSearch>(0));
+
+            SearchHost.SearchObject.Returns((_) => search);
         }
 
 
-        protected FilterDialogViewModel CreateViewModel(IEnumerable<IHierarchyNode> hierarchy, IDebouncer? debouncer = null, TextFilterFactory? textFilterFactory = null, Dictionary<string, SolutionNodeSettings>? nodeSettings = null) {
-            return CreateViewModel(() => Task.FromResult(hierarchy), debouncer, textFilterFactory, nodeSettings);
+        protected static FilterDialogViewModel CreateViewModel(IEnumerable<IHierarchyNode> hierarchy, TextFilterFactory? textFilterFactory = null, Dictionary<string, SolutionNodeSettings>? nodeSettings = null) {
+            return CreateViewModel(() => Task.FromResult(hierarchy), textFilterFactory, nodeSettings);
         }
 
 
-        protected FilterDialogViewModel CreateViewModel(Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory, IDebouncer? debouncer = null, TextFilterFactory? textFilterFactory = null, Dictionary<string, SolutionNodeSettings>? nodeSettings = null) {
-            debouncer ??= Substitute.For<IDebouncer>();
-
+        protected static FilterDialogViewModel CreateViewModel(Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory, TextFilterFactory? textFilterFactory = null, Dictionary<string, SolutionNodeSettings>? nodeSettings = null) {
             return new FilterDialogViewModel(
                 hierarchyFactory,
-                (x) => debouncer,
                 textFilterFactory ?? Factory.CreateTextFilter,
-                nodeSettings,
-                _joinableTaskFactory
+                nodeSettings
             );
         }
 
 
-        protected virtual void Dispose(bool disposing) {
-            _joinableTaskContext.Dispose();
-        }
+        protected IVsWindowSearchHost SearchHost { get; }
 
 
-        public void Dispose() {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+        protected async Task<(int ErrorCode, int ResultCount)> SearchAsync(string text) {
+            IVsSearchCallback callback;
+            IVsSearchTask task;
+            int resultCount;
+
+
+            resultCount = -1;
+
+            callback = Substitute.For<IVsSearchCallback>();
+            callback
+                .When((x) => x.ReportComplete(Arg.Any<IVsSearchTask>(), Arg.Any<uint>()))
+                .Do((info) => resultCount = (int)info.ArgAt<uint>(1));
+
+            SearchHost.SearchQuery.SearchString.Returns(text);
+            task = SearchHost.SearchObject.CreateSearch(1, SearchHost.SearchQuery, callback);
+
+            Assert.Equal((uint)VSConstants.VsSearchTaskStatus.Created, task.Status);
+
+            task.Start();
+
+            for (int i = 0; i < 10; i++) {
+                if (task.Status == (uint)VSConstants.VsSearchTaskStatus.Completed) {
+                    break;
+                }
+
+                await Task.Delay(100);
+            }
+
+            Assert.Equal((uint)VSConstants.VsSearchTaskStatus.Completed, task.Status);
+
+            return (task.ErrorCode, resultCount);
         }
 
     }
