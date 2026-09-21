@@ -8,6 +8,7 @@
     xmlns:properties="clr-namespace:ProjectFilter.UI.AttachedProperties"
     xmlns:shell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
     xmlns:system="clr-namespace:System;assembly=mscorlib"
+    xmlns:ui="clr-namespace:ProjectFilter.UI"
     xmlns:utils="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Utilities" 
     >
 
@@ -16,6 +17,7 @@
     <utils:BrushToColorConverter x:Key="BrushToColorConverter" />
 
     <Style x:Key="ExpandCollapseToggleStyle" TargetType="{x:Type ToggleButton}">
+        <Setter Property="Background" Value="{DynamicResource {x:Static shell:VsBrushes.EnvironmentBackgroundTextureKey}}" />
         <Setter Property="Focusable" Value="False"/>
         <Setter Property="Width" Value="16"/>
         <Setter Property="Height" Value="16"/>
@@ -25,39 +27,25 @@
                     <Border 
                         Width="16" 
                         Height="16"
-                        Background="{DynamicResource {x:Static shell:VsBrushes.EnvironmentBackgroundTextureKey}}"
+                        Background="{TemplateBinding Background}"
                         SnapsToDevicePixels="True"
                         >
 
                         <Path 
                             x:Name="ExpandPath"
-                            Data="M0,0 L4,4 L0,8 Z"
-                            Stroke="{DynamicResource {x:Static platform:TreeViewColors.GlyphBrushKey}}"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
+                            Data="F1M6.64645,4.14645C6.45118,4.34171,6.45118,4.65829,6.64645,4.85355L9.79289,8 6.64645,11.1464C6.45118,11.3417 6.45118,11.6583 6.64645,11.8536 6.84171,12.0488 7.15829,12.0488 7.35355,11.8536L10.8536,8.35355C11.0488,8.15829,11.0488,7.84171,10.8536,7.64645L7.35355,4.14645C7.15829,3.95118,6.84171,3.95118,6.64645,4.14645z"
+                            Fill="{DynamicResource {x:Static platform:TreeViewColors.GlyphBrushKey}}"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
                             SnapsToDevicePixels="True"
                             />
                     </Border>
 
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="ExpandPath" Property="Data" Value="M5,0 L0,5 L5,5 Z"/>
+                            <Setter TargetName="ExpandPath" Property="Data" Value="F1M4.14645,6.64645C4.34171,6.45118,4.65829,6.45118,4.85355,6.64645L8,9.79289 11.1464,6.64645C11.3417,6.45118 11.6583,6.45118 11.8536,6.64645 12.0488,6.84171 12.0488,7.15829 11.8536,7.35355L8.35355,10.8536C8.15829,11.0488,7.84171,11.0488,7.64645,10.8536L4.14645,7.35355C3.95118,7.15829,3.95118,6.84171,4.14645,6.64645z"/>
                             <Setter TargetName="ExpandPath" Property="Fill" Value="{DynamicResource {x:Static platform:TreeViewColors.GlyphBrushKey}}"/>
                         </Trigger>
-
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="ExpandPath" Property="Stroke" Value="{DynamicResource {x:Static platform:TreeViewColors.GlyphMouseOverBrushKey}}"/>
-                        </Trigger>
-
-                        <MultiTrigger>
-                            <MultiTrigger.Conditions>
-                                <Condition Property="IsMouseOver" Value="True"/>
-                                <Condition Property="IsChecked" Value="True"/>
-                            </MultiTrigger.Conditions>
-
-                            <Setter TargetName="ExpandPath" Property="Stroke" Value="{DynamicResource {x:Static platform:TreeViewColors.GlyphMouseOverBrushKey}}"/>
-                            <Setter TargetName="ExpandPath" Property="Fill" Value="{DynamicResource {x:Static platform:TreeViewColors.GlyphMouseOverBrushKey}}"/>
-                        </MultiTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -141,8 +129,10 @@
             <Border
                 x:Name="Bd"
                 Background="{TemplateBinding Background}"
-                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderBrush="Transparent"
                 BorderThickness="1"
+                CornerRadius="4"
+                Padding="0,2,0,1"
                 >
 
                 <Border.Resources>
@@ -150,33 +140,55 @@
                     <system:Int32 x:Key="BaseMargin">-1</system:Int32>
                 </Border.Resources>
 
-                <Grid Margin="{Binding RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource IndentConverter}, ConverterParameter={StaticResource BaseMargin}}">
+                <Grid Margin="0,1">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" MinWidth="{StaticResource IndentSize}"/>
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <ToggleButton
-                        x:Name="Expander"
+                    <Border
+                        x:Name="SelectionMarker"
                         Grid.Column="0"
-                        Style="{StaticResource ExpandCollapseToggleStyle}"
-                        IsChecked="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=IsExpanded}"
-                        ClickMode="Press"
-                        SnapsToDevicePixels="True"
+                        Background="{DynamicResource {x:Static ui:ResourceKeys.AccentFillDefaultBrushKey}}"
+                        Width="3"
+                        Height="16"
+                        CornerRadius="2"
+                        Visibility="Hidden"
                         />
 
-                    <Border
+                    <Grid
                         Grid.Column="1"
-                        SnapsToDevicePixels="True"
+                        Margin="{Binding RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource IndentConverter}, ConverterParameter={StaticResource BaseMargin}}"
                         >
 
-                        <ContentPresenter 
-                            x:Name="PART_Header" 
-                            ContentSource="Header"
-                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                            SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" MinWidth="{StaticResource IndentSize}"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <ToggleButton
+                            x:Name="Expander"
+                            Grid.Column="0"
+                            Style="{StaticResource ExpandCollapseToggleStyle}"
+                            IsChecked="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=IsExpanded}"
+                            ClickMode="Press"
+                            SnapsToDevicePixels="True"
+                            Margin="0,0,0,1"
                             />
-                    </Border>
+
+                        <Border
+                            Grid.Column="1"
+                            SnapsToDevicePixels="True"
+                            >
+
+                            <ContentPresenter
+                                x:Name="PART_Header" 
+                                ContentSource="Header"
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                />
+                        </Border>
+                    </Grid>
                 </Grid>
             </Border>
 
@@ -197,22 +209,16 @@
                 <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
             </Trigger>
 
-            <Trigger Property="IsSelected" Value="True">
-                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource {x:Static platform:TreeViewColors.SelectedItemActiveBrushKey}}"/>
-                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource {x:Static platform:TreeViewColors.FocusVisualBorderBrushKey}}"/>
-                <Setter Property="Foreground" Value="{DynamicResource {x:Static platform:TreeViewColors.SelectedItemActiveTextBrushKey}}"/>
+            <Trigger SourceName="Bd" Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource {x:Static ui:ResourceKeys.SubtleFillSecondaryBrushKey}}"/>
+                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource {x:Static ui:ResourceKeys.ControlStrokeSecondaryBrushKey}}"/>
             </Trigger>
 
-            <MultiTrigger>
-                <MultiTrigger.Conditions>
-                    <Condition Property="IsSelected" Value="True"/>
-                    <Condition Property="IsSelectionActive" Value="False"/>
-                </MultiTrigger.Conditions>
-
-                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource {x:Static platform:TreeViewColors.SelectedItemInactiveBrushKey}}"/>
-                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource {x:Static platform:TreeViewColors.SelectedItemActiveBrushKey}}"/>
-                <Setter Property="Foreground" Value="{DynamicResource {x:Static platform:TreeViewColors.SelectedItemInactiveTextBrushKey}}"/>
-            </MultiTrigger>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource {x:Static ui:ResourceKeys.SubtleFillSecondaryBrushKey}}"/>
+                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource {x:Static ui:ResourceKeys.ControlStrokeSecondaryBrushKey}}"/>
+                <Setter TargetName="SelectionMarker" Property="Visibility" Value="Visible"/>
+            </Trigger>
         </ControlTemplate.Triggers>
     </ControlTemplate>
 
@@ -225,10 +231,9 @@
 
     <Style x:Key="TreeViewStyle" TargetType="{x:Type TreeView}">
         <Setter Property="Background" Value="{DynamicResource {x:Static platform:TreeViewColors.BackgroundBrushKey}}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static platform:CommonControlsColors.ButtonBorderBrushKey}}"/>
         <Setter Property="ItemContainerStyle" Value="{StaticResource TreeViewItemStyle}"/>
         <Setter Property="platformImaging:ImageThemingUtilities.ImageBackgroundColor" Value="{Binding Background, RelativeSource={RelativeSource Self}, Converter={StaticResource BrushToColorConverter}}" />
-        <Setter Property="Padding" Value="0" />
+        <Setter Property="Padding" Value="3,0" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
     </Style>
 
@@ -238,16 +243,19 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="Focusable" Value="False" />
+        <Setter Property="Margin" Value="2,0,0,0" />
 
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ButtonBase}">
-                    <Border 
+                    <Border
                         x:Name="border"
                         Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
                         SnapsToDevicePixels="True"
+                        CornerRadius="4"
+                        Padding="1"
                         >
 
                         <ContentPresenter 
@@ -264,12 +272,12 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="border" Property="Background" Value="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarMouseOverBackgroundGradientBrushKey}}" />
-                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource {x:Static shell:VsBrushes.CommandBarBorderKey}}" />
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarMouseOverBackgroundGradientBrushKey}}" />
                         </Trigger>
 
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="border" Property="Background" Value="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarMouseDownBackgroundGradientBrushKey}}" />
-                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource {x:Static shell:VsBrushes.CommandBarBorderKey}}" />
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarMouseDownBackgroundGradientBrushKey}}" />
                         </Trigger>
 
                         <Trigger Property="ToggleButton.IsChecked" Value="True" >
@@ -294,7 +302,7 @@
                             </MultiTrigger.Conditions>
 
                             <Setter TargetName="border" Property="Background" Value="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarMouseDownBackgroundGradientBrushKey}}" />
-                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarBorderBrushKey}}" />
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarMouseDownBackgroundGradientBrushKey}}" />
                         </MultiTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -307,7 +315,7 @@
     <Style x:Key="ToolBarToggleButtonStyle" TargetType="ToggleButton" BasedOn="{StaticResource ToolBarButtonBase}"/>
 
     <Style x:Key="ToolBarSeparatorStyle" TargetType="Separator">
-        <Setter Property="Margin" Value="3,2" />
+        <Setter Property="Margin" Value="4,3,2,3" />
 
         <Setter Property="Template">
             <Setter.Value>
@@ -349,7 +357,7 @@
         </Style.Resources>
 
         <Setter Property="Background" Value="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarGradientBrushKey}}"/>
-        <Setter Property="Padding" Value="4,2" />
+        <Setter Property="Padding" Value="2,3" />
         <Setter Property="MinHeight" Value="24" />
         <Setter Property="ToolBar.OverflowMode" Value="Never" />
         <Setter Property="KeyboardNavigation.TabNavigation" Value="Continue"/>

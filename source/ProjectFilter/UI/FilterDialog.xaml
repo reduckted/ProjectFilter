@@ -18,7 +18,7 @@
     Width="350"
     ShowInTaskbar="False"
     WindowStartupLocation="CenterOwner"
-    Background="{DynamicResource {x:Static platform:ThemedDialogColors.WindowPanelBrushKey}}"
+    Background="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowBackgroundBrushKey}}"
     platform:ThemedDialogStyleLoader.UseDefaultThemedDialogStyles="True"
     platformImaging:ImageThemingUtilities.ThemeScrollBars="True"
     properties:CloseDialog.Trigger="{Binding Result}"
@@ -71,10 +71,10 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <StackPanel 
+            <StackPanel
                 Grid.Row="0"
                 Orientation="Vertical"
-                Background="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarGradientBrushKey}}"
+                Background="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowBackgroundBrushKey}}"
                 platformImaging:ImageThemingUtilities.ImageBackgroundColor="{Binding RelativeSource={RelativeSource Mode=Self}, Path=Background, Converter={StaticResource BrushToColorConverter}}"
                 >
 
@@ -169,13 +169,14 @@
                 <Grid x:Name="SearchContainer" Margin="2,0,2,4"></Grid>
             </StackPanel>
 
-            <TreeView 
+            <TreeView
                 Grid.Row="1"
-                ItemsSource="{Binding Items}" 
+                ItemsSource="{Binding Items}"
                 Style="{StaticResource TreeViewStyle}"
-                BorderThickness="0,0,0,1"
+                BorderThickness="0"
                 VirtualizingStackPanel.IsVirtualizing="True"
                 VirtualizingStackPanel.VirtualizationMode="Recycling"
+                Background="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowBackgroundBrushKey}}"
                 >
 
                 <TreeView.InputBindings>
@@ -248,25 +249,31 @@
                 </TreeView.ItemContainerStyle>
             </TreeView>
 
-            <StackPanel 
+            <Border
                 Grid.Row="2"
-                Orientation="Horizontal"
-                Margin="12"
-                HorizontalAlignment="Right"
+                BorderBrush="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowBorderBrushKey}}"
+                BorderThickness="0,1,0,0"
                 >
 
-                <Button 
-                    Command="{Binding AcceptCommand}"
-                    Content="OK"
-                    IsDefault="True"
-                    />
+                <StackPanel 
+                    Orientation="Horizontal"
+                    Margin="12"
+                    HorizontalAlignment="Right"
+                    >
 
-                <Button 
-                    Content="Cancel"
-                    IsCancel="True"
-                    Margin="8,0,0,0"
-                    />
-            </StackPanel>
+                    <Button 
+                        Command="{Binding AcceptCommand}"
+                        Content="OK"
+                        IsDefault="True"
+                        />
+
+                    <Button 
+                        Content="Cancel"
+                        IsCancel="True"
+                        Margin="8,0,0,0"
+                        />
+                </StackPanel>
+            </Border>
         </Grid>
     </Grid>
 </platform:DialogWindow>
