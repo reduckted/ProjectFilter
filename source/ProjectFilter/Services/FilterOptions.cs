@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 
 namespace ProjectFilter.Services;
@@ -13,13 +12,15 @@ public class FilterOptions {
         IEnumerable<Guid> projectsToUnload,
         bool loadProjectDependencies,
         bool expandLoadedProjects,
-        bool hideSolutionFoldersWithoutLoadedProjects
+        bool hideSolutionFoldersWithoutLoadedProjects,
+        bool hideSolutionFoldersWithOnlyFiles
     ) {
         ProjectsToLoad = [.. projectsToLoad];
         ProjectsToUnload = [.. projectsToUnload];
         LoadProjectDependencies = loadProjectDependencies;
         ExpandLoadedProjects = expandLoadedProjects;
         HideSolutionFoldersWithoutLoadedProjects = hideSolutionFoldersWithoutLoadedProjects;
+        HideSolutionFoldersWithOnlyFiles = hideSolutionFoldersWithOnlyFiles;
     }
 
 
@@ -32,9 +33,12 @@ public class FilterOptions {
     public bool LoadProjectDependencies { get; }
 
 
-    public bool ExpandLoadedProjects{ get; }
+    public bool ExpandLoadedProjects { get; }
 
 
     public bool HideSolutionFoldersWithoutLoadedProjects { get; }
+
+
+    public bool HideSolutionFoldersWithOnlyFiles { get; }
 
 }

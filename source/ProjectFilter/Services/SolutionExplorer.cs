@@ -122,8 +122,15 @@ public class SolutionExplorer : ISolutionExplorer {
     }
 
 
-    public async Task HideSolutionFoldersWithoutLoadedProjectsAsync() {
+    public async Task HideSolutionFoldersAsync(
+        bool hideSolutionFoldersWithoutLoadedProjects,
+        bool hideSolutionFoldersWithOnlyFiles
+    ) {
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+        if (!hideSolutionFoldersWithoutLoadedProjects && !hideSolutionFoldersWithOnlyFiles) {
+            return;
+        }
 
         SolutionExplorerWindow? solutionExplorer;
 
@@ -133,31 +140,37 @@ public class SolutionExplorer : ISolutionExplorer {
         if (solutionExplorer is not null) {
             IVsSolution solution;
             IHierarchyProvider provider;
-            IEnumerable<IHierarchyNode> nodes;
             IEnumerable<SolutionItem> selection;
+            IEnumerable<IHierarchyNode> nodes;
+            List<IHierarchyNode> foldersToHide;
             WindowFrame? window;
             bool focused;
 
 
             solution = await VS.Services.GetSolutionAsync();
             provider = await VS.GetRequiredServiceAsync<IHierarchyProvider, IHierarchyProvider>();
-            nodes = await provider.GetHierarchyAsync();
-
-            window = null;
-            focused = false;
 
             // We need to execute some commands that operate on the solution folders,
             // which means we may need to change the selected item solution explorer.
             // Remember the current selection so that we can restore it.
             selection = await solutionExplorer.GetSelectionAsync();
 
-            // We only want to hide folders that contain projects where all of the projects are
-            // unloaded. We don't want to hide folders that only contain miscellaneous files like
-            // the "Solution Items" folder. The nodes we get from the `IHierarchyProvider` only
-            // include nodes that contain projects either within them directly or somewhere within
-            // a descendant folder. That means if we encounter a folder that doesn't have loaded
-            // projects within it, then we know it must contain only unloaded projects.
-            foreach (IHierarchyNode node in GetSolutionFoldersWithoutLoadedProjects(nodes)) {
+            // The hierarchy we can retrieve only includes projects and not files. We can choose to
+            // get the hierarchy with or without empty folders. An empty folder in this scenario is
+            // a folder without any projects (either loaded or unloaded). We'll get the hierarchy
+            // with the empty folders (don't omit empty folders) so that we are able to include
+            // folders with only files (they would be empty folders) in the folders to hide.
+            nodes = await provider.GetHierarchyAsync(false);
+            foldersToHide = GetSolutionFoldersToHide(
+                nodes,
+                hideSolutionFoldersWithoutLoadedProjects,
+                hideSolutionFoldersWithOnlyFiles
+            );
+
+            window = null;
+            focused = false;
+
+            foreach (IHierarchyNode node in foldersToHide) {
                 if (ErrorHandler.Succeeded(solution.GetProjectOfGuid(node.Identifier, out IVsHierarchy hierarchy))) {
                     SolutionItem? folder;
 
@@ -195,7 +208,11 @@ public class SolutionExplorer : ISolutionExplorer {
     }
 
 
-    public static List<IHierarchyNode> GetSolutionFoldersWithoutLoadedProjects(IEnumerable<IHierarchyNode> nodes) {
+    public static List<IHierarchyNode> GetSolutionFoldersToHide(
+        IEnumerable<IHierarchyNode> nodes,
+        bool hideSolutionFoldersWithoutLoadedProjects,
+        bool hideSolutionFoldersWithOnlyFiles
+    ) {
         List<IHierarchyNode> folders;
 
 
@@ -203,41 +220,58 @@ public class SolutionExplorer : ISolutionExplorer {
 
         foreach (IHierarchyNode child in nodes) {
             if (child.IsFolder) {
-                Visit(child, folders, out _);
+                Visit(child);
             }
         }
 
         return folders;
 
-        static void Visit(
-            IHierarchyNode folder,
-            List<IHierarchyNode> foldersWithoutLoadedProjects,
-            out bool hasLoadedProjectsWithin
-        ) {
-            bool hasLoadedProjectsDirectly;
-            bool hasLoadedProjectsInDescendants;
-
-
-            hasLoadedProjectsDirectly = false;
-            hasLoadedProjectsInDescendants = false;
-
-            foreach (IHierarchyNode child in folder.Children) {
-                if (child.IsFolder) {
-                    Visit(child, foldersWithoutLoadedProjects, out bool hasLoadedProjectsWithinFolder);
-
-                    if (hasLoadedProjectsWithinFolder) {
-                        hasLoadedProjectsInDescendants = true;
-                    }
-
-                } else if (child.IsLoaded) {
-                    hasLoadedProjectsDirectly = true;
+        bool Visit(IHierarchyNode folder) {
+            if (folder.Children.Count == 0) {
+                // An empty folder has no projects, so we'll assume that it must therefore
+                // contain files which are not included in the hierarchy that we traverse.
+                if (hideSolutionFoldersWithOnlyFiles) {
+                    folders.Add(folder);
+                    return true;
+                } else {
+                    return false;
                 }
-            }
 
-            hasLoadedProjectsWithin = hasLoadedProjectsDirectly || hasLoadedProjectsInDescendants;
+            } else {
+                bool canHide = true;
+                bool hasLoadedProjects = false;
 
-            if (!hasLoadedProjectsWithin) {
-                foldersWithoutLoadedProjects.Add(folder);
+                foreach (IHierarchyNode child in folder.Children) {
+                    if (child.IsFolder) {
+                        if (!Visit(child)) {
+                            // We can't hide this child folder, which means we
+                            // also can't hide the folder we are visiting.
+                            canHide = false;
+                        }
+
+                    } else {
+                        // The node is not a folder, so it must be a project.
+                        // If the project is loaded, then we can't hide the folder.
+                        if (child.IsLoaded) {
+                            canHide = false;
+                            hasLoadedProjects = true;
+                        }
+                    }
+                }
+
+                // If the folder does not contain any loaded projects, but we
+                // are not allowed to hide folders without loaded projects,
+                // then we can't actually hide this folder. We can only determine
+                // this once we have looked at all children in the given folder.
+                if (canHide && !hasLoadedProjects && !hideSolutionFoldersWithoutLoadedProjects) {
+                    canHide = false;
+                }
+
+                if (canHide) {
+                    folders.Add(folder);
+                }
+
+                return canHide;
             }
         }
     }

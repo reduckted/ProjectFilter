@@ -48,7 +48,8 @@
 
         <KeyBinding Key="X" Modifiers="Alt" Command="{Binding ToggleExpandLoadedProjectsCommand}"/>
 
-        <KeyBinding Key="H" Modifiers="Alt" Command="{Binding ToggleHideSolutionFoldersWithNoProjectsCommand}"/>
+        <KeyBinding Key="H" Modifiers="Alt" Command="{Binding ToggleHideSolutionFoldersWithoutLoadedProjectsCommand}"/>
+        <KeyBinding Key="O" Modifiers="Alt" Command="{Binding ToggleHideSolutionFoldersWithOnlyFilesCommand}"/>
 
         <KeyBinding Key="F" Modifiers="Alt" Command="{Binding FocusSearchBoxCommand}"/>
         <KeyBinding Key="F" Modifiers="Ctrl" Command="{Binding FocusSearchBoxCommand}"/>
@@ -96,23 +97,27 @@
                         IsChecked="{Binding ExpandLoadedProjects}"
                         >
 
-                        <imaging:CrispImage
-                            Moniker="{x:Static catalog:KnownMonikers.TreeView}"
-                            imaging:CrispImage.Dpi="96"
-                            />
+                        <imaging:CrispImage Moniker="{x:Static catalog:KnownMonikers.TreeView}"/>
                     </ToggleButton>
 
-                    <ToggleButton 
+                    <Separator/>
+
+                    <ToggleButton
                         ToolTip="Hide solution folders without loaded projects (Alt+H)"
                         IsChecked="{Binding HideSolutionFoldersWithoutLoadedProjects}"
                         >
-
-                        <imaging:CrispImage
-                            Moniker="{x:Static catalog:KnownMonikers.ShowOrHideFolder}"
-                            imaging:CrispImage.Dpi="96"
-                            />
+                        
+                        <imaging:CrispImage Moniker="{x:Static catalog:KnownMonikers.ShowOrHideFolder}"/>
                     </ToggleButton>
 
+                    <ToggleButton
+                        ToolTip="Hide solution folders that only contain files (Alt+O)"
+                        IsChecked="{Binding HideSolutionFoldersWithOnlyFiles}"
+                        >
+                        
+                        <imaging:CrispImage Moniker="{x:Static catalog:KnownMonikers.DocumentsFolder}"/>
+                    </ToggleButton>
+                    
                     <Separator/>
 
                     <Button 

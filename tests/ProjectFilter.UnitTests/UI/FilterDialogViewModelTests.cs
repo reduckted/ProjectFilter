@@ -297,6 +297,60 @@ public static class FilterDialogViewModelTests {
     }
 
 
+    public class ToggleHideSolutionFoldersWithoutLoadedProjectsCommandProperty : TestBase {
+
+        public ToggleHideSolutionFoldersWithoutLoadedProjectsCommandProperty(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
+
+
+        [Fact]
+        public async Task TogglesTheHideSolutionFoldersWithoutLoadedProjectsProperty() {
+            FilterDialogViewModel vm;
+
+
+            vm = CreateViewModel([]);
+            await vm.OnLoadedAsync(SearchHost);
+
+            Assert.False(vm.HideSolutionFoldersWithoutLoadedProjects);
+
+            vm.ToggleHideSolutionFoldersWithoutLoadedProjectsCommand.Execute(null);
+
+            Assert.True(vm.HideSolutionFoldersWithoutLoadedProjects);
+
+            vm.ToggleHideSolutionFoldersWithoutLoadedProjectsCommand.Execute(null);
+
+            Assert.False(vm.HideSolutionFoldersWithoutLoadedProjects);
+        }
+
+    }
+
+
+    public class ToggleHideSolutionFoldersWithOnlyFilesCommandProperty : TestBase {
+
+        public ToggleHideSolutionFoldersWithOnlyFilesCommandProperty(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
+
+
+        [Fact]
+        public async Task TogglesTheHideSolutionFoldersWithOnlyFilesProperty() {
+            FilterDialogViewModel vm;
+
+
+            vm = CreateViewModel([]);
+            await vm.OnLoadedAsync(SearchHost);
+
+            Assert.False(vm.HideSolutionFoldersWithOnlyFiles);
+
+            vm.ToggleHideSolutionFoldersWithOnlyFilesCommand.Execute(null);
+
+            Assert.True(vm.HideSolutionFoldersWithOnlyFiles);
+
+            vm.ToggleHideSolutionFoldersWithOnlyFilesCommand.Execute(null);
+
+            Assert.False(vm.HideSolutionFoldersWithOnlyFiles);
+        }
+
+    }
+
+
     public class CollapseAllCommandProperty : TestBase {
 
         public CollapseAllCommandProperty(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }

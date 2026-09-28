@@ -32,6 +32,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IVsWindowSearch {
     private bool _useRegularExpressions;
     private bool _expandLoadedProjects;
     private bool _hideSolutionFoldersWithoutLoadedProjects;
+    private bool _hideSolutionFoldersWithOnlyFiles;
 
 
     public FilterDialogViewModel(
@@ -90,6 +91,12 @@ public sealed class FilterDialogViewModel : ObservableObject, IVsWindowSearch {
 
         ToggleHideSolutionFoldersWithoutLoadedProjectsCommand = new DelegateCommand(
             (_) => HideSolutionFoldersWithoutLoadedProjects = !HideSolutionFoldersWithoutLoadedProjects,
+            CanAlwaysExecute,
+            ThreadHelper.JoinableTaskFactory
+        );
+
+        ToggleHideSolutionFoldersWithOnlyFilesCommand = new DelegateCommand(
+            (_) => HideSolutionFoldersWithOnlyFiles = !HideSolutionFoldersWithOnlyFiles,
             CanAlwaysExecute,
             ThreadHelper.JoinableTaskFactory
         );
@@ -173,19 +180,19 @@ public sealed class FilterDialogViewModel : ObservableObject, IVsWindowSearch {
 
 
     public Visibility LoadingVisibility {
-        get { return _loadingVisibility; }
+        get => _loadingVisibility;
         private set { SetProperty(ref _loadingVisibility, value); }
     }
 
 
     public Visibility LoadedVisibility {
-        get { return _loadedVisibility; }
+        get => _loadedVisibility;
         private set { SetProperty(ref _loadedVisibility, value); }
     }
 
 
     public HierarchyTreeViewItemCollection Items {
-        get { return _items; }
+        get => _items;
         private set { SetProperty(ref _items, value); }
     }
 
@@ -214,6 +221,9 @@ public sealed class FilterDialogViewModel : ObservableObject, IVsWindowSearch {
     public DelegateCommand ToggleHideSolutionFoldersWithoutLoadedProjectsCommand { get; }
 
 
+    public DelegateCommand ToggleHideSolutionFoldersWithOnlyFilesCommand { get; }
+
+
     public DelegateCommand FocusSearchBoxCommand { get; }
 
 
@@ -221,19 +231,19 @@ public sealed class FilterDialogViewModel : ObservableObject, IVsWindowSearch {
 
 
     public FilterOptions? Result {
-        get { return _result; }
+        get => _result;
         private set { SetProperty(ref _result, value); }
     }
 
 
     public bool LoadProjectDependencies {
-        get { return _loadProjectDependencies; }
+        get => _loadProjectDependencies;
         set { SetProperty(ref _loadProjectDependencies, value); }
     }
 
 
     public bool UseRegularExpressions {
-        get { return _useRegularExpressions; }
+        get => _useRegularExpressions;
         set {
             ThreadHelper.ThrowIfNotOnUIThread();
             SetProperty(ref _useRegularExpressions, value);
@@ -243,14 +253,20 @@ public sealed class FilterDialogViewModel : ObservableObject, IVsWindowSearch {
 
 
     public bool ExpandLoadedProjects {
-        get { return _expandLoadedProjects; }
+        get => _expandLoadedProjects;
         set { SetProperty(ref _expandLoadedProjects, value); }
     }
 
 
     public bool HideSolutionFoldersWithoutLoadedProjects {
-        get { return _hideSolutionFoldersWithoutLoadedProjects; }
+        get => _hideSolutionFoldersWithoutLoadedProjects;
         set { SetProperty(ref _hideSolutionFoldersWithoutLoadedProjects, value); }
+    }
+
+
+    public bool HideSolutionFoldersWithOnlyFiles {
+        get => _hideSolutionFoldersWithOnlyFiles;
+        set { SetProperty(ref _hideSolutionFoldersWithOnlyFiles, value); }
     }
 
 
@@ -317,7 +333,8 @@ public sealed class FilterDialogViewModel : ObservableObject, IVsWindowSearch {
             projects[false],
             LoadProjectDependencies,
             ExpandLoadedProjects,
-            HideSolutionFoldersWithoutLoadedProjects
+            _hideSolutionFoldersWithoutLoadedProjects,
+            _hideSolutionFoldersWithOnlyFiles
         );
     }
 

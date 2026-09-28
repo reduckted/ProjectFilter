@@ -3,7 +3,6 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.PatternMatching;
 using ProjectFilter.Services;
 using ProjectFilter.UI;
-using ProjectFilter.UI.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -31,20 +30,23 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
     }
 
 
-    private async Task<FilterOptions?> GetOptionsAsync() {
+    private static async Task<FilterOptions?> GetOptionsAsync() {
         IHierarchyProvider hierarchyProvider;
         TextFilterFactory textFilterFactory;
         Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory;
         IExtensionSettings globalSettings;
         ISolutionSettingsManager solutionSettingsManager;
         SolutionSettings? solutionSettings;
+        FilterDialogViewModel vm;
+        FilterDialog dialog;
+        bool result;
 
 
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
         hierarchyProvider = await VS.GetRequiredServiceAsync<IHierarchyProvider, IHierarchyProvider>();
         textFilterFactory = await CreateTextFilterFactoryAsync();
-        hierarchyFactory = async () => await hierarchyProvider.GetHierarchyAsync();
+        hierarchyFactory = async () => await hierarchyProvider.GetHierarchyAsync(true);
 
         globalSettings = await VS.GetRequiredServiceAsync<IExtensionSettings, IExtensionSettings>();
         await globalSettings.LoadAsync();
@@ -52,49 +54,55 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
         solutionSettingsManager = await VS.GetRequiredServiceAsync<ISolutionSettingsManager, ISolutionSettingsManager>();
         solutionSettings = await solutionSettingsManager.GetSettingsAsync();
 
-        using (var vm = new FilterDialogViewModel(hierarchyFactory, Debouncer.Create, textFilterFactory, solutionSettings?.Nodes, Package.JoinableTaskFactory)) {
-            FilterDialog dialog;
-            bool result;
-
-
+        vm = new FilterDialogViewModel(hierarchyFactory, textFilterFactory, solutionSettings?.Nodes) {
             // Initialize the settings with the settings that were last
             // used for this solution. If this solution hasn't been
             // filtered before, then we'll use the global settings.
-            vm.LoadProjectDependencies = solutionSettings?.LoadProjectDependencies ?? globalSettings.LoadProjectDependencies;
-            vm.UseRegularExpressions = solutionSettings?.UseRegularExpressions ?? globalSettings.UseRegularExpressions;
-            vm.ExpandLoadedProjects = solutionSettings?.ExpandLoadedProjects ?? globalSettings.ExpandLoadedProjects;
-            vm.HideSolutionFoldersWithoutLoadedProjects = solutionSettings?.HideSolutionFoldersWithoutLoadedProjects ?? globalSettings.HideSolutionFoldersWithoutLoadedProjects;
+            LoadProjectDependencies = solutionSettings?.LoadProjectDependencies ?? globalSettings.LoadProjectDependencies,
+            UseRegularExpressions = solutionSettings?.UseRegularExpressions ?? globalSettings.UseRegularExpressions,
+            ExpandLoadedProjects = solutionSettings?.ExpandLoadedProjects ?? globalSettings.ExpandLoadedProjects,
+            HideSolutionFoldersWithoutLoadedProjects =
+                solutionSettings?.HideSolutionFoldersWithoutLoadedProjects ??
+                globalSettings.HideSolutionFoldersWithoutLoadedProjects,
+            HideSolutionFoldersWithOnlyFiles =
+                solutionSettings?.HideSolutionFoldersWithOnlyFiles ??
+                globalSettings.HideSolutionFoldersWithOnlyFiles
+        };
 
-            dialog = new FilterDialog {
-                DataContext = vm
-            };
+        dialog = new FilterDialog {
+            DataContext = vm
+        };
 
-            result = dialog.ShowModal().GetValueOrDefault();
+        result = dialog.ShowModal().GetValueOrDefault();
 
-            // Save the settings for this solution, even if filtering
-            // was cancelled. This saves the user from having to re-apply
-            // the settings the next time they open the dialog.
-            solutionSettings = new SolutionSettings {
-                LoadProjectDependencies = vm.LoadProjectDependencies,
-                UseRegularExpressions = vm.UseRegularExpressions,
-                ExpandLoadedProjects = vm.ExpandLoadedProjects,
-                HideSolutionFoldersWithoutLoadedProjects = vm.HideSolutionFoldersWithoutLoadedProjects
-            };
-            PopulateNodeSettings(vm.Items, solutionSettings.Nodes);
+        // Save the settings for this solution, even if filtering
+        // was cancelled. This saves the user from having to re-apply
+        // the settings the next time they open the dialog.
+        solutionSettings = new SolutionSettings {
+            LoadProjectDependencies = vm.LoadProjectDependencies,
+            UseRegularExpressions = vm.UseRegularExpressions,
+            ExpandLoadedProjects = vm.ExpandLoadedProjects,
+            HideSolutionFoldersWithoutLoadedProjects = vm.HideSolutionFoldersWithoutLoadedProjects,
+            HideSolutionFoldersWithOnlyFiles = vm.HideSolutionFoldersWithOnlyFiles
+        };
+        PopulateNodeSettings(vm.Items, solutionSettings.Nodes);
 
-            solutionSettingsManager.SetSettings(solutionSettings);
+        solutionSettingsManager.SetSettings(solutionSettings);
 
-            // Also save the settings to the global settings so that the same settings
-            // can be used for solutions that don't have their own settings yet.
-            globalSettings.LoadProjectDependencies = vm.LoadProjectDependencies;
-            globalSettings.UseRegularExpressions = vm.UseRegularExpressions;
-            globalSettings.ExpandLoadedProjects = vm.ExpandLoadedProjects;
-            globalSettings.HideSolutionFoldersWithoutLoadedProjects = vm.HideSolutionFoldersWithoutLoadedProjects;
-            await globalSettings.SaveAsync();
+        // Also save the settings to the global settings so that the same settings
+        // can be used for solutions that don't have their own settings yet.
+        globalSettings.LoadProjectDependencies = solutionSettings.LoadProjectDependencies;
+        globalSettings.UseRegularExpressions = solutionSettings.UseRegularExpressions;
+        globalSettings.ExpandLoadedProjects = solutionSettings.ExpandLoadedProjects;
+        globalSettings.HideSolutionFoldersWithoutLoadedProjects =
+            solutionSettings.HideSolutionFoldersWithoutLoadedProjects ?? false;
+        globalSettings.HideSolutionFoldersWithOnlyFiles =
+            solutionSettings.HideSolutionFoldersWithOnlyFiles ?? false;
 
-            if (result) {
-                return vm.Result;
-            }
+        await globalSettings.SaveAsync();
+
+        if (result) {
+            return vm.Result;
         }
 
         return null;
