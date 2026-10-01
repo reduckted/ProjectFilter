@@ -20,6 +20,9 @@ public interface IExtensionSettings {
     bool HideSolutionFoldersWithoutLoadedProjects { get; set; }
 
 
+    bool HideSolutionFoldersWithOnlyFiles { get; set; }
+
+
     Task LoadAsync();
 
 

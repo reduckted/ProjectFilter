@@ -16,7 +16,7 @@ namespace ProjectFilter.Services;
 
 public class HierarchyProvider : IHierarchyProvider {
 
-    public async Task<IEnumerable<IHierarchyNode>> GetHierarchyAsync() {
+    public async Task<IEnumerable<IHierarchyNode>> GetHierarchyAsync(bool omitEmptyFolders) {
         List<(HierarchyNode Hierarchy, Guid Parent)> nodes;
         Dictionary<Guid, HierarchyNode> mapping;
         List<HierarchyNode> roots;
@@ -45,7 +45,9 @@ public class HierarchyProvider : IHierarchyProvider {
             }
         }
 
-        RemoveEmptyFolders(roots);
+        if (omitEmptyFolders) {
+            RemoveEmptyFolders(roots);
+        }
 
         return roots;
     }
@@ -182,7 +184,7 @@ public class HierarchyProvider : IHierarchyProvider {
     }
 
 
-    private void RemoveEmptyFolders(IList<HierarchyNode> nodes) {
+    private static void RemoveEmptyFolders(IList<HierarchyNode> nodes) {
         for (int i = nodes.Count - 1; i >= 0; i--) {
             HierarchyNode node;
 

@@ -18,7 +18,7 @@
     Width="350"
     ShowInTaskbar="False"
     WindowStartupLocation="CenterOwner"
-    Background="{DynamicResource {x:Static platform:ThemedDialogColors.WindowPanelBrushKey}}"
+    Background="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowBackgroundBrushKey}}"
     platform:ThemedDialogStyleLoader.UseDefaultThemedDialogStyles="True"
     platformImaging:ImageThemingUtilities.ThemeScrollBars="True"
     properties:CloseDialog.Trigger="{Binding Result}"
@@ -48,7 +48,8 @@
 
         <KeyBinding Key="X" Modifiers="Alt" Command="{Binding ToggleExpandLoadedProjectsCommand}"/>
 
-        <KeyBinding Key="H" Modifiers="Alt" Command="{Binding ToggleHideSolutionFoldersWithNoProjectsCommand}"/>
+        <KeyBinding Key="H" Modifiers="Alt" Command="{Binding ToggleHideSolutionFoldersWithoutLoadedProjectsCommand}"/>
+        <KeyBinding Key="O" Modifiers="Alt" Command="{Binding ToggleHideSolutionFoldersWithOnlyFilesCommand}"/>
 
         <KeyBinding Key="F" Modifiers="Alt" Command="{Binding FocusSearchBoxCommand}"/>
         <KeyBinding Key="F" Modifiers="Ctrl" Command="{Binding FocusSearchBoxCommand}"/>
@@ -71,10 +72,10 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <StackPanel 
+            <StackPanel
                 Grid.Row="0"
                 Orientation="Vertical"
-                Background="{DynamicResource {x:Static platform:EnvironmentColors.CommandBarGradientBrushKey}}"
+                Background="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowBackgroundBrushKey}}"
                 platformImaging:ImageThemingUtilities.ImageBackgroundColor="{Binding RelativeSource={RelativeSource Mode=Self}, Path=Background, Converter={StaticResource BrushToColorConverter}}"
                 >
 
@@ -96,23 +97,27 @@
                         IsChecked="{Binding ExpandLoadedProjects}"
                         >
 
-                        <imaging:CrispImage
-                            Moniker="{x:Static catalog:KnownMonikers.TreeView}"
-                            imaging:CrispImage.Dpi="96"
-                            />
+                        <imaging:CrispImage Moniker="{x:Static catalog:KnownMonikers.TreeView}"/>
                     </ToggleButton>
 
-                    <ToggleButton 
+                    <Separator/>
+
+                    <ToggleButton
                         ToolTip="Hide solution folders without loaded projects (Alt+H)"
                         IsChecked="{Binding HideSolutionFoldersWithoutLoadedProjects}"
                         >
-
-                        <imaging:CrispImage
-                            Moniker="{x:Static catalog:KnownMonikers.ShowOrHideFolder}"
-                            imaging:CrispImage.Dpi="96"
-                            />
+                        
+                        <imaging:CrispImage Moniker="{x:Static catalog:KnownMonikers.ShowOrHideFolder}"/>
                     </ToggleButton>
 
+                    <ToggleButton
+                        ToolTip="Hide solution folders that only contain files (Alt+O)"
+                        IsChecked="{Binding HideSolutionFoldersWithOnlyFiles}"
+                        >
+                        
+                        <imaging:CrispImage Moniker="{x:Static catalog:KnownMonikers.DocumentsFolder}"/>
+                    </ToggleButton>
+                    
                     <Separator/>
 
                     <Button 
@@ -166,35 +171,17 @@
                     </ToggleButton>
                 </ToolBar>
 
-                <TextBox
-                    x:Name="SearchBox"
-                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                    Margin="2,1,2,2"
-                    properties:Watermark.Text="Filter projects... (Ctrl+F)"
-                    properties:ClearOnEscape.Enabled="True"
-                    properties:FocusWhenVisible.Enabled="True"
-                    properties:FocusWhenRequested.Source="{Binding FocusSearchBoxSource}"
-                    >
-
-                    <TextBox.Style>
-                        <Style TargetType="TextBox" BasedOn="{StaticResource SearchTextBoxStyle}">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding InvalidFilter}" Value="True">
-                                    <Setter Property="BorderBrush" Value="{DynamicResource {x:Static ui:FilterDialog.ErrorBorderBrushKey}}"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBox.Style>
-                </TextBox>
+                <Grid x:Name="SearchContainer" Margin="2,0,2,4"></Grid>
             </StackPanel>
 
-            <TreeView 
+            <TreeView
                 Grid.Row="1"
-                ItemsSource="{Binding Items}" 
+                ItemsSource="{Binding Items}"
                 Style="{StaticResource TreeViewStyle}"
-                BorderThickness="0,0,0,1"
+                BorderThickness="0"
                 VirtualizingStackPanel.IsVirtualizing="True"
                 VirtualizingStackPanel.VirtualizationMode="Recycling"
+                Background="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowBackgroundBrushKey}}"
                 >
 
                 <TreeView.InputBindings>
@@ -267,25 +254,31 @@
                 </TreeView.ItemContainerStyle>
             </TreeView>
 
-            <StackPanel 
+            <Border
                 Grid.Row="2"
-                Orientation="Horizontal"
-                Margin="12"
-                HorizontalAlignment="Right"
+                BorderBrush="{DynamicResource {x:Static platform:EnvironmentColors.ToolWindowBorderBrushKey}}"
+                BorderThickness="0,1,0,0"
                 >
 
-                <Button 
-                    Command="{Binding AcceptCommand}"
-                    Content="OK"
-                    IsDefault="True"
-                    />
+                <StackPanel 
+                    Orientation="Horizontal"
+                    Margin="12"
+                    HorizontalAlignment="Right"
+                    >
 
-                <Button 
-                    Content="Cancel"
-                    IsCancel="True"
-                    Margin="8,0,0,0"
-                    />
-            </StackPanel>
+                    <Button 
+                        Command="{Binding AcceptCommand}"
+                        Content="OK"
+                        IsDefault="True"
+                        />
+
+                    <Button 
+                        Content="Cancel"
+                        IsCancel="True"
+                        Margin="8,0,0,0"
+                        />
+                </StackPanel>
+            </Border>
         </Grid>
     </Grid>
 </platform:DialogWindow>

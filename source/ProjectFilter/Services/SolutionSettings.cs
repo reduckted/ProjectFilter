@@ -11,6 +11,7 @@ public class SolutionSettings {
         UseRegularExpressions = false;
         ExpandLoadedProjects = true;
         HideSolutionFoldersWithoutLoadedProjects = null;
+        HideSolutionFoldersWithOnlyFiles = null;
         Nodes = [];
     }
 
@@ -25,6 +26,9 @@ public class SolutionSettings {
 
 
     public bool? HideSolutionFoldersWithoutLoadedProjects { get; set; }
+
+
+    public bool? HideSolutionFoldersWithOnlyFiles { get; set; }
 
 
     public Dictionary<string, SolutionNodeSettings> Nodes { get; }

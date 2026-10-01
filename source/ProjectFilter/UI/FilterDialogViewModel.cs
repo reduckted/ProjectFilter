@@ -1,9 +1,12 @@
+using Microsoft.Internal.VisualStudio.PlatformUI;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.PlatformUI;
-using Microsoft.VisualStudio.Threading;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using ProjectFilter.Services;
-using ProjectFilter.UI.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -12,7 +15,7 @@ using System.Windows;
 namespace ProjectFilter.UI;
 
 
-public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
+public sealed class FilterDialogViewModel : ObservableObject, IVsWindowSearch {
 
     private static readonly Predicate<object> CanAlwaysExecute = (x) => true;
 
@@ -20,9 +23,8 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
     private readonly Func<Task<IEnumerable<IHierarchyNode>>> _hierarchyFactory;
     private readonly TextFilterFactory _textFilterFactory;
     private readonly Dictionary<string, SolutionNodeSettings>? _nodeSettings;
-    private readonly IDebouncer _debouncer;
+    private IVsWindowSearchHost? _searchHost;
     private HierarchyTreeViewItemCollection _items;
-    private string _searchText;
     private bool _loadProjectDependencies;
     private FilterOptions? _result;
     private Visibility _loadingVisibility;
@@ -30,102 +32,102 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
     private bool _useRegularExpressions;
     private bool _expandLoadedProjects;
     private bool _hideSolutionFoldersWithoutLoadedProjects;
-    private bool _invalidFilter;
+    private bool _hideSolutionFoldersWithOnlyFiles;
 
 
     public FilterDialogViewModel(
         Func<Task<IEnumerable<IHierarchyNode>>> hierarchyFactory,
-        Func<TimeSpan, IDebouncer> debouncerFactory,
         TextFilterFactory textFilterFactory,
-        Dictionary<string, SolutionNodeSettings>? nodeSettings,
-        JoinableTaskFactory joinableTaskFactory
+        Dictionary<string, SolutionNodeSettings>? nodeSettings
     ) {
-        if (debouncerFactory is null) {
-            throw new ArgumentNullException(nameof(debouncerFactory));
-        }
-
         _hierarchyFactory = hierarchyFactory ?? throw new ArgumentNullException(nameof(hierarchyFactory));
         _textFilterFactory = textFilterFactory ?? throw new ArgumentNullException(nameof(textFilterFactory));
         _nodeSettings = nodeSettings;
-
         _items = new HierarchyTreeViewItemCollection([]);
-        _searchText = "";
         _loadingVisibility = Visibility.Visible;
         _loadedVisibility = Visibility.Collapsed;
-
-        FocusSearchBoxSource = new FocusSource();
 
         ToggleLoadProjectDependenciesCommand = new DelegateCommand(
             (_) => LoadProjectDependencies = !LoadProjectDependencies,
             CanAlwaysExecute,
-            joinableTaskFactory
+            ThreadHelper.JoinableTaskFactory
         );
 
         CollapseAllCommand = new DelegateCommand<HierarchyTreeViewItem>(
             CollapseAll,
             CanAlwaysExecute,
-            joinableTaskFactory
+            ThreadHelper.JoinableTaskFactory
         );
 
         ExpandAllCommand = new DelegateCommand<HierarchyTreeViewItem>(
             ExpandAll,
             CanAlwaysExecute,
-            joinableTaskFactory
+            ThreadHelper.JoinableTaskFactory
         );
 
         CheckAllCommand = new DelegateCommand(
             (_) => SetAllChecked(true),
             CanAlwaysExecute,
-            joinableTaskFactory
+            ThreadHelper.JoinableTaskFactory
         );
 
         UncheckAllCommand = new DelegateCommand(
             (_) => SetAllChecked(false),
             CanAlwaysExecute,
-            joinableTaskFactory
+            ThreadHelper.JoinableTaskFactory
         );
 
         ToggleRegularExpressionModeCommand = new DelegateCommand(
            (_) => UseRegularExpressions = !UseRegularExpressions,
            CanAlwaysExecute,
-           joinableTaskFactory
+           ThreadHelper.JoinableTaskFactory
         );
 
         ToggleExpandLoadedProjectsCommand = new DelegateCommand(
             (_) => ExpandLoadedProjects = !ExpandLoadedProjects,
             CanAlwaysExecute,
-            joinableTaskFactory
+            ThreadHelper.JoinableTaskFactory
         );
 
         ToggleHideSolutionFoldersWithoutLoadedProjectsCommand = new DelegateCommand(
             (_) => HideSolutionFoldersWithoutLoadedProjects = !HideSolutionFoldersWithoutLoadedProjects,
             CanAlwaysExecute,
-            joinableTaskFactory
+            ThreadHelper.JoinableTaskFactory
+        );
+
+        ToggleHideSolutionFoldersWithOnlyFilesCommand = new DelegateCommand(
+            (_) => HideSolutionFoldersWithOnlyFiles = !HideSolutionFoldersWithOnlyFiles,
+            CanAlwaysExecute,
+            ThreadHelper.JoinableTaskFactory
         );
 
         FocusSearchBoxCommand = new DelegateCommand(
-           (_) => FocusSearchBoxSource.RequestFocus(),
+           (_) => {
+               ThreadHelper.ThrowIfNotOnUIThread();
+               _searchHost?.Activate();
+           },
            CanAlwaysExecute,
-           joinableTaskFactory
+           ThreadHelper.JoinableTaskFactory
         );
 
         AcceptCommand = new DelegateCommand(
             (_) => AcceptSelection(),
             CanAlwaysExecute,
-            joinableTaskFactory
+            ThreadHelper.JoinableTaskFactory
         );
 
-        // Use a `DispatcherTimer` constructor without a callback
-        // so that the timer doesn't start immediately. We only
-        // want to start the timer when the search text changes.
-        _debouncer = debouncerFactory.Invoke(TimeSpan.FromMilliseconds(500));
-        _debouncer.Stable += OnSearchStable;
+        SearchFiltersEnum = new WindowSearchFilterEnumerator([]);
+        SearchOptionsEnum = new WindowSearchOptionEnumerator([]);
     }
 
 
-    public async Task OnLoadedAsync() {
+    public async Task OnLoadedAsync(IVsWindowSearchHost searchHost) {
         IEnumerable<IHierarchyNode> hierarchy;
 
+
+        _searchHost = searchHost;
+
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
         hierarchy = await _hierarchyFactory.Invoke();
 
@@ -135,6 +137,9 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
 
         LoadedVisibility = Visibility.Visible;
         LoadingVisibility = Visibility.Collapsed;
+
+        searchHost.SetupSearch(this);
+        searchHost.Activate();
     }
 
 
@@ -175,19 +180,19 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
 
 
     public Visibility LoadingVisibility {
-        get { return _loadingVisibility; }
+        get => _loadingVisibility;
         private set { SetProperty(ref _loadingVisibility, value); }
     }
 
 
     public Visibility LoadedVisibility {
-        get { return _loadedVisibility; }
+        get => _loadedVisibility;
         private set { SetProperty(ref _loadedVisibility, value); }
     }
 
 
     public HierarchyTreeViewItemCollection Items {
-        get { return _items; }
+        get => _items;
         private set { SetProperty(ref _items, value); }
     }
 
@@ -216,69 +221,52 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
     public DelegateCommand ToggleHideSolutionFoldersWithoutLoadedProjectsCommand { get; }
 
 
+    public DelegateCommand ToggleHideSolutionFoldersWithOnlyFilesCommand { get; }
+
+
     public DelegateCommand FocusSearchBoxCommand { get; }
 
 
     public DelegateCommand AcceptCommand { get; }
 
 
-    public FocusSource FocusSearchBoxSource { get; }
-
-
     public FilterOptions? Result {
-        get { return _result; }
+        get => _result;
         private set { SetProperty(ref _result, value); }
     }
 
 
-    public string SearchText {
-        get { return _searchText; }
-        set {
-            SetProperty(ref _searchText, value);
-
-            _debouncer.Cancel();
-
-            // If the text is cleared, bypass the debounce and "search" 
-            // immediately so that the original items are restored.
-            if (string.IsNullOrWhiteSpace(_searchText)) {
-                Search();
-            } else {
-                _debouncer.Start();
-            }
-        }
-    }
-
-
     public bool LoadProjectDependencies {
-        get { return _loadProjectDependencies; }
+        get => _loadProjectDependencies;
         set { SetProperty(ref _loadProjectDependencies, value); }
     }
 
 
     public bool UseRegularExpressions {
-        get { return _useRegularExpressions; }
+        get => _useRegularExpressions;
         set {
+            ThreadHelper.ThrowIfNotOnUIThread();
             SetProperty(ref _useRegularExpressions, value);
-            Search();
+            _searchHost?.SearchAsync(_searchHost.SearchQuery);
         }
     }
 
 
     public bool ExpandLoadedProjects {
-        get { return _expandLoadedProjects; }
+        get => _expandLoadedProjects;
         set { SetProperty(ref _expandLoadedProjects, value); }
     }
 
 
     public bool HideSolutionFoldersWithoutLoadedProjects {
-        get { return _hideSolutionFoldersWithoutLoadedProjects; }
+        get => _hideSolutionFoldersWithoutLoadedProjects;
         set { SetProperty(ref _hideSolutionFoldersWithoutLoadedProjects, value); }
     }
 
 
-    public bool InvalidFilter {
-        get { return _invalidFilter; }
-        private set { SetProperty(ref _invalidFilter, value); }
+    public bool HideSolutionFoldersWithOnlyFiles {
+        get => _hideSolutionFoldersWithOnlyFiles;
+        set { SetProperty(ref _hideSolutionFoldersWithOnlyFiles, value); }
     }
 
 
@@ -345,46 +333,134 @@ public sealed class FilterDialogViewModel : ObservableObject, IDisposable {
             projects[false],
             LoadProjectDependencies,
             ExpandLoadedProjects,
-            HideSolutionFoldersWithoutLoadedProjects
+            _hideSolutionFoldersWithoutLoadedProjects,
+            _hideSolutionFoldersWithOnlyFiles
         );
     }
 
 
-    private void OnSearchStable(object sender, EventArgs e) {
-        Search();
-    }
-
-
-    private void Search() {
-        string text;
-
-
-        text = _searchText.Trim();
-
+    private void ApplyFilter(string text) {
         if (!string.IsNullOrEmpty(text)) {
-            ITextFilter filter;
-
-
-            try {
-                filter = _textFilterFactory(text, UseRegularExpressions);
-            } catch (ArgumentException) {
-                InvalidFilter = true;
-                return;
-            }
-
-            Items.Filter(filter);
-
+            Items.Filter(_textFilterFactory(text, UseRegularExpressions));
         } else {
             Items.ClearFilter();
         }
-
-        InvalidFilter = false;
     }
 
 
-    public void Dispose() {
-        _debouncer.Dispose();
-        _debouncer.Stable -= OnSearchStable;
+    public void ClearSearch() {
+        Items.ClearFilter();
+    }
+
+
+    public IVsSearchTask CreateSearch(uint cookie, IVsSearchQuery query, IVsSearchCallback callback) {
+        return new SearchTask(cookie, query, callback, ApplyFilter, ClearSearch);
+    }
+
+
+    public void ProvideSearchSettings(IVsUIDataSource pSearchSettings) {
+        ThreadHelper.ThrowIfNotOnUIThread();
+
+        SetString(SearchSettingsDataSource.PropertyNames.SearchWatermark, "Filter projects... (Ctrl+F)");
+        SetString(SearchSettingsDataSource.PropertyNames.SearchWatermarkWhenFocused, "Filter projects... (Ctrl+F)");
+        SetString(SearchSettingsDataSource.PropertyNames.SearchTooltip, "Type words to filter the projects");
+        SetString(SearchSettingsDataSource.PropertyNames.SearchStartTooltip, "Filter");
+        SetString(SearchSettingsDataSource.PropertyNames.SearchStopTooltip, "Cancel");
+        SetString(SearchSettingsDataSource.PropertyNames.SearchClearTooltip, "Clear");
+
+        SetUint(SearchSettingsDataSource.PropertyNames.ControlMaxWidth, 10000u);
+
+        SetUint(SearchSettingsDataSource.PropertyNames.SearchStartType, (uint)VSSEARCHSTARTTYPE.SST_DELAYED);
+        SetUint(SearchSettingsDataSource.PropertyNames.SearchStartDelay, 500u);
+        SetUint(SearchSettingsDataSource.PropertyNames.SearchProgressType, (uint)VSSEARCHPROGRESSTYPE.SPT_INDETERMINATE);
+
+        SetBool(SearchSettingsDataSource.PropertyNames.SearchUseMRU, false);
+
+        void SetString(string prop, string value) {
+            pSearchSettings.SetValue(prop, BuiltInPropertyValue.Create(value));
+        }
+
+        void SetUint(string prop, uint value) {
+            pSearchSettings.SetValue(prop, BuiltInPropertyValue.Create(value));
+        }
+
+        void SetBool(string prop, bool value) {
+            pSearchSettings.SetValue(prop, BuiltInPropertyValue.Create(value));
+        }
+    }
+
+
+    public bool OnNavigationKeyDown(uint dwNavigationKey, uint dwModifiers) {
+        return false;
+    }
+
+
+    public bool SearchEnabled => true;
+
+
+    public Guid Category => Guid.Empty;
+
+
+    public IVsEnumWindowSearchFilters SearchFiltersEnum { get; }
+
+
+    public IVsEnumWindowSearchOptions SearchOptionsEnum { get; }
+
+
+    private sealed class SearchTask : VsSearchTask {
+
+        private readonly Action<string> _search;
+        private readonly Action _clear;
+
+
+        public SearchTask(
+            uint dwCookie,
+            IVsSearchQuery pSearchQuery,
+            IVsSearchCallback pSearchCallback,
+            Action<string> search,
+            Action clear
+        ) : base(dwCookie, pSearchQuery, pSearchCallback) {
+            _search = search;
+            _clear = clear;
+        }
+
+
+        [SuppressMessage(
+            "Reliability",
+            "VSSDK007:ThreadHelper.JoinableTaskFactory.RunAsync",
+            Justification = "Cannot await or join here."
+        )]
+        protected override void OnStartSearch() {
+            ErrorCode = VSConstants.S_OK;
+
+            // We are always called on a background thread, but
+            // because filtering changes properties that the view
+            // binds to, we need to switch to the main thread.
+            ThreadHelper.JoinableTaskFactory.RunAsync(async () => {
+                try {
+                    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                    if (TaskStatus != VSConstants.VsSearchTaskStatus.Stopped) {
+                        _search(SearchQuery.SearchString);
+                    } else {
+                        _clear();
+                    }
+
+                    // The number of search results are not shown anywhere,
+                    // but if it's zero, then the search control gets an
+                    // "error" border. Set it to one to prevent that.
+                    SearchResults = 1;
+
+                } catch (Exception ex) when (!ErrorHandler.IsCriticalException(ex)) {
+                    ErrorCode = VSConstants.E_FAIL;
+                }
+
+                // Confusingly, calling the base `OnStartSearch`
+                // method actually completes the search.
+                base.OnStartSearch();
+            }).FireAndForget();
+        }
+
     }
 
 }

@@ -121,13 +121,17 @@ public partial class FilterService : IFilterService {
             // remain hidden because the user cancelled half way through.
             await solutionExplorer.HideUnloadedProjectsAsync();
 
-            // Hiding unloaded projects will hide the solution folders that those hidden
-            // projects are in as long as there is nothing else in those folders. If all
-            // of the projects in a solution folder have been unloaded, but the folder contains
-            // other solution item (like a readme file or editorconfig file), the folder
-            // will not be hidden. We have an option that allows those folders to be hidden.
-            if (options.HideSolutionFoldersWithoutLoadedProjects) {
-                await solutionExplorer.HideSolutionFoldersWithoutLoadedProjectsAsync();
+            if (options.HideSolutionFoldersWithoutLoadedProjects || options.HideSolutionFoldersWithOnlyFiles) {
+                // Hiding unloaded projects will hide the solution folders that those hidden projects
+                // are in as long as there is nothing else in those folders. If all of the projects
+                // in a solution folder have been unloaded, but the folder contains other solution
+                // item (like a readme file or editorconfig file), the folder will not be hidden.
+                // So when we want to hide solution files without loaded projects, or hide solution
+                // folders that only contain files, then we need to hide those folders ourselves.
+                await solutionExplorer.HideSolutionFoldersAsync(
+                    options.HideSolutionFoldersWithoutLoadedProjects,
+                    options.HideSolutionFoldersWithOnlyFiles
+                );
             }
 
             // Expand the projects if we are supposed to. For some reason, Visual Studio seems to expand

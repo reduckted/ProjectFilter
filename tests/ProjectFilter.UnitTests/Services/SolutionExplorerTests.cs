@@ -15,10 +15,17 @@ namespace ProjectFilter.Services;
 
 public static class SolutionExplorerTests {
 
-    public class GetSolutionFoldersWithoutProjectsMethod {
+    public class GetSolutionFoldersToHideMethod {
 
-        [Fact]
-        public async Task FindsNoFoldersWhenSolutionIsEmpty() {
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task SolutionIsEmpty(
+            bool hideSolutionFoldersWithoutLoadedProjects,
+            bool hideSolutionFoldersWithOnlyFiles
+        ) {
             Node solution;
 
 
@@ -28,13 +35,28 @@ public static class SolutionExplorerTests {
                 """
             );
 
-            Assert.Empty(GetSolutionFoldersWithoutProjects(solution));
+            Assert.Empty(
+                GetSolutionFoldersToHide(
+                    solution,
+                    hideSolutionFoldersWithoutLoadedProjects,
+                    hideSolutionFoldersWithOnlyFiles
+                )
+            );
         }
 
 
-        [Fact]
-        public async Task IncludesFolderWhenItHasOnlyUnloadedProjects() {
+        [Theory]
+        [InlineData(true, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, false, false)]
+        public async Task FolderHasOnlyUnloadedProjects(
+            bool hideSolutionFoldersWithoutLoadedProjects,
+            bool hideSolutionFoldersWithOnlyFiles,
+            bool expectedToHide
+        ) {
             Node solution;
+            IEnumerable<string> result;
 
 
             solution = await CreateSolutionAsync(
@@ -48,12 +70,29 @@ public static class SolutionExplorerTests {
                 """
             );
 
-            Assert.Equal(["a"], GetSolutionFoldersWithoutProjects(solution));
+            result = GetSolutionFoldersToHide(
+                solution,
+                hideSolutionFoldersWithoutLoadedProjects,
+                hideSolutionFoldersWithOnlyFiles
+            );
+
+            if (expectedToHide) {
+                Assert.Equal(["a"], result);
+            } else {
+                Assert.Empty(result);
+            }
         }
 
 
-        [Fact]
-        public async Task DoesNotIncludeFolderWhenItHasLoadedProjects() {
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task FolderHasLoadedProjects(
+            bool hideSolutionFoldersWithoutLoadedProjects,
+            bool hideSolutionFoldersWithOnlyFiles
+        ) {
             Node solution;
 
 
@@ -68,12 +107,25 @@ public static class SolutionExplorerTests {
                 """
             );
 
-            Assert.Empty(GetSolutionFoldersWithoutProjects(solution));
+            Assert.Empty(
+                GetSolutionFoldersToHide(
+                    solution,
+                    hideSolutionFoldersWithoutLoadedProjects,
+                    hideSolutionFoldersWithOnlyFiles
+                )
+            );
         }
 
 
-        [Fact]
-        public async Task DoesNotIncludeFolderWhenItHasLoadedAndUnloadedProjects() {
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task FolderHasLoadedAndUnloadedProjects(
+            bool hideSolutionFoldersWithoutLoadedProjects,
+            bool hideSolutionFoldersWithOnlyFiles
+        ) {
             Node solution;
 
 
@@ -88,13 +140,28 @@ public static class SolutionExplorerTests {
                 """
             );
 
-            Assert.Empty(GetSolutionFoldersWithoutProjects(solution));
+            Assert.Empty(
+                GetSolutionFoldersToHide(
+                    solution,
+                    hideSolutionFoldersWithoutLoadedProjects,
+                    hideSolutionFoldersWithOnlyFiles
+                )
+            );
         }
 
 
-        [Fact]
-        public async Task IncludesParentAndChildFoldersWhenChildFoldersCanBeHidden() {
+        [Theory]
+        [InlineData(true, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, false, false)]
+        public async Task ParentAndChildFoldersCanBeHidden(
+            bool hideSolutionFoldersWithoutLoadedProjects,
+            bool hideSolutionFoldersWithOnlyFiles,
+            bool expectedToHide
+        ) {
             Node solution;
+            IEnumerable<string> result;
 
 
             solution = await CreateSolutionAsync(
@@ -112,13 +179,32 @@ public static class SolutionExplorerTests {
                 """
             );
 
-            Assert.Equal(["a", "b", "d"], GetSolutionFoldersWithoutProjects(solution));
+            result = GetSolutionFoldersToHide(
+                solution,
+                hideSolutionFoldersWithoutLoadedProjects,
+                hideSolutionFoldersWithOnlyFiles
+            );
+
+            if (expectedToHide) {
+                Assert.Equal(["a", "b", "d"], result);
+            } else {
+                Assert.Empty(result);
+            }
         }
 
 
-        [Fact]
-        public async Task IncludesChildFoldersWhenParentFolderCannotBeHidden() {
+        [Theory]
+        [InlineData(true, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, false, false)]
+        public async Task OnlyChildFoldersCanBeHidden(
+            bool hideSolutionFoldersWithoutLoadedProjects,
+            bool hideSolutionFoldersWithOnlyFiles,
+            bool expectedToHide
+        ) {
             Node solution;
+            IEnumerable<string> result;
 
 
             solution = await CreateSolutionAsync(
@@ -137,12 +223,66 @@ public static class SolutionExplorerTests {
                 """
             );
 
-            Assert.Equal(["b", "d"], GetSolutionFoldersWithoutProjects(solution));
+            result = GetSolutionFoldersToHide(
+                solution,
+                hideSolutionFoldersWithoutLoadedProjects,
+                hideSolutionFoldersWithOnlyFiles
+            );
+
+            if (expectedToHide) {
+                Assert.Equal(["b", "d"], result);
+            } else {
+                Assert.Empty(result);
+            }
         }
 
 
-        [Fact]
-        public async Task CanFindMultipleFolders() {
+        [Theory]
+        [InlineData(true, true, true)]
+        [InlineData(true, false, false)]
+        [InlineData(false, true, true)]
+        [InlineData(false, false, false)]
+        public async Task FolderContainsNoProjects(
+            bool hideSolutionFoldersWithoutLoadedProjects,
+            bool hideSolutionFoldersWithOnlyFiles,
+            bool expectedToHide
+        ) {
+            Node solution;
+            IEnumerable<string> result;
+
+
+            solution = await CreateSolutionAsync(
+                """
+                <solution>
+                    <folder name="a"/>
+                </solution>
+                """
+            );
+
+            result = GetSolutionFoldersToHide(
+                solution,
+                hideSolutionFoldersWithoutLoadedProjects,
+                hideSolutionFoldersWithOnlyFiles
+            );
+
+            if (expectedToHide) {
+                Assert.Equal(["a"], result);
+            } else {
+                Assert.Empty(result);
+            }
+        }
+
+
+        [Theory]
+        [InlineData(true, true, new[] { "e", "k", "n", "o", "p", "q", "r", "u", "v" })]
+        [InlineData(true, false, new[] { "e", "k", "p", "q", "r" })]
+        [InlineData(false, true, new[] { "v" })]
+        [InlineData(false, false, new string[] { })]
+        public async Task CanFindMultipleFolders(
+            bool hideSolutionFoldersWithoutLoadedProjects,
+            bool hideSolutionFoldersWithOnlyFiles,
+            string[] expected
+        ) {
             Node solution;
 
 
@@ -176,6 +316,10 @@ public static class SolutionExplorerTests {
                                     </folder>
                                     <unloaded name="t"/>
                                 </folder>
+                                <folder name="u">
+                                    <folder name="v"/>
+                                    <unloaded name="w"/>
+                                </folder>
                             </folder>
                         </folder>
                     </folder>
@@ -183,7 +327,14 @@ public static class SolutionExplorerTests {
                 """
             );
 
-            Assert.Equal(["e", "k", "n", "o", "p", "q", "r"], GetSolutionFoldersWithoutProjects(solution));
+            Assert.Equal(
+                expected,
+                GetSolutionFoldersToHide(
+                    solution,
+                    hideSolutionFoldersWithoutLoadedProjects,
+                    hideSolutionFoldersWithOnlyFiles
+                )
+            );
         }
 
 
@@ -197,9 +348,17 @@ public static class SolutionExplorerTests {
         }
 
 
-        private static IEnumerable<string> GetSolutionFoldersWithoutProjects(IHierarchyNode root) {
+        private static IEnumerable<string> GetSolutionFoldersToHide(
+            IHierarchyNode root,
+            bool hideSolutionFoldersWithoutLoadedProjects,
+            bool hideSolutionFoldersWithOnlyFiles
+        ) {
             return SolutionExplorer
-                .GetSolutionFoldersWithoutLoadedProjects(root.Children)
+                .GetSolutionFoldersToHide(
+                    root.Children,
+                    hideSolutionFoldersWithoutLoadedProjects,
+                    hideSolutionFoldersWithOnlyFiles
+                )
                 .Cast<Node>()
                 .Select(node => node.Data.Name)
                 .OrderBy((x) => x);

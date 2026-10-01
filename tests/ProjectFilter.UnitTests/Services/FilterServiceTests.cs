@@ -5,7 +5,6 @@ using NSubstitute;
 using ProjectFilter.Helpers;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Xml.Linq;
@@ -52,6 +51,7 @@ public static class FilterServiceTests {
                     [],
                     false,
                     false,
+                    false,
                     false
                 )
             );
@@ -86,6 +86,7 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     [],
                     [ProjectAlpha, ProjectBeta],
+                    false,
                     false,
                     false,
                     false
@@ -124,6 +125,7 @@ public static class FilterServiceTests {
                     [ProjectAlpha],
                     false,
                     false,
+                    false,
                     false
                 )
             );
@@ -159,6 +161,7 @@ public static class FilterServiceTests {
                     [ProjectAlpha],
                     [],
                     true,
+                    false,
                     false,
                     false
                 )
@@ -196,6 +199,7 @@ public static class FilterServiceTests {
                     [],
                     false,
                     false,
+                    false,
                     false
                 )
             );
@@ -229,6 +233,7 @@ public static class FilterServiceTests {
                     [ProjectAlpha],
                     [ProjectBeta],
                     true,
+                    false,
                     false,
                     false
                 )
@@ -264,6 +269,7 @@ public static class FilterServiceTests {
                     [],
                     true,
                     false,
+                    false,
                     false
                 )
             );
@@ -298,6 +304,7 @@ public static class FilterServiceTests {
                     [ProjectAlpha],
                     [],
                     true,
+                    false,
                     false,
                     false
                 )
@@ -342,6 +349,7 @@ public static class FilterServiceTests {
                     [],
                     false,
                     true,
+                    false,
                     false
                 )
             );
@@ -392,6 +400,7 @@ public static class FilterServiceTests {
                     [],
                     false,
                     false,
+                    false,
                     false
                 )
             );
@@ -428,6 +437,7 @@ public static class FilterServiceTests {
                     [ProjectAlpha],
                     false,
                     true,
+                    false,
                     false
                 )
             );
@@ -437,8 +447,16 @@ public static class FilterServiceTests {
         }
 
 
-        [Fact]
-        public async Task HidesSolutionFoldersWithoutLoadedProjectsWhenOptionIsEnabled() {
+        [Theory]
+        [InlineData(true, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(false, true, true)]
+        [InlineData(false, false, false)]
+        public async Task HidesSolutionFoldersAppropriately(
+            bool hideSolutionFoldersWithoutLoadedProjects,
+            bool hideSolutionFoldersWithOnlyFiles,
+            bool expectedToHide
+        ) {
             ISolutionExplorer solutionExplorer;
 
 
@@ -464,59 +482,19 @@ public static class FilterServiceTests {
                     [],
                     false,
                     false,
-                    true
+                    hideSolutionFoldersWithoutLoadedProjects,
+                    hideSolutionFoldersWithOnlyFiles
                 )
             );
 
-            await solutionExplorer.Received(1).HideSolutionFoldersWithoutLoadedProjectsAsync();
-        }
-
-
-        [Fact]
-        public async Task DoesNotHideSolutionFoldersWithoutLoadedProjectsWhenOptionIsDisabled() {
-            ISolutionExplorer solutionExplorer;
-            Guid testFolder;
-            Guid otherFolder;
-
-
-            testFolder = new Guid("{1413358E-AD48-4DB9-92E3-238CFF65743D}");
-            otherFolder = new Guid("{11C39F56-668C-48B4-B3E4-91F9BA7DB09F}");
-
-            solutionExplorer = Substitute.For<ISolutionExplorer>();
-
-            solutionExplorer.GetExpandedFoldersAsync().Returns(
-                [testFolder],
-                [testFolder, otherFolder]
-            );
-
-            Setup(
-                $@"
-                <solution name='root'>
-                    <folder name='core'>
-                        <folder name='test'>
-                            <unloaded name='alpha' guid='{ProjectAlpha}'/>
-                            <project name='beta' guid='{ProjectBeta}'/>
-                        </folder>
-                    </folder>
-                    <folder name='other'>
-                        <unloaded name='alpha' guid='{ProjectGamma}'/>
-                    </folder>
-                </solution>
-                ",
-                solutionExplorer: solutionExplorer
-            );
-
-            await ApplyAsync(
-                new FilterOptions(
-                    [ProjectAlpha, ProjectGamma],
-                    [],
-                    false,
-                    false,
-                    false
-                )
-            );
-
-            await solutionExplorer.DidNotReceive().HideSolutionFoldersWithoutLoadedProjectsAsync();
+            if (expectedToHide) {
+                await solutionExplorer.Received(1).HideSolutionFoldersAsync(
+                    hideSolutionFoldersWithoutLoadedProjects,
+                    hideSolutionFoldersWithOnlyFiles
+                );
+            } else {
+                await solutionExplorer.DidNotReceive().HideSolutionFoldersAsync(Arg.Any<bool>(), Arg.Any<bool>());
+            }
         }
 
 

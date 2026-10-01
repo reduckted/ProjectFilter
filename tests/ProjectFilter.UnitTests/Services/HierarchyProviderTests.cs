@@ -35,16 +35,16 @@ public static class HierarchyProviderTests {
 
 
             root = Setup(
-                @"
-                    <solution>
-                        <folder name='foo'>
-                            <project name='bar'/>
-                        </folder>
-                    </solution>
-                    "
+                """
+                <solution>
+                    <folder name='foo'>
+                        <project name='bar'/>
+                    </folder>
+                </solution>
+                """
             );
 
-            node = (await CreateService().GetHierarchyAsync()).First().Children[0];
+            node = (await CreateService().GetHierarchyAsync(true)).First().Children[0];
 
             Assert.Equal(
                 root.DescendantsAndSelf().First((x) => string.Equals(x.Data.Name, "bar", StringComparison.Ordinal)).Data.Identifier,
@@ -60,16 +60,16 @@ public static class HierarchyProviderTests {
 
 
             Setup(
-                @"
-                    <solution>
-                        <folder name='foo' expanded='FolderOpened' collapsed='FolderClosed'>
-                            <project name='bar' expanded='Accelerator' collapsed='Zoom'/>
-                        </folder>
-                    </solution>
-                    "
+                """
+                <solution>
+                    <folder name='foo' expanded='FolderOpened' collapsed='FolderClosed'>
+                        <project name='bar' expanded='Accelerator' collapsed='Zoom'/>
+                    </folder>
+                </solution>
+                """
             );
 
-            nodes = [.. (await CreateService().GetHierarchyAsync())];
+            nodes = [.. (await CreateService().GetHierarchyAsync(true))];
             node = Flatten(nodes).First((x) => x.Name == "foo");
 
             Assert.Equal(GetImageMoniker("FolderOpened"), node.ExpandedIcon);
@@ -78,27 +78,57 @@ public static class HierarchyProviderTests {
 
 
         [Fact]
-        public async Task SkipsEmptyFolders() {
+        public async Task SkipsEmptyFoldersWhenOmitEmptyFoldersIsTrue() {
             Setup(
-                @"
-                    <solution>
-                        <folder name='empty'/>
-                        <folder name='foo'>
-                            <project name='bar'/>
-                            <folder name='also_empty'/>
-                        </folder>
-                    </solution>
-                    "
+                """
+                <solution>
+                    <folder name='empty'/>
+                    <folder name='foo'>
+                        <project name='bar'/>
+                        <folder name='also_empty'/>
+                    </folder>
+                </solution>
+                """
             );
 
             await VerifyAsync(
-                @"
-                    <root>
-                        <folder name='foo'>
-                            <project name='bar'/>
-                        </folder>
-                    </root>
-                    "
+                true,
+                """
+                <root>
+                    <folder name='foo'>
+                        <project name='bar'/>
+                    </folder>
+                </root>
+                """
+            );
+        }
+
+
+        [Fact]
+        public async Task IncludesEmptyFoldersWhenOmitEmptyFoldersIsFalse() {
+            Setup(
+                """
+                <solution>
+                    <folder name='empty'/>
+                    <folder name='foo'>
+                        <project name='bar'/>
+                        <folder name='also_empty'/>
+                    </folder>
+                </solution>
+                """
+                    );
+
+            await VerifyAsync(
+                false,
+                """
+                <root>
+                    <folder name='empty'/>
+                    <folder name='foo'>
+                        <folder name='also_empty'/>
+                        <project name='bar'/>
+                    </folder>
+                </root>
+                """
             );
         }
 
@@ -106,20 +136,21 @@ public static class HierarchyProviderTests {
         [Fact]
         public async Task SkipsMiscellaneousFilesProject() {
             Setup(
-                @"
-                    <solution>
-                        <project name='foo'/>
-                        <misc name='misc'/>
-                    </solution>
-                    "
+                """
+                <solution>
+                    <project name='foo'/>
+                    <misc name='misc'/>
+                </solution>
+                """
             );
 
             await VerifyAsync(
-                @"
-                    <root>
-                        <project name='foo'/>
-                    </root>
-                    "
+                true,
+                """
+                <root>
+                    <project name='foo'/>
+                </root>
+                """
             );
         }
 
@@ -127,41 +158,42 @@ public static class HierarchyProviderTests {
         [Fact]
         public async Task SortsNodesByFoldersThenByNames() {
             Setup(
-                @"
-                    <solution>
-                        <folder name='z'>
-                            <project name='b'/>
-                            <project name='a'/>
-                            <folder name='m'>
-                                <unloaded name='c'/>
-                                <project name='d'/>
-                            </folder>
+                """
+                <solution>
+                    <folder name='z'>
+                        <project name='b'/>
+                        <project name='a'/>
+                        <folder name='m'>
+                            <unloaded name='c'/>
+                            <project name='d'/>
                         </folder>
-                        <folder name='y'>
-                            <unloaded name='f'/>
-                            <project name='e'/>
-                        </folder>
-                    </solution>
-                    "
+                    </folder>
+                    <folder name='y'>
+                        <unloaded name='f'/>
+                        <project name='e'/>
+                    </folder>
+                </solution>
+                """
             );
 
             await VerifyAsync(
-                @"
-                    <root>
-                        <folder name='y'>
-                            <project name='e'/>
-                            <unloaded name='f'/>
+                true,
+                """
+                <root>
+                    <folder name='y'>
+                        <project name='e'/>
+                        <unloaded name='f'/>
+                    </folder>
+                    <folder name='z'>
+                        <folder name='m'>
+                            <unloaded name='c'/>
+                            <project name='d'/>
                         </folder>
-                        <folder name='z'>
-                            <folder name='m'>
-                                <unloaded name='c'/>
-                                <project name='d'/>
-                            </folder>
-                            <project name='a'/>
-                            <project name='b'/>
-                        </folder>
-                    </root>
-                    "
+                        <project name='a'/>
+                        <project name='b'/>
+                    </folder>
+                </root>
+                """
             );
         }
 
@@ -263,8 +295,7 @@ public static class HierarchyProviderTests {
 
                 data = root
                         .DescendantsAndSelf()
-                        .Where((x) => x.Hierarchy == hierarchy)
-                        .FirstOrDefault();
+                        .FirstOrDefault((x) => x.Hierarchy == hierarchy);
 
                 if (data is not null) {
                     IVsHierarchyItem item;
@@ -288,12 +319,12 @@ public static class HierarchyProviderTests {
         }
 
 
-        private async Task VerifyAsync(string expected) {
+        private async Task VerifyAsync(bool omitEmptyFolders, string expected) {
             XElement solution;
 
 
             solution = XElement.Parse("<root/>");
-            solution.Add([.. ConvertToElements(await CreateService().GetHierarchyAsync())]);
+            solution.Add([.. ConvertToElements(await CreateService().GetHierarchyAsync(omitEmptyFolders))]);
 
             Assert.Equal(
                 XDocument.Parse(expected).Root.ToString(),
