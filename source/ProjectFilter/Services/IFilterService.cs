@@ -12,6 +12,6 @@ public interface IFilterService {
     public bool IsFiltering { get; }
 
 
-    Task ApplyAsync(FilterOptions options);
+    Task ApplyAsync(FilterOptions options, bool background);
 
 }

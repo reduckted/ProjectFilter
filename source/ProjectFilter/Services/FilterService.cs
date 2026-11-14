@@ -28,11 +28,7 @@ public partial class FilterService : IFilterService {
     }
 
 
-    public async Task ApplyAsync(FilterOptions options) {
-        ThreadedWaitDialogProgressData progress;
-        IWaitDialogFactory waitDialogFactory;
-
-
+    public async Task ApplyAsync(FilterOptions options, bool background) {
         if (options is null) {
             throw new ArgumentNullException(nameof(options));
         }
@@ -43,26 +39,36 @@ public partial class FilterService : IFilterService {
             return;
         }
 
-        waitDialogFactory = await VS.GetRequiredServiceAsync<IWaitDialogFactory, IWaitDialogFactory>();
-        progress = new ThreadedWaitDialogProgressData("Filtering projects...", "Getting ready...", "", true);
+        // Project dependencies can be loaded in response to projects being loaded
+        // outside of this filter service. To prevent that processing from running
+        // at the same time as a user's request to filter the projects, we'll use
+        // a semaphore to ensure that only one of those operations can run at a time.
+        await _synchronizer.WaitAsync();
+        _isFilteringStack += 1;
 
-        using (var dialog = await waitDialogFactory.CreateAsync(Vsix.Name, progress)) {
-            // Project dependencies can be loaded in response to projects being loaded
-            // outside of this filter service. To prevent that processing from running
-            // at the same time as a user's request to filter the projects, we'll use
-            // a semaphore to ensure that only one of those operations can run at a time.
-            await _synchronizer.WaitAsync();
-            _isFilteringStack += 1;
+        try {
+            ThreadedWaitDialogProgressData progress;
+            IWaitDialogFactory waitDialogFactory;
+            TimeSpan delayToShowDialog;
 
-            try {
+
+            await LogInfoAsync("Starting filtering.");
+
+            waitDialogFactory = await VS.GetRequiredServiceAsync<IWaitDialogFactory, IWaitDialogFactory>();
+            progress = new ThreadedWaitDialogProgressData("Filtering projects...", "Getting ready...", "", true);
+
+            // If we're trying to do this in the background, then delay the
+            // appearance of the dialog by a few seconds because we might
+            // be able to finish within that time and not interrupt the user.
+            delayToShowDialog = background ? TimeSpan.FromSeconds(3) : TimeSpan.Zero;
+
+            using (var dialog = await waitDialogFactory.CreateAsync(Vsix.Name, progress, delayToShowDialog)) {
                 IEnumerable<Guid> projectsToUnload;
                 IEnumerable<Guid> projectsToLoad;
                 State state;
                 ISolutionExplorer solutionExplorer;
                 IEnumerable<Guid> expandedFolders;
 
-
-                await LogInfoAsync("Starting filtering.");
 
                 state = new State(
                     dialog,
@@ -76,7 +82,9 @@ public partial class FilterService : IFilterService {
                 // them instead, because Visual Studio seems to automatically expand them and
                 // the folders they are in. To work out what should be collapsed after the
                 // projects are loaded, we first need to know what was originally expanded.
-                if (!options.Behavior.ExpandLoadedProjects) {
+                // We can skip this if we're doing this in the background because we won't
+                // be changing the expanded/collapsed state of the projects in that case.
+                if (!options.Behavior.ExpandLoadedProjects && !background) {
                     expandedFolders = await solutionExplorer.GetExpandedFoldersAsync();
                 } else {
                     expandedFolders = new HashSet<Guid>();
@@ -135,45 +143,50 @@ public partial class FilterService : IFilterService {
                 // to be a problem if you've loaded a Solution Filter ¯\_(ツ)_/¯).
                 await Task.Yield();
 
-                // Even if we've been cancelled, we'll still hide the unloaded
-                // projects and show the loaded projects. This prevents us from
-                // getting into a state where we've loaded some projects but they
-                // remain hidden because the user cancelled half way through.
-                await solutionExplorer.HideUnloadedProjectsAsync();
+                // The projects have been loaded or unloaded. If we're trying to
+                // do this in the background, then we'll skip the changes to Solution Explorer
+                // so that the loading is as seamless as possible.
+                if (!background) {
+                    // Even if we've been cancelled, we'll still hide the unloaded
+                    // projects and show the loaded projects. This prevents us from
+                    // getting into a state where we've loaded some projects but they
+                    // remain hidden because the user cancelled half way through.
+                    await solutionExplorer.HideUnloadedProjectsAsync();
 
-                if (
-                    options.Behavior.HideSolutionFoldersWithoutLoadedProjects ||
-                    options.Behavior.HideSolutionFoldersWithOnlyFiles
-                ) {
-                    // Hiding unloaded projects will hide the solution folders that those hidden projects
-                    // are in as long as there is nothing else in those folders. If all of the projects
-                    // in a solution folder have been unloaded, but the folder contains other solution
-                    // item (like a readme file or editorconfig file), the folder will not be hidden.
-                    // So when we want to hide solution files without loaded projects, or hide solution
-                    // folders that only contain files, then we need to hide those folders ourselves.
-                    await solutionExplorer.HideSolutionFoldersAsync(
-                        options.Behavior.HideSolutionFoldersWithoutLoadedProjects,
+                    if (
+                        options.Behavior.HideSolutionFoldersWithoutLoadedProjects ||
                         options.Behavior.HideSolutionFoldersWithOnlyFiles
-                    );
-                }
+                    ) {
+                        // Hiding unloaded projects will hide the solution folders that those hidden projects
+                        // are in as long as there is nothing else in those folders. If all of the projects
+                        // in a solution folder have been unloaded, but the folder contains other solution
+                        // item (like a readme file or editorconfig file), the folder will not be hidden.
+                        // So when we want to hide solution files without loaded projects, or hide solution
+                        // folders that only contain files, then we need to hide those folders ourselves.
+                        await solutionExplorer.HideSolutionFoldersAsync(
+                            options.Behavior.HideSolutionFoldersWithoutLoadedProjects,
+                            options.Behavior.HideSolutionFoldersWithOnlyFiles
+                        );
+                    }
 
-                // Expand the projects if we are supposed to. For some reason, Visual Studio seems to expand
-                // the projects anyway, so if we are not supposed to expand them, then we will collapse them.
-                if (options.Behavior.ExpandLoadedProjects) {
-                    await solutionExplorer.ExpandAsync(state.GetLoadedProjects());
+                    // Expand the projects if we are supposed to. For some reason, Visual Studio seems to expand
+                    // the projects anyway, so if we are not supposed to expand them, then we will collapse them.
+                    if (options.Behavior.ExpandLoadedProjects) {
+                        await solutionExplorer.ExpandAsync(state.GetLoadedProjects());
 
-                } else {
-                    await solutionExplorer.CollapseAsync(
-                        await GetProjectsToCollapseAsync(solutionExplorer, expandedFolders, state)
-                    );
+                    } else {
+                        await solutionExplorer.CollapseAsync(
+                            await GetProjectsToCollapseAsync(solutionExplorer, expandedFolders, state)
+                        );
+                    }
                 }
 
                 await LogInfoAsync("Completed filtering.");
-
-            } finally {
-                _isFilteringStack -= 1;
-                _synchronizer.Release();
             }
+
+        } finally {
+            _isFilteringStack -= 1;
+            _synchronizer.Release();
         }
     }
 

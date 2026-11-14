@@ -25,7 +25,7 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
         options = await GetOptionsAsync();
 
         if (options is not null) {
-            await filterService.ApplyAsync(options);
+            await filterService.ApplyAsync(options, false);
         }
     }
 

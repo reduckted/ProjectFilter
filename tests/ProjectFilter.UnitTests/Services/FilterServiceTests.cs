@@ -483,16 +483,16 @@ public static class FilterServiceTests {
 
             Setup(
                 $@"
-                    <solution name='root'>
-                        <folder name='core'>
-                            <project name='alpha' guid='{ProjectAlpha}'/>
-                        </folder>
-                    </solution>
-                    ",
+                <solution name='root'>
+                    <folder name='core'>
+                        <project name='alpha' guid='{ProjectAlpha}'/>
+                    </folder>
+                </solution>
+                ",
                 solutionExplorer: solutionExplorer
             );
 
-            service= CreateService();
+            service = CreateService();
             isFiltering.Add(service.IsFiltering);
 
             await service.ApplyAsync(
@@ -500,7 +500,8 @@ public static class FilterServiceTests {
                     [],
                     [ProjectAlpha],
                     CreateBehavior(expandLoadedProjects: true)
-                )
+                ),
+                false
             );
 
             isFiltering.Add(service.IsFiltering);
@@ -512,8 +513,121 @@ public static class FilterServiceTests {
         }
 
 
+        [Fact]
+        public async Task DoesNotDelayWaitDialogWhenNotRunningInBackground() {
+            IWaitDialogFactory waitDialogFactory;
 
-        private void Setup(string data, ISolutionExplorer? solutionExplorer = null) {
+
+            waitDialogFactory = MockWaitDialogFactory();
+
+            Setup(
+                $@"
+                <solution name='root'>
+                    <folder name='core'>
+                        <project name='alpha' guid='{ProjectAlpha}'/>
+                    </folder>
+                </solution>
+                ",
+                waitDialogFactory: waitDialogFactory
+            );
+
+            await CreateService().ApplyAsync(
+                new FilterOptions(
+                    [],
+                    [ProjectAlpha],
+                    CreateBehavior()
+                ),
+                false
+            );
+
+            await waitDialogFactory.Received(1).CreateAsync(
+                Arg.Any<string>(),
+                Arg.Any<ThreadedWaitDialogProgressData>(),
+                TimeSpan.Zero
+            );
+        }
+
+
+        [Fact]
+        public async Task DelaysWaitDialogWhenRunningInBackground() {
+            IWaitDialogFactory waitDialogFactory;
+
+
+            waitDialogFactory = MockWaitDialogFactory();
+
+            Setup(
+                $@"
+                <solution name='root'>
+                    <folder name='core'>
+                        <project name='alpha' guid='{ProjectAlpha}'/>
+                    </folder>
+                </solution>
+                ",
+                waitDialogFactory: waitDialogFactory
+            );
+
+            await CreateService().ApplyAsync(
+                new FilterOptions(
+                    [],
+                    [ProjectAlpha],
+                    CreateBehavior()
+                ),
+                true
+            );
+
+            await waitDialogFactory.Received(1).CreateAsync(
+                Arg.Any<string>(),
+                Arg.Any<ThreadedWaitDialogProgressData>(),
+                TimeSpan.FromSeconds(3)
+            );
+        }
+
+
+        [Fact]
+        public async Task DoesNotChangeSolutionExplorerWhenRunningInBackground() {
+            ISolutionExplorer solutionExplorer;
+
+
+            solutionExplorer = Substitute.For<ISolutionExplorer>();
+
+            Setup(
+                $@"
+                <solution name='root'>
+                    <folder name='core'>
+                        <project name='alpha' guid='{ProjectAlpha}'/>
+                    </folder>
+                </solution>
+                ",
+                solutionExplorer: solutionExplorer
+            );
+
+            await CreateService().ApplyAsync(
+                new FilterOptions(
+                    [],
+                    [ProjectAlpha],
+                    CreateBehavior(
+                        expandLoadedProjects: true,
+                        hideSolutionFoldersWithOnlyFiles: true,
+                        hideSolutionFoldersWithoutLoadedProjects: true
+                    )
+                ),
+                true
+            );
+
+            await solutionExplorer.DidNotReceive().ExpandAsync(Arg.Any<IEnumerable<Guid>>());
+            await solutionExplorer.DidNotReceive().CollapseAsync(Arg.Any<IEnumerable<Guid>>());
+
+            await solutionExplorer.DidNotReceive().GetExpandedFoldersAsync();
+            await solutionExplorer.DidNotReceive().HideSolutionFoldersAsync(Arg.Any<bool>(), Arg.Any<bool>());
+            await solutionExplorer.DidNotReceive().HideUnloadedProjectsAsync();
+        }
+
+
+        private void Setup(
+            string data,
+            ISolutionExplorer? solutionExplorer = null,
+            IWaitDialogFactory? waitDialogFactory = null
+        ) {
             IVsSolution solution;
             IVsSolutionBuildManager2 buildManager;
 
@@ -525,7 +639,7 @@ public static class FilterServiceTests {
 
             AddService<SVsSolution>(solution);
             AddService<SVsSolutionBuildManager>(buildManager);
-            AddService<IWaitDialogFactory>(MockWaitDialogFactory());
+            AddService<IWaitDialogFactory>(waitDialogFactory ?? MockWaitDialogFactory());
             AddService<ISolutionExplorer>(solutionExplorer ?? Substitute.For<ISolutionExplorer>());
         }
 
@@ -545,7 +659,9 @@ public static class FilterServiceTests {
             dialog.CancellationToken.Returns(CancellationToken.None);
 
             factory = Substitute.For<IWaitDialogFactory>();
-            factory.CreateAsync(Arg.Any<string>(), Arg.Any<ThreadedWaitDialogProgressData>()).Returns(dialog);
+            factory
+                .CreateAsync(Arg.Any<string>(), Arg.Any<ThreadedWaitDialogProgressData>(), Arg.Any<TimeSpan>())
+                .Returns(dialog);
 
             return factory;
         }
@@ -570,8 +686,8 @@ public static class FilterServiceTests {
         }
 
 
-        private async Task ApplyAsync(FilterOptions options) {
-            await CreateService().ApplyAsync(options);
+        private async Task ApplyAsync(FilterOptions options, bool background = false) {
+            await CreateService().ApplyAsync(options, background);
         }
 
 
