@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Task = System.Threading.Tasks.Task;
 
@@ -17,6 +18,15 @@ namespace ProjectFilter.Services;
 
 
 public partial class FilterService : IFilterService {
+
+    private readonly SemaphoreSlim _synchronizer = new(1, 1);
+    private int _isFilteringStack;
+
+
+    public bool IsFiltering {
+        get => _isFilteringStack > 0;
+    }
+
 
     public async Task ApplyAsync(FilterOptions options) {
         ThreadedWaitDialogProgressData progress;
@@ -37,109 +47,132 @@ public partial class FilterService : IFilterService {
         progress = new ThreadedWaitDialogProgressData("Filtering projects...", "Getting ready...", "", true);
 
         using (var dialog = await waitDialogFactory.CreateAsync(Vsix.Name, progress)) {
-            IEnumerable<Guid> projectsToUnload;
-            IEnumerable<Guid> projectsToLoad;
-            State state;
-            ISolutionExplorer solutionExplorer;
-            IEnumerable<Guid> expandedFolders;
+            // Project dependencies can be loaded in response to projects being loaded
+            // outside of this filter service. To prevent that processing from running
+            // at the same time as a user's request to filter the projects, we'll use
+            // a semaphore to ensure that only one of those operations can run at a time.
+            await _synchronizer.WaitAsync();
+            _isFilteringStack += 1;
+
+            try {
+                IEnumerable<Guid> projectsToUnload;
+                IEnumerable<Guid> projectsToLoad;
+                State state;
+                ISolutionExplorer solutionExplorer;
+                IEnumerable<Guid> expandedFolders;
 
 
-            state = new State(
-                dialog,
-                progress,
-                (IVsSolution4)await VS.Services.GetSolutionAsync()
-            );
+                await LogInfoAsync("Starting filtering.");
 
-            solutionExplorer = await VS.GetRequiredServiceAsync<ISolutionExplorer, ISolutionExplorer>();
+                state = new State(
+                    dialog,
+                    progress,
+                    (IVsSolution4)await VS.Services.GetSolutionAsync()
+                );
 
-            // If we are not going to expand the loaded projects, then we will need to collapse
-            // them instead, because Visual Studio seems to automatically expand them and
-            // the folders they are in. To work out what should be collapsed after the
-            // projects are loaded, we first need to know what was originally expanded.
-            if (!options.ExpandLoadedProjects) {
-                expandedFolders = await solutionExplorer.GetExpandedFoldersAsync();
-            } else {
-                expandedFolders = new HashSet<Guid>();
-            }
+                solutionExplorer = await VS.GetRequiredServiceAsync<ISolutionExplorer, ISolutionExplorer>();
 
-            projectsToUnload = [.. options.ProjectsToUnload];
-            projectsToLoad = [.. options.ProjectsToLoad];
+                // If we are not going to expand the loaded projects, then we will need to collapse
+                // them instead, because Visual Studio seems to automatically expand them and
+                // the folders they are in. To work out what should be collapsed after the
+                // projects are loaded, we first need to know what was originally expanded.
+                if (!options.Behavior.ExpandLoadedProjects) {
+                    expandedFolders = await solutionExplorer.GetExpandedFoldersAsync();
+                } else {
+                    expandedFolders = new HashSet<Guid>();
+                }
 
-            // Work out which projects actually need to be unloaded
-            // so that we can calculate an accurate progress. If a
-            // project is already unloaded, then we can skip it.
-            state.AddProjectsToUnload(projectsToUnload.Where((x) => IsLoaded(state.Solution, x)));
+                projectsToUnload = [.. options.ProjectsToUnload];
+                projectsToLoad = [.. options.ProjectsToLoad];
 
-            // Do the same for the projects that we need to load. We may add
-            // to this list as we load projects and find their dependencies,
-            // but we need to start with a known list so that we can give a
-            // reasonable initial estimation for the progress. Start with the
-            // projects that we were asked to load that are not already loaded.
-            state.AddProjectsToLoad(projectsToLoad.Where((x) => !IsLoaded(state.Solution, x)));
+                // Work out which projects actually need to be unloaded
+                // so that we can calculate an accurate progress. If a
+                // project is already unloaded, then we can skip it.
+                state.AddProjectsToUnload(projectsToUnload.Where((x) => IsLoaded(state.Solution, x)));
 
-            // If we're loading dependencies, then we can add the unloaded
-            // dependencies of the loaded projects that were requested to be loaded.
-            if (options.LoadProjectDependencies) {
-                foreach (var identifier in projectsToLoad.Where((x) => IsLoaded(state.Solution, x))) {
-                    foreach (var dependency in await GetProjectDependenciesAsync(identifier, state)) {
-                        if (!IsLoaded(state.Solution, dependency)) {
-                            state.AddProjectToLoad(dependency);
+                // Do the same for the projects that we need to load. We may add
+                // to this list as we load projects and find their dependencies,
+                // but we need to start with a known list so that we can give a
+                // reasonable initial estimation for the progress. Start with the
+                // projects that we were asked to load that are not already loaded.
+                state.AddProjectsToLoad(projectsToLoad.Where((x) => !IsLoaded(state.Solution, x)));
+
+                // If we're loading dependencies, then we can add the unloaded
+                // dependencies of the loaded projects that were requested to be loaded.
+                if (options.Behavior.LoadProjectDependencies) {
+                    foreach (var identifier in projectsToLoad.Where((x) => IsLoaded(state.Solution, x))) {
+                        foreach (var dependency in await GetProjectDependenciesAsync(identifier, state)) {
+                            if (!IsLoaded(state.Solution, dependency)) {
+                                state.AddProjectToLoad(dependency);
+                            }
                         }
                     }
                 }
-            }
 
-            // Now we can start loading and unloading projects. We're
-            // filtering projects because the user wants to keep the number
-            // of projects loaded to a minimum, so start by unloading the
-            // requested projects before we start loading any new projects.
-            foreach (var identifier in projectsToUnload) {
-                if (state.IsCancellationRequested) {
-                    break;
+                // Now we can start loading and unloading projects. We're
+                // filtering projects because the user wants to keep the number
+                // of projects loaded to a minimum, so start by unloading the
+                // requested projects before we start loading any new projects.
+                foreach (var identifier in projectsToUnload) {
+                    if (state.IsCancellationRequested) {
+                        break;
+                    }
+
+                    await UnloadProjectAsync(identifier, state);
                 }
 
-                await UnloadProjectAsync(identifier, state);
-            }
+                foreach (var identifier in projectsToLoad) {
+                    if (state.IsCancellationRequested) {
+                        break;
+                    }
 
-            foreach (var identifier in projectsToLoad) {
-                if (state.IsCancellationRequested) {
-                    break;
+                    await LoadProjectAsync(identifier, options.Behavior.LoadProjectDependencies, state);
                 }
 
-                await LoadProjectAsync(identifier, options.LoadProjectDependencies, state);
-            }
+                // Let Visual Studio catch up with the changes we made before we do
+                // anything else. If we don't do this, then Solution Explorer can
+                // end up hiding projects that we just loaded (though, that only seems
+                // to be a problem if you've loaded a Solution Filter ¯\_(ツ)_/¯).
+                await Task.Yield();
 
-            // Let Visual Studio catch up with the changes we made before we do
-            // anything else. If we don't do this, then Solution Explorer can
-            // end up hiding projects that we just loaded (though, that only seems
-            // to be a problem if you've loaded a Solution Filter ¯\_(ツ)_/¯).
-            await Task.Yield();
+                // Even if we've been cancelled, we'll still hide the unloaded
+                // projects and show the loaded projects. This prevents us from
+                // getting into a state where we've loaded some projects but they
+                // remain hidden because the user cancelled half way through.
+                await solutionExplorer.HideUnloadedProjectsAsync();
 
-            // Even if we've been cancelled, we'll still hide the unloaded
-            // projects and show the loaded projects. This prevents us from
-            // getting into a state where we've loaded some projects but they
-            // remain hidden because the user cancelled half way through.
-            await solutionExplorer.HideUnloadedProjectsAsync();
+                if (
+                    options.Behavior.HideSolutionFoldersWithoutLoadedProjects ||
+                    options.Behavior.HideSolutionFoldersWithOnlyFiles
+                ) {
+                    // Hiding unloaded projects will hide the solution folders that those hidden projects
+                    // are in as long as there is nothing else in those folders. If all of the projects
+                    // in a solution folder have been unloaded, but the folder contains other solution
+                    // item (like a readme file or editorconfig file), the folder will not be hidden.
+                    // So when we want to hide solution files without loaded projects, or hide solution
+                    // folders that only contain files, then we need to hide those folders ourselves.
+                    await solutionExplorer.HideSolutionFoldersAsync(
+                        options.Behavior.HideSolutionFoldersWithoutLoadedProjects,
+                        options.Behavior.HideSolutionFoldersWithOnlyFiles
+                    );
+                }
 
-            if (options.HideSolutionFoldersWithoutLoadedProjects || options.HideSolutionFoldersWithOnlyFiles) {
-                // Hiding unloaded projects will hide the solution folders that those hidden projects
-                // are in as long as there is nothing else in those folders. If all of the projects
-                // in a solution folder have been unloaded, but the folder contains other solution
-                // item (like a readme file or editorconfig file), the folder will not be hidden.
-                // So when we want to hide solution files without loaded projects, or hide solution
-                // folders that only contain files, then we need to hide those folders ourselves.
-                await solutionExplorer.HideSolutionFoldersAsync(
-                    options.HideSolutionFoldersWithoutLoadedProjects,
-                    options.HideSolutionFoldersWithOnlyFiles
-                );
-            }
+                // Expand the projects if we are supposed to. For some reason, Visual Studio seems to expand
+                // the projects anyway, so if we are not supposed to expand them, then we will collapse them.
+                if (options.Behavior.ExpandLoadedProjects) {
+                    await solutionExplorer.ExpandAsync(state.GetLoadedProjects());
 
-            // Expand the projects if we are supposed to. For some reason, Visual Studio seems to expand
-            // the projects anyway, so if we are not supposed to expand them, then we will collapse them.
-            if (options.ExpandLoadedProjects) {
-                await solutionExplorer.ExpandAsync(state.GetLoadedProjects());
-            } else {
-                await solutionExplorer.CollapseAsync(await GetProjectsToCollapseAsync(solutionExplorer, expandedFolders, state));
+                } else {
+                    await solutionExplorer.CollapseAsync(
+                        await GetProjectsToCollapseAsync(solutionExplorer, expandedFolders, state)
+                    );
+                }
+
+                await LogInfoAsync("Completed filtering.");
+
+            } finally {
+                _isFilteringStack -= 1;
+                _synchronizer.Release();
             }
         }
     }
@@ -402,6 +435,16 @@ public partial class FilterService : IFilterService {
         exceptionMessage = ex?.Message ?? "[Unknown Error]";
 
         await logger.WriteLineAsync($"{message} {exceptionMessage}");
+    }
+
+
+    private static async Task LogInfoAsync(string message) {
+        ILogger logger;
+
+
+        logger = await VS.GetRequiredServiceAsync<ILogger, ILogger>();
+
+        await logger.WriteLineAsync(message);
     }
 
 }

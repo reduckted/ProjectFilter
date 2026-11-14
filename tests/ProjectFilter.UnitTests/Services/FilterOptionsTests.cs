@@ -1,3 +1,4 @@
+using NSubstitute;
 using System;
 using System.Collections.Generic;
 using Xunit;
@@ -21,30 +22,24 @@ public class FilterOptionsTests {
         FilterOptions options;
         List<Guid> loaded;
         List<Guid> unloaded;
+        IExtensionSettings globalSettings;
+        FilterBehavior behavior;
 
 
         loaded = [ProjectA, ProjectB];
         unloaded = [Project1, Project2];
 
-        options = new FilterOptions(loaded, unloaded, true, false, true, false);
+        globalSettings = Substitute.For<IExtensionSettings>();
+        behavior = new FilterBehavior(null, globalSettings);
+
+        options = new FilterOptions(loaded, unloaded, behavior);
 
         loaded.Add(ProjectC);
         unloaded.Add(Project3);
 
         Assert.Equal([ProjectA, ProjectB], options.ProjectsToLoad);
         Assert.Equal([Project1, Project2], options.ProjectsToUnload);
-
-        Assert.True(options.LoadProjectDependencies);
-        Assert.False(options.ExpandLoadedProjects);
-        Assert.True(options.HideSolutionFoldersWithoutLoadedProjects);
-        Assert.False(options.HideSolutionFoldersWithOnlyFiles);
-
-        // Flip the booleans to ensure they are stored correctly.
-        options = new FilterOptions(loaded, unloaded, false, true, false, true);
-        Assert.False(options.LoadProjectDependencies);
-        Assert.True(options.ExpandLoadedProjects);
-        Assert.False(options.HideSolutionFoldersWithoutLoadedProjects);
-        Assert.True(options.HideSolutionFoldersWithOnlyFiles);
+        Assert.Same(behavior, options.Behavior);
     }
 
 }

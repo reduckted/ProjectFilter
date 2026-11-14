@@ -37,6 +37,7 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
         IExtensionSettings globalSettings;
         ISolutionSettingsManager solutionSettingsManager;
         SolutionSettings? solutionSettings;
+        FilterBehavior behavior;
         FilterDialogViewModel vm;
         FilterDialog dialog;
         bool result;
@@ -54,19 +55,14 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
         solutionSettingsManager = await VS.GetRequiredServiceAsync<ISolutionSettingsManager, ISolutionSettingsManager>();
         solutionSettings = await solutionSettingsManager.GetSettingsAsync();
 
+        behavior = new FilterBehavior(solutionSettings, globalSettings);
+
         vm = new FilterDialogViewModel(hierarchyFactory, textFilterFactory, solutionSettings?.Nodes) {
-            // Initialize the settings with the settings that were last
-            // used for this solution. If this solution hasn't been
-            // filtered before, then we'll use the global settings.
-            LoadProjectDependencies = solutionSettings?.LoadProjectDependencies ?? globalSettings.LoadProjectDependencies,
             UseRegularExpressions = solutionSettings?.UseRegularExpressions ?? globalSettings.UseRegularExpressions,
-            ExpandLoadedProjects = solutionSettings?.ExpandLoadedProjects ?? globalSettings.ExpandLoadedProjects,
-            HideSolutionFoldersWithoutLoadedProjects =
-                solutionSettings?.HideSolutionFoldersWithoutLoadedProjects ??
-                globalSettings.HideSolutionFoldersWithoutLoadedProjects,
-            HideSolutionFoldersWithOnlyFiles =
-                solutionSettings?.HideSolutionFoldersWithOnlyFiles ??
-                globalSettings.HideSolutionFoldersWithOnlyFiles
+            LoadProjectDependencies = behavior.LoadProjectDependencies,
+            ExpandLoadedProjects = behavior.ExpandLoadedProjects,
+            HideSolutionFoldersWithoutLoadedProjects = behavior.HideSolutionFoldersWithoutLoadedProjects,
+            HideSolutionFoldersWithOnlyFiles = behavior.HideSolutionFoldersWithOnlyFiles
         };
 
         dialog = new FilterDialog {
@@ -79,8 +75,8 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
         // was cancelled. This saves the user from having to re-apply
         // the settings the next time they open the dialog.
         solutionSettings = new SolutionSettings {
-            LoadProjectDependencies = vm.LoadProjectDependencies,
             UseRegularExpressions = vm.UseRegularExpressions,
+            LoadProjectDependencies = vm.LoadProjectDependencies,
             ExpandLoadedProjects = vm.ExpandLoadedProjects,
             HideSolutionFoldersWithoutLoadedProjects = vm.HideSolutionFoldersWithoutLoadedProjects,
             HideSolutionFoldersWithOnlyFiles = vm.HideSolutionFoldersWithOnlyFiles
@@ -91,8 +87,8 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
 
         // Also save the settings to the global settings so that the same settings
         // can be used for solutions that don't have their own settings yet.
-        globalSettings.LoadProjectDependencies = solutionSettings.LoadProjectDependencies;
         globalSettings.UseRegularExpressions = solutionSettings.UseRegularExpressions;
+        globalSettings.LoadProjectDependencies = solutionSettings.LoadProjectDependencies;
         globalSettings.ExpandLoadedProjects = solutionSettings.ExpandLoadedProjects;
         globalSettings.HideSolutionFoldersWithoutLoadedProjects =
             solutionSettings.HideSolutionFoldersWithoutLoadedProjects ?? false;
@@ -101,8 +97,12 @@ public sealed class FilterProjectsCommand : BaseCommand<FilterProjectsCommand> {
 
         await globalSettings.SaveAsync();
 
-        if (result) {
-            return vm.Result;
+        if (result && (vm.Result is not null)) {
+            return new FilterOptions(
+                vm.Result.ProjectsToLoad,
+                vm.Result.ProjectsToUnload,
+                new FilterBehavior(solutionSettings, globalSettings)
+            );
         }
 
         return null;

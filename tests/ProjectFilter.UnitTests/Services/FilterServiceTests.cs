@@ -49,10 +49,7 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     [ProjectAlpha, ProjectBeta],
                     [],
-                    false,
-                    false,
-                    false,
-                    false
+                    CreateBehavior()
                 )
             );
 
@@ -86,10 +83,7 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     [],
                     [ProjectAlpha, ProjectBeta],
-                    false,
-                    false,
-                    false,
-                    false
+                    CreateBehavior()
                 )
             );
 
@@ -123,10 +117,7 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     [ProjectBeta],
                     [ProjectAlpha],
-                    false,
-                    false,
-                    false,
-                    false
+                    CreateBehavior()
                 )
             );
 
@@ -160,10 +151,7 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     [ProjectAlpha],
                     [],
-                    true,
-                    false,
-                    false,
-                    false
+                    CreateBehavior(loadDependencies: true)
                 )
             );
 
@@ -197,10 +185,7 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     [ProjectAlpha],
                     [],
-                    false,
-                    false,
-                    false,
-                    false
+                    CreateBehavior(loadDependencies: false)
                 )
             );
 
@@ -232,10 +217,7 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     [ProjectAlpha],
                     [ProjectBeta],
-                    true,
-                    false,
-                    false,
-                    false
+                    CreateBehavior(loadDependencies: true)
                 )
             );
 
@@ -267,10 +249,7 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     [ProjectAlpha],
                     [],
-                    true,
-                    false,
-                    false,
-                    false
+                    CreateBehavior(loadDependencies: true)
                 )
             );
 
@@ -303,10 +282,7 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     [ProjectAlpha],
                     [],
-                    true,
-                    false,
-                    false,
-                    false
+                    CreateBehavior(loadDependencies: true)
                 )
             );
 
@@ -347,10 +323,7 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     [ProjectAlpha],
                     [],
-                    false,
-                    true,
-                    false,
-                    false
+                    CreateBehavior(expandLoadedProjects: true)
                 )
             );
 
@@ -398,10 +371,7 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     [ProjectAlpha, ProjectGamma],
                     [],
-                    false,
-                    false,
-                    false,
-                    false
+                    CreateBehavior(expandLoadedProjects: false)
                 )
             );
 
@@ -435,10 +405,7 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     [],
                     [ProjectAlpha],
-                    false,
-                    true,
-                    false,
-                    false
+                    CreateBehavior(expandLoadedProjects: true)
                 )
             );
 
@@ -480,10 +447,10 @@ public static class FilterServiceTests {
                 new FilterOptions(
                     [ProjectAlpha],
                     [],
-                    false,
-                    false,
-                    hideSolutionFoldersWithoutLoadedProjects,
-                    hideSolutionFoldersWithOnlyFiles
+                    CreateBehavior(
+                        hideSolutionFoldersWithoutLoadedProjects: hideSolutionFoldersWithoutLoadedProjects,
+                        hideSolutionFoldersWithOnlyFiles: hideSolutionFoldersWithOnlyFiles
+                    )
                 )
             );
 
@@ -496,6 +463,54 @@ public static class FilterServiceTests {
                 await solutionExplorer.DidNotReceive().HideSolutionFoldersAsync(Arg.Any<bool>(), Arg.Any<bool>());
             }
         }
+
+
+        [Fact]
+        public async Task IndicatesWhenFilteringIsOccurring() {
+            List<bool> isFiltering;
+            ISolutionExplorer solutionExplorer;
+            FilterService? service;
+
+
+            isFiltering = [];
+            service = null;
+
+            solutionExplorer = Substitute.For<ISolutionExplorer>();
+            solutionExplorer.ExpandAsync(Arg.Any<IEnumerable<Guid>>()).Returns((_) => {
+                isFiltering.Add(service?.IsFiltering ?? false);
+                return Task.CompletedTask;
+            });
+
+            Setup(
+                $@"
+                    <solution name='root'>
+                        <folder name='core'>
+                            <project name='alpha' guid='{ProjectAlpha}'/>
+                        </folder>
+                    </solution>
+                    ",
+                solutionExplorer: solutionExplorer
+            );
+
+            service= CreateService();
+            isFiltering.Add(service.IsFiltering);
+
+            await service.ApplyAsync(
+                new FilterOptions(
+                    [],
+                    [ProjectAlpha],
+                    CreateBehavior(expandLoadedProjects: true)
+                )
+            );
+
+            isFiltering.Add(service.IsFiltering);
+
+            Assert.Equal(
+                [false, true, false],
+                isFiltering
+            );
+        }
+
 
 
         private void Setup(string data, ISolutionExplorer? solutionExplorer = null) {
@@ -533,6 +548,25 @@ public static class FilterServiceTests {
             factory.CreateAsync(Arg.Any<string>(), Arg.Any<ThreadedWaitDialogProgressData>()).Returns(dialog);
 
             return factory;
+        }
+
+
+        private static FilterBehavior CreateBehavior(
+            bool loadDependencies = false,
+            bool expandLoadedProjects = false,
+            bool hideSolutionFoldersWithoutLoadedProjects = false,
+            bool hideSolutionFoldersWithOnlyFiles = false
+        ) {
+            IExtensionSettings globalSettings;
+
+
+            globalSettings = Substitute.For<IExtensionSettings>();
+            globalSettings.LoadProjectDependencies.Returns(loadDependencies);
+            globalSettings.ExpandLoadedProjects.Returns(expandLoadedProjects);
+            globalSettings.HideSolutionFoldersWithoutLoadedProjects.Returns(hideSolutionFoldersWithoutLoadedProjects);
+            globalSettings.HideSolutionFoldersWithOnlyFiles.Returns(hideSolutionFoldersWithOnlyFiles);
+
+            return new FilterBehavior(null, globalSettings);
         }
 
 
