@@ -17,17 +17,17 @@ public static class SolutionLoadObserver {
         // If a solution is already open, then we need to tell the solution
         // observer to do whatever it does after a solution is opened.
         if ((await VS.Services.GetSolutionAsync()).IsOpen()) {
-            await HideUnloadedProjectsInSolutionExplorerAsync();
+            await ApplyProjectVisibilityInSolutionExplorerAsync();
         }
     }
 
 
     private static void OnAfterOpenSolution(SolutionItem? item) {
-        HideUnloadedProjectsInSolutionExplorerAsync().FireAndForget();
+        ApplyProjectVisibilityInSolutionExplorerAsync().FireAndForget();
     }
 
 
-    private static async Task HideUnloadedProjectsInSolutionExplorerAsync() {
+    private static async Task ApplyProjectVisibilityInSolutionExplorerAsync() {
         ISolutionExplorer solutionExplorer;
 
 
@@ -55,7 +55,7 @@ public static class SolutionLoadObserver {
             }
         }
 
-        await solutionExplorer.HideUnloadedProjectsAsync();
+        await solutionExplorer.ApplyProjectVisibilityAsync();
     }
 
 }

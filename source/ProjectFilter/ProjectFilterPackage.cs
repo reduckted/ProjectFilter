@@ -46,6 +46,7 @@ public sealed class ProjectFilterPackage : ToolkitPackage {
         await FilterProjectsCommand.InitializeAsync(this);
 
         await SolutionLoadObserver.InitializeAsync();
+        await ProjectLoadObserver.InitializeAsync();
 
         await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
         _solutionSettingsManager = this.GetService<ISolutionSettingsManager, ISolutionSettingsManager>();

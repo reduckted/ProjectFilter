@@ -143,15 +143,32 @@ public partial class FilterService : IFilterService {
                 // to be a problem if you've loaded a Solution Filter ¯\_(ツ)_/¯).
                 await Task.Yield();
 
-                // The projects have been loaded or unloaded. If we're trying to
-                // do this in the background, then we'll skip the changes to Solution Explorer
-                // so that the loading is as seamless as possible.
-                if (!background) {
+                if (background) {
+                    // We're trying to do this in the background, so we won't make too many
+                    // visual changes. We'll leave Solution Explorer alone as much as possible,
+                    // but one change we might need to make to it is to apply visibility to
+                    // the projects, otherwise the projects we just loaded may remain hidden.
+                    // 
+                    // If the command to _Show All Files_ at the solution-level is enabled,
+                    // then it means the solution is not currently showing all files.
+                    // That means the projects that we just loaded will remain hidden.
+                    // On the other hand, if that command is disabled, then it means the
+                    // solution is currently showing all files, and the projects that we just
+                    // loaded will already be visible. If we applied project visibility, then
+                    // it would turn off the _Show All Files_ option, which we don't want to do.
+                    // 
+                    // So we only need to apply project visibility if the solution
+                    // is currently not showing all files.
+                    if (await solutionExplorer.IsSolutionShowAllFilesEnabledAsync()) {
+                        await solutionExplorer.ApplyProjectVisibilityAsync();
+                    }
+
+                } else {
                     // Even if we've been cancelled, we'll still hide the unloaded
                     // projects and show the loaded projects. This prevents us from
                     // getting into a state where we've loaded some projects but they
                     // remain hidden because the user cancelled half way through.
-                    await solutionExplorer.HideUnloadedProjectsAsync();
+                    await solutionExplorer.ApplyProjectVisibilityAsync();
 
                     if (
                         options.Behavior.HideSolutionFoldersWithoutLoadedProjects ||

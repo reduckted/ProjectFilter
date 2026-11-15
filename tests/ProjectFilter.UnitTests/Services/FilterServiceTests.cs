@@ -583,12 +583,17 @@ public static class FilterServiceTests {
         }
 
 
-        [Fact]
-        public async Task DoesNotChangeSolutionExplorerWhenRunningInBackground() {
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task AppliesProjectVisibilityInSolutionExplorerWhenRunningInBackgroundAndNotShowingAllFiles(
+            bool showAllFilesEnabled
+        ) {
             ISolutionExplorer solutionExplorer;
 
 
             solutionExplorer = Substitute.For<ISolutionExplorer>();
+            solutionExplorer.IsSolutionShowAllFilesEnabledAsync().Returns(showAllFilesEnabled);
 
             Setup(
                 $@"
@@ -614,12 +619,13 @@ public static class FilterServiceTests {
                 true
             );
 
+            await solutionExplorer.Received(showAllFilesEnabled ? 1 : 0).ApplyProjectVisibilityAsync();
+
             await solutionExplorer.DidNotReceive().ExpandAsync(Arg.Any<IEnumerable<Guid>>());
             await solutionExplorer.DidNotReceive().CollapseAsync(Arg.Any<IEnumerable<Guid>>());
 
             await solutionExplorer.DidNotReceive().GetExpandedFoldersAsync();
             await solutionExplorer.DidNotReceive().HideSolutionFoldersAsync(Arg.Any<bool>(), Arg.Any<bool>());
-            await solutionExplorer.DidNotReceive().HideUnloadedProjectsAsync();
         }
 
 
