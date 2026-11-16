@@ -646,31 +646,6 @@ public static class FilterDialogViewModelTests {
         public AcceptCommandProperty(GlobalServiceProvider serviceProvider) : base(serviceProvider) { }
 
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task SetsOptionsFromProperties(bool loadDependencies) {
-            IEnumerable<IHierarchyNode> hierarchy;
-            FilterDialogViewModel vm;
-
-
-            hierarchy = [
-                CreateNode(name: "a"),
-                CreateNode(name: "b")
-            ];
-
-            vm = CreateViewModel(hierarchy);
-            await vm.OnLoadedAsync(SearchHost);
-
-            vm.LoadProjectDependencies = loadDependencies;
-
-            vm.AcceptCommand.Execute(null);
-
-            Assert.NotNull(vm.Result);
-            Assert.Equal(loadDependencies, vm.Result!.LoadProjectDependencies);
-        }
-
-
         [Fact]
         public async Task SetsProjectsBasedOnCheckedState() {
             IEnumerable<IHierarchyNode> hierarchy;

@@ -26,7 +26,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IVsWindowSearch {
     private IVsWindowSearchHost? _searchHost;
     private HierarchyTreeViewItemCollection _items;
     private bool _loadProjectDependencies;
-    private FilterOptions? _result;
+    private FilterDialogResult? _result;
     private Visibility _loadingVisibility;
     private Visibility _loadedVisibility;
     private bool _useRegularExpressions;
@@ -230,7 +230,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IVsWindowSearch {
     public DelegateCommand AcceptCommand { get; }
 
 
-    public FilterOptions? Result {
+    public FilterDialogResult? Result {
         get => _result;
         private set { SetProperty(ref _result, value); }
     }
@@ -328,14 +328,7 @@ public sealed class FilterDialogViewModel : ObservableObject, IVsWindowSearch {
             select (node.Identifier, Load: node.IsChecked.GetValueOrDefault())
         ).ToLookup((x) => x.Load, (x) => x.Identifier);
 
-        Result = new FilterOptions(
-            projects[true],
-            projects[false],
-            LoadProjectDependencies,
-            ExpandLoadedProjects,
-            _hideSolutionFoldersWithoutLoadedProjects,
-            _hideSolutionFoldersWithOnlyFiles
-        );
+        Result = new FilterDialogResult(projects[true], projects[false]);
     }
 
 

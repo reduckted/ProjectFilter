@@ -53,7 +53,40 @@ public class SolutionExplorer : ISolutionExplorer {
     }
 
 
-    public async Task HideUnloadedProjectsAsync() {
+    public async Task<bool> IsSolutionShowAllFilesEnabledAsync() {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+        Solution? solution;
+
+
+        solution = await VS.Solutions.GetCurrentSolutionAsync();
+
+        if (solution is not null) {
+            solution.GetItemInfo(out IVsHierarchy hierarchy, out uint itemID, out var _);
+
+            if (hierarchy is IVsUIHierarchy uiHierarchy) {
+                OLECMD[] command;
+
+
+                command = [new OLECMD { cmdID = (uint)KnownCommands.Project_ShowAllFiles.ID }];
+
+                uiHierarchy.QueryStatusCommand(
+                    itemID,
+                    KnownCommands.Project_ShowAllFiles.Guid,
+                    1,
+                    command,
+                    IntPtr.Zero
+                );
+
+                return (command[0].cmdf & (uint)(OLECMDF.OLECMDF_SUPPORTED | OLECMDF.OLECMDF_ENABLED)) != 0;
+            }
+        }
+
+        return false;
+    }
+
+
+    public async Task ApplyProjectVisibilityAsync() {
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
         Solution? solution;

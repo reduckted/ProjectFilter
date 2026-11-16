@@ -1,6 +1,7 @@
 using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using System;
 using System.Threading.Tasks;
 
 
@@ -12,7 +13,11 @@ namespace ProjectFilter.Services;
 /// </summary>
 public partial class WaitDialogFactory : IWaitDialogFactory {
 
-    public async Task<IWaitDialog> CreateAsync(string title, ThreadedWaitDialogProgressData progress) {
+    public async Task<IWaitDialog> CreateAsync(
+        string title,
+        ThreadedWaitDialogProgressData progress,
+        TimeSpan delayToShowDialog
+    ) {
         IVsThreadedWaitDialogFactory waitDialogFactory;
 
 
@@ -20,7 +25,7 @@ public partial class WaitDialogFactory : IWaitDialogFactory {
 
         waitDialogFactory = (IVsThreadedWaitDialogFactory)await VS.Services.GetThreadedWaitDialogAsync();
 
-        return new Dialog(waitDialogFactory.StartWaitDialog(title, progress));
+        return new Dialog(waitDialogFactory.StartWaitDialog(title, progress, delayToShowDialog));
     }
 
 }

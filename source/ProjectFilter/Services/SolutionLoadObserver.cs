@@ -17,17 +17,17 @@ public static class SolutionLoadObserver {
         // If a solution is already open, then we need to tell the solution
         // observer to do whatever it does after a solution is opened.
         if ((await VS.Services.GetSolutionAsync()).IsOpen()) {
-            await HideUnloadedProjectsInSolutionExplorerAsync();
+            await ApplyProjectVisibilityInSolutionExplorerAsync();
         }
     }
 
 
     private static void OnAfterOpenSolution(SolutionItem? item) {
-        HideUnloadedProjectsInSolutionExplorerAsync().FireAndForget();
+        ApplyProjectVisibilityInSolutionExplorerAsync().FireAndForget();
     }
 
 
-    private static async Task HideUnloadedProjectsInSolutionExplorerAsync() {
+    private static async Task ApplyProjectVisibilityInSolutionExplorerAsync() {
         ISolutionExplorer solutionExplorer;
 
 
@@ -46,7 +46,7 @@ public static class SolutionLoadObserver {
             // If we know for sure that Solution Explorer is empty, then wait
             // a bit and try again. If we know it's not empty then we can hide
             // the unloaded projects. If we don't know if it's empty or not, then
-            // we'll still try to hide the unloaded projects because if we don't now,
+            // we'll still try to hide the unloaded projects because if we don't know,
             // then we may never know, and then we'd end up looping here forever.
             if (empty.GetValueOrDefault()) {
                 await Task.Delay(1000);
@@ -55,7 +55,7 @@ public static class SolutionLoadObserver {
             }
         }
 
-        await solutionExplorer.HideUnloadedProjectsAsync();
+        await solutionExplorer.ApplyProjectVisibilityAsync();
     }
 
 }

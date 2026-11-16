@@ -13,7 +13,10 @@ public interface ISolutionExplorer {
     Task<bool?> IsEmptyAsync();
 
 
-    Task HideUnloadedProjectsAsync();
+    Task<bool> IsSolutionShowAllFilesEnabledAsync();
+
+
+    Task ApplyProjectVisibilityAsync();
 
 
     Task HideSolutionFoldersAsync(

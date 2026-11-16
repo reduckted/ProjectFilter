@@ -10,17 +10,11 @@ public class FilterOptions {
     public FilterOptions(
         IEnumerable<Guid> projectsToLoad,
         IEnumerable<Guid> projectsToUnload,
-        bool loadProjectDependencies,
-        bool expandLoadedProjects,
-        bool hideSolutionFoldersWithoutLoadedProjects,
-        bool hideSolutionFoldersWithOnlyFiles
+        FilterBehavior behavior
     ) {
         ProjectsToLoad = [.. projectsToLoad];
         ProjectsToUnload = [.. projectsToUnload];
-        LoadProjectDependencies = loadProjectDependencies;
-        ExpandLoadedProjects = expandLoadedProjects;
-        HideSolutionFoldersWithoutLoadedProjects = hideSolutionFoldersWithoutLoadedProjects;
-        HideSolutionFoldersWithOnlyFiles = hideSolutionFoldersWithOnlyFiles;
+        Behavior = behavior;
     }
 
 
@@ -30,15 +24,6 @@ public class FilterOptions {
     public IReadOnlyCollection<Guid> ProjectsToUnload { get; }
 
 
-    public bool LoadProjectDependencies { get; }
-
-
-    public bool ExpandLoadedProjects { get; }
-
-
-    public bool HideSolutionFoldersWithoutLoadedProjects { get; }
-
-
-    public bool HideSolutionFoldersWithOnlyFiles { get; }
+    public FilterBehavior Behavior { get; }
 
 }
